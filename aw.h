@@ -81,7 +81,6 @@ EXPORTED void awPopCurrent(aw *);
 EXPORTED void awShow(aw *);
 EXPORTED void awHide(aw *);
 EXPORTED void awSetTitle(aw *, const char *);
-EXPORTED void awMove(aw *, int, int);
 EXPORTED void awResize(aw *, int, int);
 EXPORTED const awEvent * awNextEvent(aw *);
 EXPORTED const awEvent * awCompressedNextEvent(aw *);
