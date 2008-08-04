@@ -137,7 +137,7 @@ aw * awosOpen(const char * t, int x, int y, int width, int height, void * ct) {
 }
 
 int awosClose(aw * w) {
-	glXMakeCurrent(g_dpy, 0, 0);
+	if (g_dpy) glXMakeCurrent(g_dpy, 0, 0);
 	if (w->win) awosHide(w);
 	if (w->ctx) glXDestroyContext(g_dpy, w->ctx);
 	if (w->win) XDestroyWindow(g_dpy, w->win);

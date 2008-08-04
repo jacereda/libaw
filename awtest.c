@@ -57,6 +57,11 @@ int main(int argc, char ** argv) {
 	aw * w;
 	awInit();
 	w = awOpen();
+	if (!w) {
+		Log("unable to open window (is DISPLAY set?)");
+		return 1;
+	}
+		
 	processEvents(w);
 	awMove(w, 100, 200);
 	processEvents(w);
