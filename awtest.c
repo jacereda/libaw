@@ -85,3 +85,9 @@ int main(int argc, char ** argv) {
 	awEnd();
 	return 0;
 }
+
+/* 
+Local variables: **
+c-file-style: "bsd" **
+End: **
+*/

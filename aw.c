@@ -130,3 +130,9 @@ const awEvent * awCompressedNextEvent(aw * w) {
 //				report("compressed: %d", compressed);
 		return evPtr(w);
 }
+
+/* 
+Local variables: **
+c-file-style: "bsd" **
+End: **
+*/

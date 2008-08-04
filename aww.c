@@ -330,3 +330,9 @@ int awosSetSwapInterval(int si) {
 		wglSwapIntervalEXT = (void*)wglGetProcAddress("wglSwapIntervalEXT");
 	return wglSwapIntervalEXT(si);
 }
+
+/* 
+   Local variables: **
+   c-file-style: "bsd" **
+   End: **
+*/

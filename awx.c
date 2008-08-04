@@ -266,3 +266,9 @@ void awosNextEvent(aw * w) {
 int awosSetSwapInterval(int i) {
 	return setSwapInterval(i);
 }
+
+/* 
+Local variables: **
+c-file-style: "bsd" **
+End: **
+*/
