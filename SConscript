@@ -1,0 +1,13 @@
+#-*-Python-*-
+Import('env')
+aw = env.Copy()
+aw.Append(CPPPATH=['/usr/X11R6/include'])
+aw.Append(LIBPATH=['/usr/X11R6/lib'])
+aw.Append(LIBS=['X11', 'GL'])
+aw.SharedLibrary('lib/aw', ['aw.c', 'awx.c'])
+aw.Install('include/aw', ['aw.h', 'sysgl.h'])
+awtest = env.Copy()
+awtest.Append(CPPPATH=['include', '/usr/X11R6/include'])
+awtest.Append(LIBS=['aw', 'GL'])
+awtest.Append(LIBPATH=['lib', '/usr/X11R6/lib'])
+awtest.Program('bin/awtest', 'awtest.c')
