@@ -1,12 +1,12 @@
 libaw README.
 =============
 
-* What is it?
+WHAT?
 
 A simple and portable window handling library suitable for use in small
 OpenGL applications.
 
-* Why?  
+WHY? 
 
 GLUT and SDL are simply huge. They try to do too much. I don't want
 their threads abstraction / font rendering / sound output / widgets /
@@ -19,10 +19,13 @@ Also, this library is quite simple and should be easy to integrate in
 interpreters.
 
 BUILDING
-========
 
 - Install scons ( http://scons.org )
 - Type 'scons' in this directory. 
 
 This should build a .dylib and some test programs.
 
+FEEDBACK
+
+You can send your suggestions/comments/patches to:
+Jorge Acereda <jacereda@gmail.com>
