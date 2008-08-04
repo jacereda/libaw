@@ -63,8 +63,6 @@ int main(int argc, char ** argv) {
 	}
 		
 	processEvents(w);
-	awMove(w, 100, 200);
-	processEvents(w);
 	awResize(w, 200, 300);
 	processEvents(w);
 	awSetTitle(w, "foo");
@@ -74,10 +72,6 @@ int main(int argc, char ** argv) {
 	awHide(w);
 	processEvents(w);
 	awShow(w);
-	processEvents(w);
-	awMove(w, 300, 400);
-	processEvents(w);
-	awMove(w, 0, 50);
 	processEvents(w);
 	awPushCurrent(w);
 	while (!g_exit) {
