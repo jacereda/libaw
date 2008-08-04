@@ -84,11 +84,6 @@ void awSetTitle(aw * w, const char * t) {
 				report("awSetTitle failed");
 }
 
-void awMove(aw * w, int x, int y) {
-		if (check(w) && !awosMove(w, x, y))
-				report("awMove failed");
-}
-
 void awResize(aw * w, int width, int height) {
 		if (check(w) && !awosResize(w, width, height))
 				report("awResize failed");
