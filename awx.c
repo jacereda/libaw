@@ -15,7 +15,11 @@ int setSwapInterval(long interval) {
 #else
 static int (*glXSwapIntervalSGI)(unsigned interval) = 0;
 int setSwapInterval(int interval) {
+#ifdef NOTYET
 	return 0 == glXSwapIntervalSGI(interval);
+#else
+	return 1;
+#endif
 }
 #endif
 
