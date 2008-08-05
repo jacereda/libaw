@@ -296,12 +296,6 @@ static int setGeom(aw * w, int x, int y, int width, int height) {
 			  r.right - r.left, r.bottom - r.top, 1);
 }
 
-int awosMove(aw * w, int x, int y) {
-	int width, height;
-	getSize(w, &width, &height);
-	return setGeom(w, x, y, width, height);
-}
-
 int awosResize(aw * w, int width, int height) {
 	int x, y;
 	getPos(w, &x, &y);

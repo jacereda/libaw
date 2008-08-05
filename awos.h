@@ -14,7 +14,6 @@ int awosPopCurrent(aw *);
 int awosShow(aw *);
 int awosHide(aw *);
 int awosSetTitle(aw *, const char *);
-int awosMove(aw *, int, int);
 int awosResize(aw *, int, int);
 void awosNextEvent(aw *);
 int awosSetSwapInterval(int);
