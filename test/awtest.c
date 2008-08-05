@@ -2,19 +2,10 @@
 #include <stdio.h>
 #include <aw/sysgl.h>
 #include <aw/aw.h>
+#include "log.h"
 
 static int g_exit = 0;
-static int g_y = 0;
 static int g_compressed = 0;
-
-static void Log(const char * fmt, ...) {
-	va_list ap;
-	va_start(ap, fmt);
-	vprintf(fmt, ap);
-	printf("\n");
-	fflush(stdout);
-	va_end(ap);
-}
 
 static const awEvent * nextEvent(aw * w) {
 	const awEvent * ret;

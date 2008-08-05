@@ -5,19 +5,9 @@
 #include <aw/sysgl.h>
 #include <aw/sysglu.h>
 #include <aw/aw.h>
-
-static void Log(const char * fmt, ...) {
-	va_list ap;
-	va_start(ap, fmt);
-	vprintf(fmt, ap);
-	printf("\n");
-	fflush(stdout);
-	va_end(ap);
-}
-
+#include "log.h"
 
 static int shoulder = 0, elbow = 0;
-
 
 static void
 drawBox(GLfloat size, GLenum type)
@@ -139,33 +129,7 @@ static int processEvents(aw * w) {
 	return keepgoing;
 }
 
-int main(int argc, char ** argv) {
-	aw * w;
-	awInit();
-	w = awOpen();
-	if (!w) {
-		Log("unable to open window (is DISPLAY set?)");
-		return 1;
-	}
-	awSetTitle(w, argv[0]);
-	awResize(w, 500, 500);
-	awShow(w);
-	awPushCurrent(w);
-	Log("Keys:\n"
-	    "s - increase shoulder angle\n"
-	    "d - decrease shoulder angle\n"
-	    "e - increase elbow angle\n"
-	    "r - decrease elbow angle\n");
-	init();
-	while (processEvents(w)) {
-		display();
-		awSwapBuffers(w);
-	}
-	awPopCurrent(w);
-	awClose(w);
-	awEnd();
-	return 0;
-}
+#include "redbook.h"
 
 /* 
    Local variables: **
