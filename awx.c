@@ -188,11 +188,6 @@ int awosSetTitle(aw * w, const char * t) {
 	return ret;
 }
 
-int awosMove(aw * w, int x, int y) {
-	w->x = x; w->y = y;
-	return reconfigure(w);
-}
-
 int awosResize(aw * w, int width, int height) {
 	w->w = width; w->h = height;
 	return reconfigure(w);
