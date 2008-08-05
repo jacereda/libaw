@@ -258,6 +258,7 @@ static int pollEvent(aw * w, XEvent * e) {
 
 void awosNextEvent(aw * w) {
 	XEvent e;
+	sync();
 	if (pollEvent(w, &e))
 		handle(w, &e);
 	if (w->head != w->tail) {
