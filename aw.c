@@ -5,7 +5,7 @@
 #include "aw.h"
 #include "awos.h"
 
-static void report(const char * fmt, ...) {
+void report(const char * fmt, ...) {
 		va_list ap;
 		va_start(ap, fmt);
 		fprintf(stderr, "ERROR: ");
@@ -90,10 +90,15 @@ void awResize(aw * w, int width, int height) {
 }
 
 static void nextEvent(aw * w) {
-		awHeader * hdr = (awHeader*)w;
-		hdr->next.type = AW_EVENT_NONE;
-		if (check(w))
-				awosNextEvent(w);
+	awHeader * hdr = (awHeader*)w;
+	hdr->next.type = AW_EVENT_NONE;
+	if (check(w))
+		awosNextEvent(w);
+	if (hdr->head != hdr->tail) {
+		hdr->next = hdr->ev[hdr->tail];
+		hdr->tail++;
+		hdr->tail %= MAX_EVENTS;
+	}
 }
 
 static int valid(const awEvent * e) {
@@ -125,6 +130,18 @@ const awEvent * awCompressedNextEvent(aw * w) {
 //				report("compressed: %d", compressed);
 		return evPtr(w);
 }
+
+
+void got(aw  * w, int type, int p1, int p2) {
+	awHeader * hdr = (awHeader*)w;
+	awEvent * e = hdr->ev + hdr->head;
+	hdr->head++;
+	hdr->head %= MAX_EVENTS;
+	e->type = type;
+	e->u.p[0] = p1;
+	e->u.p[1] = p2;
+}
+
 
 /* 
 Local variables: **
