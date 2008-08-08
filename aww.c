@@ -16,8 +16,6 @@ struct _aw {
 	HGLRC ctx;
 	HDC pushdc;
 	HGLRC pushctx;
-	awEvent ev[MAX_EVENTS];
-	unsigned head, tail;
 	int lastmx, lastmy;
 };
 
@@ -47,16 +45,10 @@ aw * awFor(HWND win) {
 	return g_w[indexFor(win)];
 }
 
-static void got(HWND win, int type, int p1, int p2) {
+static void wgot(HWND win, int type, int p1, int p2) {
 	aw * w = awFor(win);
-	if (w) {
-		awEvent * e = w->ev + w->head;
-		w->head++;
-		w->head %= MAX_EVENTS;
-		e->type = type;
-		e->u.p[0] = p1;
-		e->u.p[1] = p2;
-	}
+	if (w)
+		got(w, type, p1, p2);
 }
 
 static void onMMove(HWND win, int x, int y, UINT flags ) {
@@ -67,53 +59,53 @@ static void onMMove(HWND win, int x, int y, UINT flags ) {
 }
 
 static void onMove(HWND win, int x, int y) {
-	got(win, AW_EVENT_MOVE, x, y);
+	wgot(win, AW_EVENT_MOVE, x, y);
 }
 
 static void onSize(HWND win, UINT state, int w, int h) {
-	got(win, AW_EVENT_RESIZE, w, h);
+	wgot(win, AW_EVENT_RESIZE, w, h);
 }
 
 static void onClose(HWND win){
-	got(win, AW_EVENT_CLOSE, 0, 0);
+	wgot(win, AW_EVENT_CLOSE, 0, 0);
 }
 
 static void onKeyDown(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-	got(win, AW_EVENT_DOWN, vk, 0);
+	wgot(win, AW_EVENT_DOWN, vk, 0);
 }
 
 static void onKeyUp(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-	got(win, AW_EVENT_UP, vk, 0);
+	wgot(win, AW_EVENT_UP, vk, 0);
 }
 
 static void onLD(HWND win, BOOL dbl, int x, int y, UINT flags) {
-	got(win, AW_EVENT_DOWN, AW_KEY_MOUSELEFT, 0);
+	wgot(win, AW_EVENT_DOWN, AW_KEY_MOUSELEFT, 0);
 }
 
 static void onMD(HWND win, BOOL dbl, int x, int y, UINT flags) {
-	got(win, AW_EVENT_DOWN, AW_KEY_MOUSEMIDDLE, 0);
+	wgot(win, AW_EVENT_DOWN, AW_KEY_MOUSEMIDDLE, 0);
 }
 
 static void onRD(HWND win, BOOL dbl, int x, int y, UINT flags) {
-	got(win, AW_EVENT_DOWN, AW_KEY_MOUSERIGHT, 0);
+	wgot(win, AW_EVENT_DOWN, AW_KEY_MOUSERIGHT, 0);
 }
 
 static void onLU(HWND win, int x, int y, UINT flags) {
-	got(win, AW_EVENT_UP, AW_KEY_MOUSELEFT, 0);
+	wgot(win, AW_EVENT_UP, AW_KEY_MOUSELEFT, 0);
 }
 
 static void onMU(HWND win, int x, int y, UINT flags) {
-	got(win, AW_EVENT_UP, AW_KEY_MOUSEMIDDLE, 0);
+	wgot(win, AW_EVENT_UP, AW_KEY_MOUSEMIDDLE, 0);
 }
 
 static void onRU(HWND win, int x, int y, UINT flags) {
-	got(win, AW_EVENT_UP, AW_KEY_MOUSERIGHT, 0);
+	wgot(win, AW_EVENT_UP, AW_KEY_MOUSERIGHT, 0);
 }
 
 static void onMW(HWND win, int x, int y, int z, UINT keys) {
 	int which = z >= 0? AW_KEY_MOUSEWHEELUP : AW_KEY_MOUSEWHEELDOWN;
-	got(win, AW_EVENT_DOWN, which, 0);
-	got(win, AW_EVENT_UP, which, 0);
+	wgot(win, AW_EVENT_DOWN, which, 0);
+	wgot(win, AW_EVENT_UP, which, 0);
 }
 
 LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
@@ -311,11 +303,6 @@ static void dispatch(HWND win) {
 
 void awosNextEvent(aw * w) {
 	dispatch(w->win);
-	if (w->head != w->tail) {
-		w->hdr.next = w->ev[w->tail];
-		w->tail++;
-		w->tail %= MAX_EVENTS;
-	}
 }
 
 int awosSetSwapInterval(int si) {

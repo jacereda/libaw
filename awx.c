@@ -31,8 +31,6 @@ static Display * g_dpy;
 static Atom g_del;
 static int g_screen;
 
-#define MAX_EVENTS 8
-
 struct _aw {
 	awHeader hdr;
 	Window win;
@@ -40,23 +38,12 @@ struct _aw {
 	Window pushwin;
 	GLXContext pushctx;
 	XVisualInfo * vinfo;
-	awEvent ev[MAX_EVENTS];
-	unsigned head, tail;
 	int x, y, w, h;
 	int lastx, lasty, lastw, lasth;
 };
 
 static int sync() {
 	return XSync(g_dpy, False);
-}
-
-static void got(aw  * w, int type, int p1, int p2) {
-	awEvent * e = w->ev + w->head;
-	w->head++;
-	w->head %= MAX_EVENTS;
-	e->type = type;
-	e->u.p[0] = p1;
-	e->u.p[1] = p2;
 }
 
 static XVisualInfo* chooseVisual() {
@@ -256,11 +243,6 @@ void awosNextEvent(aw * w) {
 	sync();
 	if (pollEvent(w, &e))
 		handle(w, &e);
-	if (w->head != w->tail) {
-		w->hdr.next = w->ev[w->tail];
-		w->tail++;
-		w->tail %= MAX_EVENTS;
-	}
 }
 
 int awosSetSwapInterval(int i) {
