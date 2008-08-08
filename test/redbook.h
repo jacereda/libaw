@@ -1,4 +1,3 @@
-
 static void loop(aw * w) {
 	while (processEvents(w)) {
 		display();
@@ -19,9 +18,11 @@ static void go(aw * w, const char * title) {
 }
 
 int main(int argc, char ** argv) {
-	aw * w;
-	awInit();
-	w = awOpen();
+	aw * w = 0;
+	if (!awInit())
+		Log("unable to initialize AW");
+	else
+		w = awOpen();
 	if (w) 
 		go(w, argv[0]);
 	else
