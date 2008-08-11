@@ -104,21 +104,9 @@ static void resetPool() {
 	got(_w, AW_EVENT_CLOSE, 0, 0);
 	return NO;
 }
-
 @end
 
 @implementation Window
-- (BOOL) canBecomeKeyWindow {
-	return YES;
-}
-
-- (BOOL) isOpaque {
-	return YES;
-}
-
-- (BOOL)acceptsMouseMovedEvents {
-	return YES;
-}
 @end
 
 
@@ -171,6 +159,7 @@ aw * awosOpen(const char * t, int x, int y, int width, int height, void * ct) {
 
 	[win setContentView: view];
 	[win setDelegate: delegate];
+	[win makeFirstResponder: view];
 	[win setAcceptsMouseMovedEvents: YES];
 
 	w = calloc(1, sizeof(*w));
