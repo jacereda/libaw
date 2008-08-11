@@ -115,6 +115,10 @@ static void resetPool() {
 - (BOOL) isOpaque {
 	return YES;
 }
+
+- (BOOL)acceptsMouseMovedEvents {
+	return YES;
+}
 @end
 
 
@@ -126,7 +130,6 @@ int awosInit() {
 	NSApp = [NSApplication sharedApplication];
 	[NSApp finishLaunching];
 	[NSApp activateIgnoringOtherApps: YES];
-	[pool release];
 	return 1;
 }
 
