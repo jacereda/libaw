@@ -109,7 +109,6 @@ void got(aw  * w, int type, int p1, int p2) {
 	awEvent * e = hdr->ev + hdr->head;
 	hdr->head++;
 	hdr->head %= MAX_EVENTS;
-	report("queue: %d %d", hdr->head, hdr->tail);
 	e->type = type;
 	e->u.p[0] = p1;
 	e->u.p[1] = p2;
