@@ -79,7 +79,7 @@ void reshape (int w, int h)
 static int processEvents(aw * w) {
 	int keepgoing = 1;
 	const awEvent * awe;
-	while ((awe = awCompressedNextEvent(w))) switch (awe->type) {
+	while ((awe = awNextEvent(w))) switch (awe->type) {
 	case AW_EVENT_RESIZE:
 		reshape(awe->u.resize.w, awe->u.resize.h);
 		break;

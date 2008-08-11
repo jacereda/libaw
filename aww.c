@@ -301,7 +301,7 @@ static void dispatch(HWND win) {
 	DispatchMessage(&msg);
 }
 
-void awosNextEvent(aw * w) {
+void awosPollEvent(aw * w) {
 	dispatch(w->win);
 }
 

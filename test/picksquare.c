@@ -50,7 +50,7 @@ static void processHits (GLint hits, GLuint buffer[])
 	unsigned int i, j;
 	GLuint ii, jj, names, *ptr;
 
-	printf ("hits = %d\n", hits);
+	Log("hits = %d", (int)hits);
 	ptr = (GLuint *) buffer;
 	for (i = 0; i < hits; i++) {/*  for each hit  */
 		names = *ptr;
@@ -129,7 +129,7 @@ static int processEvents(aw * w) {
 	static int s_x = 0;
 	static int s_y = 0;
 	const awEvent * awe;
-	while ((awe = awCompressedNextEvent(w))) switch (awe->type) {
+	while ((awe = awNextEvent(w))) switch (awe->type) {
 	case AW_EVENT_RESIZE:
 		reshape(awe->u.resize.w, awe->u.resize.h);
 		break;

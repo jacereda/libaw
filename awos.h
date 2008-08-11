@@ -1,9 +1,7 @@
-#define MAX_EVENTS 8
 
+#define MAX_EVENTS 128
 
 typedef struct awHeader {
-	awEvent curr;
-	awEvent next;
 	int interval;
 	awEvent ev[MAX_EVENTS];
 	unsigned head, tail;
@@ -20,7 +18,7 @@ int awosShow(aw *);
 int awosHide(aw *);
 int awosSetTitle(aw *, const char *);
 int awosResize(aw *, int, int);
-void awosNextEvent(aw *);
+void awosPollEvent(aw *);
 int awosSetSwapInterval(int);
 
 // Defined in the frontend
