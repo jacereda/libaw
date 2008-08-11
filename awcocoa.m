@@ -9,7 +9,10 @@
 #include <AppKit/NSWindow.h>
 #include <AppKit/NSEvent.h>
 #include <AppKit/NSOpenGL.h>
-#include <AppKit/NSOpenGLView.h>
+#include <AppKit/NSView.h>
+#include <OpenGL/CGLTypes.h>
+#include <OpenGL/OpenGL.h>
+#include <OpenGL/gl.h>
 
 @interface Window : NSWindow {
 	aw * _w;
@@ -67,6 +70,10 @@ static void resetPool() {
 - (void) mouseMoved: (NSEvent *)ev {
 	[self handleMotion: ev];
 }
+
+- (BOOL) isOpaque {
+	return YES;
+}
 @end
 
 @implementation Delegate
@@ -106,15 +113,20 @@ static void resetPool() {
 }
 
 - (BOOL) isOpaque {
-	return NO;
+	return YES;
 }
 @end
 
+
 int awosInit() {
+	ProcessSerialNumber psn = { 0, kCurrentProcess };
+	TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+	SetFrontProcess(&psn);
 	pool = [[NSAutoreleasePool alloc] init];
 	NSApp = [NSApplication sharedApplication];
 	[NSApp finishLaunching];
-	[NSApp activateIgnoringOtherApps:YES];
+	[NSApp activateIgnoringOtherApps: YES];
+	[pool release];
 	return 1;
 }
 
@@ -154,7 +166,6 @@ aw * awosOpen(const char * t, int x, int y, int width, int height, void * ct) {
 	View * view = [[View alloc] initWithFrame: frm];
 	Delegate * delegate = [[Delegate alloc] init];
 
-//	[view setPostsFrameChangedNotifications: YES];
 	[win setContentView: view];
 	[win setDelegate: delegate];
 	[win setAcceptsMouseMovedEvents: YES];
@@ -179,6 +190,7 @@ int awosClose(aw * w) {
 }
 
 int awosSwapBuffers(aw * w) {
+	glFlush();
 	[w->ctx flushBuffer];
 	return 1;
 }
@@ -216,23 +228,19 @@ int awosSetTitle(aw * w, const char * t) {
 
 int awosResize(aw * w, int width, int height) {
 	NSSize sz;
-	sz.width = width;
-	sz.height = height;
+	sz.width = width;  sz.height = height;
 	[w->win setContentSize: sz];
 	return 1;
 }
 
 void awosPollEvent(aw * w) {
-	NSEvent * ev;
-	while (ev = [w->win nextEventMatchingMask: NSAnyEventMask 
-		      untilDate: [NSDate distantPast] 
-		      inMode: NSDefaultRunLoopMode 
-		      dequeue: YES])
-	       [NSApp sendEvent: ev];
+	[NSApp sendEvent: [w->win nextEventMatchingMask: NSAnyEventMask 
+			    untilDate: [NSDate distantPast] 
+			    inMode: NSDefaultRunLoopMode 
+			    dequeue: YES]];
 	resetPool();
 }
 
-#include <OpenGL/CGLTypes.h>
 int awosSetSwapInterval(int i) {
         long param = i;
         CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &param);
