@@ -2,8 +2,8 @@
 import sys
 import os
 backends = []
-#if sys.platform == 'darwin':
-#	backends += ['cocoa']
+if sys.platform == 'darwin':
+	backends += ['cocoa']
 if os.name == 'posix':
 	backends += ['x11']
 if os.name == 'nt':

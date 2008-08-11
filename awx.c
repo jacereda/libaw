@@ -238,7 +238,7 @@ static int pollEvent(aw * w, XEvent * e) {
 }
 
 
-void awosNextEvent(aw * w) {
+void awosPollEvent(aw * w) {
 	XEvent e;
 	sync();
 	if (pollEvent(w, &e))

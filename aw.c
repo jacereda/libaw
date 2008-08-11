@@ -90,55 +90,26 @@ void awResize(aw * w, int width, int height) {
 		report("awResize failed");
 }
 
-static void nextEvent(aw * w) {
-	awHeader * hdr = (awHeader*)w;
-	hdr->next.type = AW_EVENT_NONE;
-	if (check(w))
-		awosNextEvent(w);
-	if (hdr->head != hdr->tail) {
-		hdr->next = hdr->ev[hdr->tail];
-		hdr->tail++;
-		hdr->tail %= MAX_EVENTS;
-	}
-}
-
-static int valid(const awEvent * e) {
-	return e->type != AW_EVENT_NONE;
-}
-
-static const awEvent * evPtr(aw * w) {
-	awHeader * hdr = (awHeader*)w;
-	return valid(&hdr->curr)? &hdr->curr : NULL;
-}
-
 const awEvent * awNextEvent(aw * w) {
+	const awEvent * ret = 0;
 	awHeader * hdr = (awHeader*)w;
-	nextEvent(w);
-	hdr->curr = hdr->next;
-	hdr->next.type = AW_EVENT_NONE;
-	return evPtr(w);
+	if (!check(w))
+		return ret;
+	awosPollEvent(w);
+	if (hdr->head == hdr->tail)
+		return ret;
+	ret = hdr->ev + hdr->tail;
+	hdr->tail++;
+	hdr->tail %= MAX_EVENTS;
+	return ret;
 }
-
-const awEvent * awCompressedNextEvent(aw * w) {
-	awHeader * hdr = (awHeader*)w;
-//		int compressed = -1;
-	hdr->curr = hdr->next;
-	do {
-		nextEvent(w);
-//				compressed++;
-	} while (hdr->next.type == hdr->curr.type && valid(&hdr->curr));
-//		if (compressed)
-//				report("compressed: %d", compressed);
-	return evPtr(w);
-}
-
 
 void got(aw  * w, int type, int p1, int p2) {
 	awHeader * hdr = (awHeader*)w;
 	awEvent * e = hdr->ev + hdr->head;
 	hdr->head++;
-	assert(hdr->head != hdr->tail);
 	hdr->head %= MAX_EVENTS;
+	report("queue: %d %d", hdr->head, hdr->tail);
 	e->type = type;
 	e->u.p[0] = p1;
 	e->u.p[1] = p2;

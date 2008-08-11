@@ -1,24 +1,12 @@
-#include <stdarg.h>
-#include <stdio.h>
 #include <aw/sysgl.h>
 #include <aw/aw.h>
 #include "log.h"
 
 static int g_exit = 0;
-static int g_compressed = 0;
-
-static const awEvent * nextEvent(aw * w) {
-	const awEvent * ret;
-	if (g_compressed)
-		ret = awCompressedNextEvent(w);
-	else
-		ret = awNextEvent(w);		
-	return ret;
-}
 
 static void processEvents(aw * w) {
 	const awEvent * awe;
-	while ((awe = nextEvent(w))) switch (awe->type) {
+	while ((awe = awNextEvent(w))) switch (awe->type) {
 	case AW_EVENT_MOVE:
 		Log("Moved to %d %d", awe->u.move.x, awe->u.move.y); break;
 	case AW_EVENT_RESIZE:
@@ -26,10 +14,6 @@ static void processEvents(aw * w) {
 	case AW_EVENT_DOWN:
 		Log("Down: %d", awe->u.down.which); break;
 	case AW_EVENT_UP:
-		if (awe->u.up.which == AW_KEY_MOUSEMIDDLE) {
-			g_compressed = 1 - g_compressed;
-			Log("Compressed: %d", g_compressed);
-			}
 		Log("Up: %d", awe->u.up.which); break;
 	case AW_EVENT_MOTION:
 		Log("Motion: %d,%d", awe->u.motion.x, awe->u.motion.y); break;

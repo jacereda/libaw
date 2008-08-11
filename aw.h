@@ -83,4 +83,3 @@ EXPORTED void awHide(aw *);
 EXPORTED void awSetTitle(aw *, const char *);
 EXPORTED void awResize(aw *, int, int);
 EXPORTED const awEvent * awNextEvent(aw *);
-EXPORTED const awEvent * awCompressedNextEvent(aw *);
