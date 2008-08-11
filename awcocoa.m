@@ -80,7 +80,6 @@ static void resetPool() {
 - (void)windowDidResize:(NSNotification *)n {
 	NSSize sz = [_w->view frame].size;
 	[_w->ctx update];
-	report("window did resize: %d %d", (int)sz.width, (int)sz.height);
 	got(_w, AW_EVENT_RESIZE, (int)sz.width, (int)sz.height);	
 }
 
@@ -190,7 +189,6 @@ int awosSwapBuffers(aw * w) {
 int awosPushCurrent(aw * w) {
 	assert(w->pushctx == 0);
 	w->pushctx = [NSOpenGLContext currentContext];
-	report("%p %p", [w->ctx view], w->view);
 	[w->ctx makeCurrentContext];
 	return 1;
 }
