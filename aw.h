@@ -33,19 +33,18 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 enum {
   AW_EVENT_UNKNOWN,
   AW_EVENT_NONE,
-  AW_EVENT_MOVE,
   AW_EVENT_RESIZE,
-  AW_EVENT_CLOSE,
   AW_EVENT_DOWN,
   AW_EVENT_UP,
   AW_EVENT_MOTION,
+  AW_EVENT_CLOSE,
 };
 
 enum {
   AW_KEY_NONE,
   AW_KEY_MOUSEWHEELUP, 
   AW_KEY_MOUSEWHEELDOWN,
-  AW_KEY_MOUSELEFT, 
+  AW_KEY_MOUSELEFT,
   AW_KEY_MOUSEMIDDLE,
   AW_KEY_MOUSERIGHT,
 };
@@ -54,7 +53,6 @@ typedef struct awEvent {
   int type;
   union {
     int p[2];
-    struct { int x, y; } move;
     struct { int w, h; } resize;
     struct { int which; } down;
     struct { int which; } up;
