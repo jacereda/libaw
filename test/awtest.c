@@ -7,8 +7,6 @@ static int g_exit = 0;
 static void processEvents(aw * w) {
 	const awEvent * awe;
 	while ((awe = awNextEvent(w))) switch (awe->type) {
-	case AW_EVENT_MOVE:
-		Log("Moved to %d %d", awe->u.move.x, awe->u.move.y); break;
 	case AW_EVENT_RESIZE:
 		Log("Resized to %d %d", awe->u.resize.w, awe->u.resize.h); break;
 	case AW_EVENT_DOWN:
@@ -41,12 +39,6 @@ int main(int argc, char ** argv) {
 	awResize(w, 200, 300);
 	processEvents(w);
 	awSetTitle(w, "foo");
-	processEvents(w);
-	awShow(w);
-	processEvents(w);
-	awHide(w);
-	processEvents(w);
-	awShow(w);
 	processEvents(w);
 	awPushCurrent(w);
 	while (!g_exit) {
