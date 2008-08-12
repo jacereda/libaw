@@ -39,7 +39,7 @@ struct _aw {
 	GLXContext pushctx;
 	XVisualInfo * vinfo;
 	int x, y, w, h;
-	int lastx, lasty, lastw, lasth;
+	int lastw, lasth;
 };
 
 static int sync() {
@@ -198,11 +198,9 @@ static int mapKey(KeyCode keycode) {
 }
 
 static void configure(aw * w, int x, int y, int width, int height) {
-	if (x != w->lastx || y != w->lasty)
-		got(w, AW_EVENT_MOVE, x, y);
 	if (width != w->lastw || height != w->lasth)
 		got(w, AW_EVENT_RESIZE, width, height);
-	w->lastx = x; w->lasty = y;	w->lastw = width; w->lasth = height;
+	w->lastw = width; w->lasth = height;
 }
 
 static void handle(aw * w, XEvent * e) {

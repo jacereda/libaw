@@ -58,10 +58,6 @@ static void onMMove(HWND win, int x, int y, UINT flags ) {
 	w->lastmx = x; w->lastmy = y;
 }
 
-static void onMove(HWND win, int x, int y) {
-	wgot(win, AW_EVENT_MOVE, x, y);
-}
-
 static void onSize(HWND win, UINT state, int w, int h) {
 	wgot(win, AW_EVENT_RESIZE, w, h);
 }
@@ -113,7 +109,6 @@ LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
 	int handled = 1;
 	switch (msg) {
 	case WM_MOUSEMOVE: r = HANDLE_WM_MOUSEMOVE(win, w, l, onMMove); break;
-	case WM_MOVE: r = HANDLE_WM_MOVE(win, w, l, onMove); break;
 	case WM_SIZE: r = HANDLE_WM_SIZE(win, w, l, onSize); break;
 	case WM_CLOSE: r = HANDLE_WM_CLOSE(win, w, l, onClose); break;
 	case WM_KEYDOWN: r = HANDLE_WM_KEYDOWN(win, w, l, onKeyDown); break;
