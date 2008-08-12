@@ -35,7 +35,6 @@ struct _aw {
 	Window * win;
 	Delegate * delegate;
 	NSOpenGLContext * ctx;
-	NSOpenGLContext * pushctx;
 };
 
 static NSAutoreleasePool * pool;
@@ -186,19 +185,6 @@ int awosSwapBuffers(aw * w) {
 	return 1;
 }
 
-int awosPushCurrent(aw * w) {
-	assert(w->pushctx == 0);
-	w->pushctx = [NSOpenGLContext currentContext];
-	[w->ctx makeCurrentContext];
-	return 1;
-}
-
-int awosPopCurrent(aw * w) {
-	[w->pushctx makeCurrentContext];
-	w->pushctx = 0;
-	return 1;
-}
-
 int awosShow(aw * w) {
 	[w->win makeKeyAndOrderFront: w->view];
 	return 1;
@@ -234,6 +220,28 @@ void awosPollEvent(aw * w) {
 int awosSetSwapInterval(int i) {
         long param = i;
         CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &param);
+	return 1;
+}
+
+void * awosGetCurrentContext() {
+	return [NSOpenGLContext currentContext];
+}
+
+void * awosGetCurrentDrawable() {
+	return 0;
+}
+
+void * awosGetContext(aw * w) {
+	return w->ctx;
+}
+
+void * awosGetDrawable(aw * w) {
+	return w->win;
+}
+
+int awosMakeCurrent(void * c, void * d) {
+	NSOpenGLContext * cc = (NSOpenGLContext*)c;
+	[cc makeCurrentContext];
 	return 1;
 }
 

@@ -4,15 +4,6 @@
 #include "aw.h"
 #include "awos.h"
 
-#if 0 // defined(__APPLE__)
-#include <OpenGL/CGLTypes.h>
-#include <OpenGL/CGLCurrent.h>
-#include <OpenGL/OpenGL.h>
-int setSwapInterval(long interval) {
-	CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &interval);
-	return 1;
-}
-#else
 static int (*glXSwapIntervalSGI)(unsigned interval) = 0;
 int setSwapInterval(int interval) {
 #ifdef NOTYET
@@ -21,9 +12,6 @@ int setSwapInterval(int interval) {
 	return 1;
 #endif
 }
-#endif
-
-
 
 #define EVMASK 	KeyPressMask | ButtonPressMask | ButtonReleaseMask |\
                 PointerMotionMask | StructureNotifyMask
@@ -35,8 +23,6 @@ struct _aw {
 	awHeader hdr;
 	Window win;
 	GLXContext ctx;
-	Window pushwin;
-	GLXContext pushctx;
 	XVisualInfo * vinfo;
 	int x, y, w, h;
 	int lastw, lasth;
@@ -129,7 +115,6 @@ aw * awosOpen(const char * t, int x, int y, int width, int height, void * ct) {
 
 int awosClose(aw * w) {
 	if (g_dpy) glXMakeCurrent(g_dpy, 0, 0);
-	if (w->win) awosHide(w);
 	if (w->ctx) glXDestroyContext(g_dpy, w->ctx);
 	if (w->win) XDestroyWindow(g_dpy, w->win);
 	if (w->vinfo) XFree(w->vinfo);
@@ -142,14 +127,24 @@ int awosSwapBuffers(aw * w) {
 	return 1;
 }
 
-int awosPushCurrent(aw * w) {
-	w->pushctx = glXGetCurrentContext();
-	w->pushwin = glXGetCurrentDrawable();
-	return glXMakeCurrent(g_dpy, w->win, w->ctx);
+int awosMakeCurrent(void * c, void * d) {
+	return glXMakeCurrent(g_dpy, (GLXDrawable)d, (GLXContext)c);
 }
 
-int awosPopCurrent(aw * w) {
-	return glXMakeCurrent(g_dpy, w->pushwin, w->pushctx);
+void * awosGetCurrentContext() {
+	return (void*)glXGetCurrentContext();
+}
+
+void * awosGetCurrentDrawable() {
+	return (void*)glXGetCurrentDrawable();
+}
+
+void * awosGetContext(aw * w) {
+	return w->ctx;
+}
+
+void * awosGetDrawable(aw * w) {
+	return w->win;
 }
 
 int awosShow(aw * w) {

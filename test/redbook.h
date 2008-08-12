@@ -8,7 +8,6 @@ static void loop(aw * w) {
 static void go(aw * w, const char * title) {
 	awSetTitle(w, title);
 	awResize(w, 500, 500);
-	awShow(w);
 	awPushCurrent(w);
 	init();
 	loop(w);

@@ -34,16 +34,33 @@ aw  * awOpen() {
 	return awOpenSharing(0);
 }
 
+static void show(aw * w) {
+	if (check(w) && !awosShow(w))
+		report("Unable to show window");
+}
+
+
+static void hide(aw * w) {
+	if (check(w) && !awosHide(w))
+		report("Unable to hide window");
+}
+
+
 aw  * awOpenSharing(void * ctx) {
 	aw * w = awosOpen("AW Window", 100, 100, 64, 64, ctx);
 	if (!w)
 		report("Unable to open window");
+	if (w)
+		show(w);
 	return w;
 }
 
-void awClose(aw * w) {
-	if (check(w) && !awosClose(w)) 
-		report("Unable to close window");
+void awClose(aw * w) {	
+	if (check(w)) {
+		hide(w);
+		if (!awosClose(w)) 
+			report("Unable to close window");
+	}
 }
 
 void awSwapBuffers(aw * w) {
@@ -59,25 +76,26 @@ static void setInterval(aw * w, int interval) {
 	}
 }
 
+static void makeCurrent(void * c, void * d) {
+	if (!awosMakeCurrent(c, d))
+		report("Unable to establish context");
+}
+
 void awPushCurrent(aw * w) {
-	if (check(w) && !awosPushCurrent(w))
-		report("awPushCurrent failed");
-	setInterval(w, 1);
+	if (check(w)) {
+		awHeader * hdr = (awHeader*)w;
+		hdr->pushctx = awosGetCurrentContext();
+		hdr->pushdrw = awosGetCurrentDrawable();
+		makeCurrent(awosGetContext(w), awosGetDrawable(w));
+		setInterval(w, 1);
+	}
 }
 
 void awPopCurrent(aw * w) {
-	if (check(w) && !awosPopCurrent(w))
-		report("awPopCurrent failed");
-}
-
-void awShow(aw * w) {
-	if (check(w) && !awosShow(w))
-		report("awShow failed");
-}
-
-void awHide(aw * w) {
-	if (check(w) && !awosHide(w))
-		report("awHide failed");
+	if (check(w)) {
+		awHeader * hdr = (awHeader*)w;
+		makeCurrent(hdr->pushctx, hdr->pushdrw);
+	}
 }
 
 void awSetTitle(aw * w, const char * t) {
