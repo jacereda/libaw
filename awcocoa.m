@@ -136,7 +136,7 @@ static NSOpenGLContext * createContext(NSOpenGLContext * share) {
 	return ctx;
 }
 
-aw * awosOpen(const char * t, int x, int y, int width, int height, void * ct) {
+aw * awosOpen(int x, int y, int width, int height, void * ct) {
 	aw * w = 0;
 	NSRect rect = NSMakeRect(x, y, width, height);
 	unsigned int style = 0
@@ -169,6 +169,7 @@ aw * awosOpen(const char * t, int x, int y, int width, int height, void * ct) {
 	w->delegate->_w = w;
 	w->ctx = ctx;
 	[ctx setView: [win contentView]];
+	got(w, AW_EVENT_RESIZE, width, height);
 	return w;
 }
 

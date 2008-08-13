@@ -14,8 +14,6 @@ struct _aw {
 	awHeader hdr;
 	HWND win;
 	HGLRC ctx;
-	HDC pushdc;
-	HGLRC pushctx;
 	int lastmx, lastmy;
 };
 
@@ -166,7 +164,7 @@ static void setPF(HDC dc) {
 	SetPixelFormat(dc, ChoosePixelFormat(dc, &pfd), &pfd); 
 }
 
-aw * awosOpen(const char * t, int x, int y, int width, int height, void * ct) {
+aw * awosOpen(int x, int y, int width, int height, void * ct) {
 	aw * ret = NULL;
 	aw * w = calloc(1, sizeof(*ret));
 	HDC dc;
@@ -222,20 +220,25 @@ int awosSwapBuffers(aw * w) {
 	return ret;
 }
 
-int awosPushCurrent(aw * w) {
-	int ret;
-	HDC dc = GetDC(w->win);
-	w->pushdc = wglGetCurrentDC();
-	w->pushctx = wglGetCurrentContext();
-	ret = wglMakeCurrent(dc, w->ctx);
-	ReleaseDC(w->win, dc);
-	return ret;
+void * awosGetCurrentContext() {
+	return (void*)wglGetCurrentDC();
 }
 
-int awosPopCurrent(aw * w) {
-	return wglMakeCurrent(w->pushdc, w->pushctx);
+void * awosGetCurrentDrawable() {
+	return wglGetCurrentDC();
 }
 
+void * awosGetContext(aw * w) {
+	return w->ctx;
+}
+
+void * awosGetDrawable(aw * w) {
+	return GetDC(w->win);
+}
+
+int awosMakeCurrent(void * c, void * d) {
+	return wglMakeCurrent(d, c);
+}
 
 int awosShow(aw * w) {
 	ShowWindow(w->win, SW_SHOWNORMAL);
@@ -251,42 +254,6 @@ int awosSetTitle(aw * w, const char * t) {
 	WCHAR wt[1024];
 	MultiByteToWideChar(CP_UTF8, 0, t, strlen(t)+1, wt, sizeof(wt));
 	return SetWindowText(w->win, wt);
-}
-
-static void toGlobal(aw * w, int x, int y, int * gx, int * gy) {
-	POINT p;
-	p.x = x; p.y = y;
-	MapWindowPoints(w->win, GetDesktopWindow(), &p, 1);
-	*gx = p.x;
-	*gy = p.y;
-}
-
-static void getSize(aw * w, int * width, int * height) {
-	RECT r;
-	GetClientRect(w->win, &r);	
-	*width = r.right - r.left; *height = r.bottom - r.top;
-}
-
-static void getPos(aw * w, int * x, int * y) {
-	POINT p;
-	p.x = 0; p.y = 0;
-	ClientToScreen(w->win, &p);
-	*x = p.x; *y = p.y;
-}
-
-static int setGeom(aw * w, int x, int y, int width, int height) {
-	RECT r;
-	r.left = x; r.top = y;
-	r.right = x + width; r.bottom = y + height;
-	AdjustWindowRect(&r, GetWindowLong(w->win, GWL_STYLE), FALSE);
-	return MoveWindow(w->win, r.left, r.top, 
-			  r.right - r.left, r.bottom - r.top, 1);
-}
-
-int awosResize(aw * w, int width, int height) {
-	int x, y;
-	getPos(w, &x, &y);
-	return setGeom(w, x, y, width, height);
 }
 
 static void dispatch(HWND win) {
