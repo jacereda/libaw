@@ -6,8 +6,6 @@ static void loop(aw * w) {
 }
 
 static void go(aw * w, const char * title) {
-	awSetTitle(w, title);
-	awResize(w, 500, 500);
 	awPushCurrent(w);
 	init();
 	loop(w);
@@ -21,7 +19,7 @@ int main(int argc, char ** argv) {
 	if (!awInit())
 		Log("unable to initialize AW");
 	else
-		w = awOpen();
+		w = awOpen(argv[0], 100, 100, 500, 500);
 	if (w) 
 		go(w, argv[0]);
 	else

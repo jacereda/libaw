@@ -29,17 +29,11 @@ static void draw() {
 int main(int argc, char ** argv) {
 	aw * w;
 	awInit();
-	w = awOpen();
+	w = awOpen(argv[0], 100, 100, 200, 300);
 	if (!w) {
 		Log("unable to open window (is DISPLAY set?)");
 		return 1;
 	}
-		
-	processEvents(w);
-	awResize(w, 200, 300);
-	processEvents(w);
-	awSetTitle(w, "foo");
-	processEvents(w);
 	awPushCurrent(w);
 	while (!g_exit) {
 		draw();

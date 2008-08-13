@@ -9,7 +9,7 @@
 void report(const char * fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
-	fprintf(stderr, "ERROR: ");
+	fprintf(stderr, "AW ERROR: ");
 	vfprintf(stderr, fmt, ap);
 	va_end(ap);
 	fprintf(stderr, "\n");
@@ -30,10 +30,6 @@ void awEnd() {
 	awosEnd();
 }
 
-aw  * awOpen() {
-	return awOpenSharing(0);
-}
-
 static void show(aw * w) {
 	if (check(w) && !awosShow(w))
 		report("Unable to show window");
@@ -45,11 +41,17 @@ static void hide(aw * w) {
 		report("Unable to hide window");
 }
 
+static void setTitle(aw * w, const char * t) {
+	if (check(w) && !awosSetTitle(w, t))
+		report("Unable to set title");
+}
 
-aw  * awOpenSharing(void * ctx) {
-	aw * w = awosOpen("AW Window", 100, 100, 64, 64, ctx);
+aw  * awOpen(const char * t, int x, int y, int width, int height) { 
+	aw * w = awosOpen(x, y, width, height, 0);
 	if (!w)
 		report("Unable to open window");
+	if (w)
+		setTitle(w, t);
 	if (w)
 		show(w);
 	return w;
@@ -98,15 +100,6 @@ void awPopCurrent(aw * w) {
 	}
 }
 
-void awSetTitle(aw * w, const char * t) {
-	if (check(w) && !awosSetTitle(w, t))
-		report("awSetTitle failed");
-}
-
-void awResize(aw * w, int width, int height) {
-	if (check(w) && !awosResize(w, width, height))
-		report("awResize failed");
-}
 
 const awEvent * awNextEvent(aw * w) {
 	const awEvent * ret = 0;

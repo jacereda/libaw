@@ -70,14 +70,9 @@ typedef struct _aw aw;
 
 EXPORTED int awInit();
 EXPORTED void awEnd();
-EXPORTED aw * awOpen();
-EXPORTED aw * awOpenSharing(void *);
+EXPORTED aw * awOpen(const char * title, int x, int y, int w, int h);
 EXPORTED void awClose(aw *);
 EXPORTED void awSwapBuffers(aw *);
 EXPORTED void awPushCurrent(aw *);
 EXPORTED void awPopCurrent(aw *);
-EXPORTED void awShow(aw *);
-EXPORTED void awHide(aw *);
-EXPORTED void awSetTitle(aw *, const char *);
-EXPORTED void awResize(aw *, int, int);
 EXPORTED const awEvent * awNextEvent(aw *);

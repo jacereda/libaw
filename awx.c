@@ -85,7 +85,7 @@ void awosEnd() {
 	XCloseDisplay(g_dpy);
 }
 
-aw * awosOpen(const char * t, int x, int y, int width, int height, void * ct) {
+aw * awosOpen(int x, int y, int width, int height, void * ct) {
 	aw * ret = NULL;
 	aw * w = calloc(1, sizeof(*ret));
 	w->vinfo = chooseVisual(g_dpy, g_screen);
@@ -140,11 +140,11 @@ void * awosGetCurrentDrawable() {
 }
 
 void * awosGetContext(aw * w) {
-	return w->ctx;
+	return (void*)w->ctx;
 }
 
 void * awosGetDrawable(aw * w) {
-	return w->win;
+	return (void*)w->win;
 }
 
 int awosShow(aw * w) {
