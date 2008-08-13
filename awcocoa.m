@@ -138,7 +138,8 @@ static NSOpenGLContext * createContext(NSOpenGLContext * share) {
 
 aw * awosOpen(int x, int y, int width, int height, void * ct) {
 	aw * w = 0;
-	NSRect rect = NSMakeRect(x, y, width, height);
+	NSSize scr = [[NSScreen mainScreen] frame].size;
+	NSRect rect = NSMakeRect(x, scr.height - y - height, width, height);
 	unsigned int style = 0
 		| NSTitledWindowMask
 		| NSClosableWindowMask
