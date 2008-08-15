@@ -4,17 +4,19 @@
 
 static int g_exit = 0;
 
-static void processEvents(aw * w) {
+static void processEvents(aw * w, int n) {
 	const awEvent * awe;
 	while ((awe = awNextEvent(w))) switch (awe->type) {
 	case AW_EVENT_RESIZE:
-		Log("Resized to %d %d", awe->u.resize.w, awe->u.resize.h); break;
+		Log("Resized %d: %d %d", 
+		    n, awe->u.resize.w, awe->u.resize.h); break;
 	case AW_EVENT_DOWN:
-		Log("Down: %d", awe->u.down.which); break;
+		Log("Down %d: %d", n, awe->u.down.which); break;
 	case AW_EVENT_UP:
-		Log("Up: %d", awe->u.up.which); break;
+		Log("Up %d: %d", n, awe->u.up.which); break;
 	case AW_EVENT_MOTION:
-		Log("Motion: %d,%d", awe->u.motion.x, awe->u.motion.y); break;
+		Log("Motion %d: %d,%d", 
+		    n, awe->u.motion.x, awe->u.motion.y); break;
 	case AW_EVENT_CLOSE:
 		Log("Exit requested");
 		g_exit = 1; break;
@@ -33,7 +35,7 @@ static void handle(aw * w, int n) {
 	awPushCurrent(w);
 	draw(n);
 	awSwapBuffers(w);
-	processEvents(w);
+	processEvents(w, n);
 	awPopCurrent(w);
 }
 
