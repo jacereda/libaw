@@ -41,17 +41,10 @@ static void hide(aw * w) {
 		report("Unable to hide window");
 }
 
-static void setTitle(aw * w, const char * t) {
-	if (check(w) && !awosSetTitle(w, t))
-		report("Unable to set title");
-}
-
 aw  * awOpen(const char * t, int x, int y, int width, int height) { 
-	aw * w = awosOpen(x, y, width, height, 0);
+	aw * w = awosOpen(x, y, width, height, t, 0);
 	if (!w)
 		report("Unable to open window");
-	if (w)
-		setTitle(w, t);
 	if (w)
 		show(w);
 	return w;

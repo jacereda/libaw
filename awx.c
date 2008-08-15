@@ -48,8 +48,10 @@ static XVisualInfo* chooseVisual() {
 static void fillWA(unsigned long * swam, XSetWindowAttributes * swa) {
 	*swam = 0;
 	swa->event_mask = EVMASK; *swam |= CWEventMask;
-	swa->border_pixel = 0; *swam = CWBorderPixel;
-	swa->colormap = XDefaultColormap(g_dpy, g_screen); *swam = CWColormap;
+//	swa->border_pixel = 0; *swam |= CWBorderPixel;
+//	swa->colormap = XDefaultColormap(g_dpy, g_screen); *swam |= CWColormap;
+//	swa->win_gravity = StaticGravity; *swam |= CWWinGravity;
+	swa->bit_gravity = StaticGravity; *swam |= CWBitGravity;
 }
 
 static int reconfigure(aw * w) {
@@ -85,13 +87,19 @@ void awosEnd() {
 	XCloseDisplay(g_dpy);
 }
 
-aw * awosOpen(int x, int y, int width, int height, void * ct) {
+aw * awosOpen(int x, int y, int width, int height, const char * t, void * ct) {
 	aw * ret = NULL;
 	aw * w = calloc(1, sizeof(*ret));
 	w->vinfo = chooseVisual(g_dpy, g_screen);
 	w->x = x; w->y = y; w->w = width; w->h = height;
 	if (w->vinfo) {
+		XSizeHints hints;
+		int xx, yy;
+		unsigned ww, hh;
 		XSetWindowAttributes swa; unsigned long swamask;
+
+		XParseGeometry("=300x400-40-50", &xx, &yy, &ww, &hh);
+
 		fillWA(&swamask, &swa);
 		w->ctx = glXCreateContext(g_dpy, w->vinfo, ct, True);
 		w->win = XCreateWindow(g_dpy, XRootWindow(g_dpy, g_screen),
@@ -102,7 +110,14 @@ aw * awosOpen(int x, int y, int width, int height, void * ct) {
 				       swamask, &swa);
 		XSelectInput(g_dpy, w->win, EVMASK);
 		XSetWMProtocols(g_dpy, w->win, &g_del, 1);
-		// XSetWMProperties
+		hints.flags = USSize | USPosition;
+		hints.x = x; hints.y = y;
+		hints.width = width; hints.height = height;
+		XSetWMNormalHints(g_dpy, w->win, &hints);
+		XSetStandardProperties(g_dpy, w->win,
+				       t, t, None,
+				       (char**)NULL, 0, &hints);
+		
 		if (w->win && w->ctx)
 			ret = w;
 	}
@@ -149,10 +164,8 @@ void * awosGetDrawable(aw * w) {
 
 int awosShow(aw * w) {
 	int ret = 0; 
-	ret |= reconfigure(w);
 	ret |= XMapWindow(g_dpy, w->win);
 	ret |= sync();
-	ret |= reconfigure(w);
 	return ret;
 }
 
@@ -161,18 +174,6 @@ int awosHide(aw * w) {
 	ret |= XUnmapWindow(g_dpy, w->win);
 	ret |= sync();
 	return ret;
-}
-
-int awosSetTitle(aw * w, const char * t) {
-	int ret = 0;
-	ret |= XStoreName(g_dpy, w->win, t);
-	ret |= XSetIconName(g_dpy, w->win, t);
-	return ret;
-}
-
-int awosResize(aw * w, int width, int height) {
-	w->w = width; w->h = height;
-	return reconfigure(w);
 }
 
 static int mapButton(int button) {

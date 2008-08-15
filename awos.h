@@ -11,7 +11,7 @@ typedef struct awHeader {
 
 int awosInit();
 void awosEnd();
-aw * awosOpen(int, int, int, int, void *);
+aw * awosOpen(int, int, int, int, const char *, void *);
 int awosClose(aw *);
 void * awosGetCurrentContext();
 void * awosGetCurrentDrawable();
@@ -21,8 +21,6 @@ int awosMakeCurrent(void *, void *);
 int awosSwapBuffers(aw *);
 int awosShow(aw *);
 int awosHide(aw *);
-int awosSetTitle(aw *, const char *);
-int awosResize(aw *, int, int);
 void awosPollEvent(aw *);
 int awosSetSwapInterval(int);
 
