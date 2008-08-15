@@ -54,6 +54,51 @@ static void fillWA(unsigned long * swam, XSetWindowAttributes * swa) {
 //	swa->bit_gravity = StaticGravity; *swam |= CWBitGravity;
 }
 
+
+static Window createWin(int x, int y, int width, int height, const char * t) {
+	XSetWindowAttributes swa; 
+	unsigned long swamask;
+	XSizeHints hints;
+	Window w;
+	fillWA(&swamask, &swa);
+	w = XCreateWindow(g_dpy, XRootWindow(g_dpy, g_screen),
+			  x, y, width, height, 
+			  0, CopyFromParent,
+			  InputOutput, 
+			  CopyFromParent,
+			  swamask, &swa);
+	XSelectInput(g_dpy, w, EVMASK);
+	XSetWMProtocols(g_dpy, w, &g_del, 1);
+	hints.flags = USSize | USPosition;
+	hints.x = x; hints.y = y;
+	hints.width = width; hints.height = height;
+	XSetWMNormalHints(g_dpy, w, &hints);
+	XSetStandardProperties(g_dpy, w,
+			       t, t, None,
+			       (char**)NULL, 0, &hints);
+	return w;
+}
+
+static int g_bw = -1;
+static int g_bh = -1;
+
+static void findBorderSize() {
+	XEvent e;
+	Window w = createWin(-100, -100, 1, 1, "");
+	XMapWindow(g_dpy, w);
+	while (g_bh < 0) {
+		XCheckWindowEvent(g_dpy, w, StructureNotifyMask, &e);
+		if (e.type == ConfigureNotify 
+		    && !e.xconfigure.override_redirect) {
+			g_bw = e.xconfigure.x;
+			g_bh = e.xconfigure.y;
+		}
+	}
+	XUnmapWindow(g_dpy, w);
+	XDestroyWindow(g_dpy, w);
+	sync();
+}
+
 int awosInit() {
 	int hasExtensions = 0;
 	g_dpy = XOpenDisplay(0);
@@ -61,6 +106,8 @@ int awosInit() {
 		g_screen = XDefaultScreen(g_dpy);
 		g_del = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
 		hasExtensions = 0 != glXQueryExtension(g_dpy, 0, 0);
+		findBorderSize();
+		
 	}
 	if (hasExtensions)
 		glXSwapIntervalSGI = (void*)glXGetProcAddress(
@@ -78,31 +125,8 @@ aw * awosOpen(int x, int y, int width, int height, const char * t, void * ct) {
 	w->vinfo = chooseVisual(g_dpy, g_screen);
 	w->x = x; w->y = y; w->w = width; w->h = height;
 	if (w->vinfo) {
-		XSizeHints hints;
-		int xx, yy;
-		unsigned ww, hh;
-		XSetWindowAttributes swa; unsigned long swamask;
-
-		XParseGeometry("=300x400-40-50", &xx, &yy, &ww, &hh);
-
-		fillWA(&swamask, &swa);
 		w->ctx = glXCreateContext(g_dpy, w->vinfo, ct, True);
-		w->win = XCreateWindow(g_dpy, XRootWindow(g_dpy, g_screen),
-				       x, y, width, height, 
-				       0, CopyFromParent,
-				       InputOutput, 
-				       CopyFromParent,
-				       swamask, &swa);
-		XSelectInput(g_dpy, w->win, EVMASK);
-		XSetWMProtocols(g_dpy, w->win, &g_del, 1);
-		hints.flags = USSize | USPosition;
-		hints.x = x; hints.y = y;
-		hints.width = width; hints.height = height;
-		XSetWMNormalHints(g_dpy, w->win, &hints);
-		XSetStandardProperties(g_dpy, w->win,
-				       t, t, None,
-				       (char**)NULL, 0, &hints);
-		
+		w->win = createWin(x - g_bw, y - g_bh, width, height, t);
 		if (w->win && w->ctx)
 			ret = w;
 	}
