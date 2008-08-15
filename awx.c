@@ -62,11 +62,9 @@ int awosInit() {
 		g_del = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
 		hasExtensions = 0 != glXQueryExtension(g_dpy, 0, 0);
 	}
-#if 1 // !defined(__APPLE__)
 	if (hasExtensions)
 		glXSwapIntervalSGI = (void*)glXGetProcAddress(
 			(GLubyte*)"glXSwapIntervalSGI");
-#endif
 	return hasExtensions;
 }
 
