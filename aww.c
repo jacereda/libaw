@@ -6,9 +6,7 @@
 #include "aw.h"
 #include "awos.h"
 
-#define MAX_EVENTS 256
 #define MAX_WINDOWS 256
-
 
 struct _aw {
 	awHeader hdr;
