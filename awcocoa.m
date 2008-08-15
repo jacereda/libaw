@@ -6,6 +6,7 @@
 #include <Foundation/NSRunLoop.h>
 #include <Foundation/NSNotification.h>
 #include <AppKit/NSApplication.h>
+#include <AppKit/NSScreen.h>
 #include <AppKit/NSWindow.h>
 #include <AppKit/NSEvent.h>
 #include <AppKit/NSOpenGL.h>
@@ -136,7 +137,8 @@ static NSOpenGLContext * createContext(NSOpenGLContext * share) {
 	return ctx;
 }
 
-aw * awosOpen(int x, int y, int width, int height, void * ct) {
+aw * awosOpen(int x, int y, int width, int height, const char * t, void * ct) {
+	NSString * s = [[NSString alloc] initWithUTF8String: t];
 	aw * w = 0;
 	NSSize scr = [[NSScreen mainScreen] frame].size;
 	NSRect rect = NSMakeRect(x, scr.height - y - height, width, height);
@@ -170,6 +172,8 @@ aw * awosOpen(int x, int y, int width, int height, void * ct) {
 	w->delegate->_w = w;
 	w->ctx = ctx;
 	[ctx setView: [win contentView]];
+	[w->win setTitle: s];
+	[s release];
 	got(w, AW_EVENT_RESIZE, width, height);
 	return w;
 }
@@ -194,20 +198,6 @@ int awosShow(aw * w) {
 
 int awosHide(aw * w) {
 	[w->win orderOut: nil];
-	return 1;
-}
-
-int awosSetTitle(aw * w, const char * t) {
-	NSString * s = [[NSString alloc] initWithUTF8String: t];
-	[w->win setTitle: s];
-	[s release];
-	return 1;
-}
-
-int awosResize(aw * w, int width, int height) {
-	NSSize sz;
-	sz.width = width;  sz.height = height;
-	[w->win setContentSize: sz];
 	return 1;
 }
 

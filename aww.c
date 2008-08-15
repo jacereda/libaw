@@ -164,7 +164,8 @@ static void setPF(HDC dc) {
 	SetPixelFormat(dc, ChoosePixelFormat(dc, &pfd), &pfd); 
 }
 
-aw * awosOpen(int x, int y, int width, int height, void * ct) {
+aw * awosOpen(int x, int y, int width, int height, const char * t, void * ct) {
+	WCHAR wt[1024];
 	aw * ret = NULL;
 	aw * w = calloc(1, sizeof(*ret));
 	HDC dc;
@@ -181,7 +182,9 @@ aw * awosOpen(int x, int y, int width, int height, void * ct) {
 	r.left = x; r.top = y;
 	r.right = x + width; r.bottom = y + height;
 	AdjustWindowRect(&r, style, FALSE);
-	w->win = CreateWindow(L"AW", L"AW", style,
+	MultiByteToWideChar(CP_UTF8, 0, t, strlen(t)+1, wt, sizeof(wt));
+	SetWindowText(w->win, wt);
+	w->win = CreateWindow(wt, wt, style,
 			      r.left, r.top, 
 			      r.right - r.left, r.bottom - r.top,
 			      NULL, NULL, GetModuleHandle(NULL), NULL);
@@ -248,12 +251,6 @@ int awosShow(aw * w) {
 int awosHide(aw * w) {
 	ShowWindow(w->win, SW_HIDE);
 	return 1;
-}
-
-int awosSetTitle(aw * w, const char * t) {
-	WCHAR wt[1024];
-	MultiByteToWideChar(CP_UTF8, 0, t, strlen(t)+1, wt, sizeof(wt));
-	return SetWindowText(w->win, wt);
 }
 
 static void dispatch(HWND win) {
