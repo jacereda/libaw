@@ -30,8 +30,6 @@ confCPPDEFINES = {
 	'release': ['NDEBUG'],
 }	
 
-debug = Env(CCFLAGS=' -g -Wall ')
-release = Env(CCFLAGS=' -O2 ', CPPDEFINES=['NDEBUG'])
 for backend in backends:
 	for conf in ['debug', 'release']:
 		cnf = Env(CCFLAGS=confCCFLAGS[conf],

@@ -51,20 +51,7 @@ static void fillWA(unsigned long * swam, XSetWindowAttributes * swa) {
 //	swa->border_pixel = 0; *swam |= CWBorderPixel;
 //	swa->colormap = XDefaultColormap(g_dpy, g_screen); *swam |= CWColormap;
 //	swa->win_gravity = StaticGravity; *swam |= CWWinGravity;
-	swa->bit_gravity = StaticGravity; *swam |= CWBitGravity;
-}
-
-static int reconfigure(aw * w) {
-	int ret = 0;
-	XWindowChanges wc;
-	unsigned long wcmask = 0;
-	wc.x = w->x; wcmask |= CWX;
-	wc.y = w->y; wcmask |= CWY;
-	wc.width = w->w; wcmask |= CWWidth;
-	wc.height = w->h; wcmask |= CWHeight;
-	ret |= XConfigureWindow(g_dpy, w->win, wcmask, &wc);
-	ret |= sync();
-	return ret;
+//	swa->bit_gravity = StaticGravity; *swam |= CWBitGravity;
 }
 
 int awosInit() {
