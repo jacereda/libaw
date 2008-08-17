@@ -126,7 +126,7 @@ void awosEnd() {
 }
 
 static NSOpenGLContext * createContext(NSOpenGLContext * share) {
-	NSOpenGLContext *ctx;
+	NSOpenGLContext *ctx = 0;
 	NSOpenGLPixelFormatAttribute attr[] = {0};
 	NSOpenGLPixelFormat * fmt;
 	fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
@@ -178,10 +178,22 @@ aw * awosOpen(int x, int y, int width, int height, const char * t, void * ct) {
 	return w;
 }
 
+static NSEvent * nextEvent(Window * win) {
+	NSEvent * e = [win nextEventMatchingMask: NSAnyEventMask 
+			untilDate: [NSDate distantPast] 
+			inMode: NSDefaultRunLoopMode 
+			dequeue: YES];
+	[NSApp sendEvent: e];
+	return e;
+}
+
 int awosClose(aw * w) {
+	while (nextEvent(w->win))
+		;
 	[w->win release];
-	[w->view release];
 	[w->ctx release];
+//	[w->view release];
+	[w->delegate release];
 	return 1;
 }
 
@@ -202,10 +214,7 @@ int awosHide(aw * w) {
 }
 
 void awosPollEvent(aw * w) {
-	[NSApp sendEvent: [w->win nextEventMatchingMask: NSAnyEventMask 
-			    untilDate: [NSDate distantPast] 
-			    inMode: NSDefaultRunLoopMode 
-			    dequeue: YES]];
+	nextEvent(w->win);
 	resetPool();
 }
 
