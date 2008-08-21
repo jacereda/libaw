@@ -23,7 +23,7 @@ static void processEvents(aw * w, int n) {
 	}
 }
 
-#define NWIN 16
+#define NWIN 160
 
 static void draw(int n) {
 	float f = (float)n / NWIN;
@@ -51,6 +51,8 @@ int main(int argc, char ** argv) {
 	for (i = 0; i < NWIN; i++) 
 		awClose(w[i]);
 	awEnd();
+	while (1)
+		;
 	return 0;
 }
 
