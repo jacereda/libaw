@@ -51,8 +51,6 @@ int main(int argc, char ** argv) {
 	for (i = 0; i < NWIN; i++) 
 		awClose(w[i]);
 	awEnd();
-	while (1)
-		;
 	return 0;
 }
 
