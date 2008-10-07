@@ -23,7 +23,6 @@ struct _aw {
 	awHeader hdr;
 	Window win;
 	GLXContext ctx;
-	XVisualInfo * vinfo;
 	int x, y, w, h;
 	int lastw, lasth;
 };
@@ -32,7 +31,7 @@ static int sync() {
 	return XSync(g_dpy, False);
 }
 
-static XVisualInfo* chooseVisual() {
+static XVisualInfo * chooseVisual() {
 	int att[64];
 	int * p = att;
 	*p++ = GLX_RGBA;
@@ -122,13 +121,14 @@ void awosEnd() {
 aw * awosOpen(int x, int y, int width, int height, const char * t, void * ct) {
 	aw * ret = NULL;
 	aw * w = calloc(1, sizeof(*ret));
-	w->vinfo = chooseVisual(g_dpy, g_screen);
+	XVisualInfo * vinfo = chooseVisual(g_dpy, g_screen);
 	w->x = x; w->y = y; w->w = width; w->h = height;
-	if (w->vinfo) {
-		w->ctx = glXCreateContext(g_dpy, w->vinfo, ct, True);
+	if (vinfo) {
+		w->ctx = glXCreateContext(g_dpy, vinfo, ct, True);
 		w->win = createWin(x - g_bw, y - g_bh, width, height, t);
 		if (w->win && w->ctx)
 			ret = w;
+		XFree(vinfo);
 	}
 	if (!ret && w)
 		awosClose(w);
@@ -141,7 +141,6 @@ int awosClose(aw * w) {
 	if (g_dpy) glXMakeCurrent(g_dpy, 0, 0);
 	if (w->ctx) glXDestroyContext(g_dpy, w->ctx);
 	if (w->win) XDestroyWindow(g_dpy, w->win);
-	if (w->vinfo) XFree(w->vinfo);
 	free(w);
 	return 1;
 }
