@@ -17,7 +17,7 @@ struct _aw {
 
 static aw * g_w[MAX_WINDOWS];
 
-unsigned indexFor(HWND win) {
+static unsigned indexFor(HWND win) {
 	unsigned i = MAX_WINDOWS;
 	unsigned ret = ~0;
 	while (i--) {
@@ -28,7 +28,7 @@ unsigned indexFor(HWND win) {
 	return ret;
 }
 
-unsigned emptySlot() {
+static unsigned emptySlot() {
 	unsigned i = MAX_WINDOWS;
 	unsigned ret = ~0;
 	while (i--)
@@ -37,7 +37,7 @@ unsigned emptySlot() {
 	return ret;
 }
 
-aw * awFor(HWND win) {
+static aw * awFor(HWND win) {
 	return g_w[indexFor(win)];
 }
 
