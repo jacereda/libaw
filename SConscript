@@ -1,6 +1,6 @@
 #-*-Python-*-
 Import('env')
-aw = env.Copy()
+aw = env.Clone()
 aw.UsesOpenGL()
 backend = {
 'cocoa': 'awcocoa.m',
@@ -9,7 +9,7 @@ backend = {
 }[aw['BACKEND']]
 aw.SharedLibrary('aw', ['aw.c', backend])
 aw.Install('include/aw', ['aw.h', 'sysgl.h', 'sysglu.h'])
-awtest = env.Copy()
+awtest = env.Clone()
 awtest.UsesOpenGL()
 awtest.Append(LIBS=['aw'])
 awtest.Append(CPPPATH=['include'])

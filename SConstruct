@@ -36,7 +36,7 @@ for backend in backends:
 			  CPPDEFINES=confCPPDEFINES[conf])
 		dir = conf + '/' + backend
 		cnf.BuildDir(dir, '.', duplicate=0)
-		env = cnf.Copy()
+		env = cnf.Clone()
 		env['BACKEND'] = backend
 		env.Append(CPPDEFINES=[['AWBACKEND', backend]])
 		Export("env")

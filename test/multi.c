@@ -23,7 +23,7 @@ static void processEvents(aw * w, int n) {
 	}
 }
 
-#define NWIN 160
+#define NWIN 64
 
 static void draw(int n) {
 	float f = (float)n / NWIN;
