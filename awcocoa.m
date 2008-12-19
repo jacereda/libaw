@@ -187,11 +187,11 @@ static NSEvent * nextEvent(Window * win) {
 	return e;
 }
 
-int awosClose(aw * w) {
+int awosClose(aw * w, int destroyctx) {
 	while (nextEvent(w->win))
 		;
 	[w->win release];
-	[w->ctx release];
+	if (destroyctx) [w->ctx release];
 //	[w->view release];
 	[w->delegate release];
 	return 1;

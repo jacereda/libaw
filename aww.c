@@ -199,16 +199,16 @@ aw * awosOpen(int x, int y, int width, int height, const char * t, void * ct) {
 		g_w[emptySlot()] = w;
 	}
 	else
-		awosClose(w);
+		awosClose(w, 1);
 	return ret;
 }
 
-int awosClose(aw * w) {
+int awosClose(aw * w, int destroyctx) {
 	int ret = 1;
 	wglMakeCurrent(0, 0);
 	if (w->win && w->ctx) g_w[indexFor(w->win)] = 0;
 	if (w->win) ret &= 0 != DestroyWindow(w->win);
-	if (w->ctx) ret &= 0 != wglDeleteContext(w->ctx);
+	if (destroyctx && w->ctx) ret &= 0 != wglDeleteContext(w->ctx);
 	free(w);
 	return ret;
 }
