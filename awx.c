@@ -131,15 +131,15 @@ aw * awosOpen(int x, int y, int width, int height, const char * t, void * ct) {
 		XFree(vinfo);
 	}
 	if (!ret && w)
-		awosClose(w);
+		awosClose(w, 1);
 	if (g_dpy)
 		sync();
 	return ret;
 }
 
-int awosClose(aw * w) {
+int awosClose(aw * w, int destroyctx) {
 	if (g_dpy) glXMakeCurrent(g_dpy, 0, 0);
-	if (w->ctx) glXDestroyContext(g_dpy, w->ctx);
+	if (destroyctx && w->ctx) glXDestroyContext(g_dpy, w->ctx);
 	if (w->win) XDestroyWindow(g_dpy, w->win);
 	free(w);
 	return 1;

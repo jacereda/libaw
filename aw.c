@@ -41,19 +41,23 @@ static void hide(aw * w) {
 		report("Unable to hide window");
 }
 
+static void * g_share = 0;
+
 aw  * awOpen(const char * t, int x, int y, int width, int height) { 
-	aw * w = awosOpen(x, y, width, height, t, 0);
+	aw * w = awosOpen(x, y, width, height, t, g_share);
 	if (!w)
 		report("Unable to open window");
 	if (w)
 		show(w);
+	if (!g_share && w)
+		g_share = awosGetContext(w);
 	return w;
 }
 
 void awClose(aw * w) {	
 	if (check(w)) {
 		hide(w);
-		if (!awosClose(w)) 
+		if (!awosClose(w, g_share != awosGetContext(w))) 
 			report("Unable to close window");
 	}
 }
