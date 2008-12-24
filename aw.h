@@ -47,6 +47,10 @@ enum {
   AW_KEY_MOUSELEFT,
   AW_KEY_MOUSEMIDDLE,
   AW_KEY_MOUSERIGHT,
+  AW_KEY_SHIFT,
+  AW_KEY_ALT,
+  AW_KEY_CONTROL,
+  AW_KEY_META,
 };
 
 typedef struct awEvent {

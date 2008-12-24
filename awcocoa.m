@@ -22,6 +22,7 @@
 
 @interface View : NSView {
 	aw * _w;
+	unsigned prevflags;
 }
 @end
 
@@ -66,6 +67,38 @@ static void resetPool() {
 
 - (void) keyDown: (NSEvent *)ev {
 	[self handleKeyEvent: ev mode: AW_EVENT_DOWN];
+}
+
+- (unsigned) keyFor: (unsigned)mask {
+	unsigned ret = 0;
+	switch (mask) {
+	case NSShiftKeyMask: ret = AW_KEY_SHIFT; break;
+	case NSControlKeyMask: ret = AW_KEY_CONTROL; break;
+	case NSAlternateKeyMask: ret = AW_KEY_ALT; break;
+	case NSCommandKeyMask: ret = AW_KEY_META; break;
+	default: assert(0);
+	}
+	return ret;
+}
+
+- (void) handleMod: (unsigned)mask 
+	     flags: (unsigned)flags {
+	unsigned delta = flags ^ prevflags;
+	unsigned pressed = delta & flags;
+	unsigned released = delta & ~flags;
+	if (mask & pressed)
+		got(_w, AW_EVENT_DOWN, [self keyFor: mask], 0);
+	if (mask & released)
+		got(_w, AW_EVENT_UP, [self keyFor: mask], 0);
+}
+
+- (void) flagsChanged: (NSEvent *)ev {
+	unsigned flags = [ev modifierFlags];
+	[self handleMod: NSShiftKeyMask flags: flags];
+	[self handleMod: NSControlKeyMask flags: flags];
+	[self handleMod: NSAlternateKeyMask flags: flags];
+	[self handleMod: NSCommandKeyMask flags: flags];
+	prevflags = flags;
 }
 
 - (void) handleMouseEvent: (NSEvent *)ev mode: (int)mode{
