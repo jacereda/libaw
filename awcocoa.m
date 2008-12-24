@@ -25,16 +25,10 @@
 }
 @end
 
-@interface Delegate : NSObject {
-	aw * _w;
-}
-@end
-
 struct _aw {
 	awHeader hdr;
 	View * view;
 	Window * win;
-	Delegate * delegate;
 	NSOpenGLContext * ctx;
 };
 
@@ -46,6 +40,17 @@ static void resetPool() {
 }
 
 @implementation View
+
+- (void)windowDidResize:(NSNotification *)n {
+	NSSize sz = [_w->view frame].size;
+	[_w->ctx update];
+	got(_w, AW_EVENT_RESIZE, (int)sz.width, (int)sz.height);	
+}
+
+- (BOOL) windowShouldClose: (id)s {
+	got(_w, AW_EVENT_CLOSE, 0, 0);
+	return NO;
+}
 
 - (void) handleKeyEvent: (NSEvent *)ev mode: (int) mode {
 	NSString * s = [ev characters];
@@ -90,20 +95,6 @@ static void resetPool() {
 
 - (BOOL) isOpaque {
 	return YES;
-}
-@end
-
-@implementation Delegate
-
-- (void)windowDidResize:(NSNotification *)n {
-	NSSize sz = [_w->view frame].size;
-	[_w->ctx update];
-	got(_w, AW_EVENT_RESIZE, (int)sz.width, (int)sz.height);	
-}
-
-- (BOOL) windowShouldClose: (id)s {
-	got(_w, AW_EVENT_CLOSE, 0, 0);
-	return NO;
 }
 @end
 
@@ -158,20 +149,17 @@ aw * awosOpen(int x, int y, int width, int height, const char * t, void * ct) {
 	NSRect frm = [Window contentRectForFrameRect: [win frame]
 			     styleMask: style];
 	View * view = [[View alloc] initWithFrame: frm];
-	Delegate * delegate = [[Delegate alloc] init];
 
 	[win setContentView: view];
-	[win setDelegate: delegate];
+	[win setDelegate: view];
 	[win makeFirstResponder: view];
 	[win setAcceptsMouseMovedEvents: YES];
 
 	w = calloc(1, sizeof(*w));
 	w->view = view;
 	w->win = win;
-	w->delegate = delegate;
 	w->view->_w = w;
 	w->win->_w = w;
-	w->delegate->_w = w;
 	w->ctx = ctx;
 	[ctx setView: [win contentView]];
 	[w->win setTitle: s];
@@ -194,8 +182,7 @@ int awosClose(aw * w, int destroyctx) {
 		;
 	[w->win release];
 	if (destroyctx) [w->ctx release];
-//	[w->view release];
-	[w->delegate release];
+	[w->view release];
 	return 1;
 }
 
