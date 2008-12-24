@@ -13,7 +13,8 @@ int setSwapInterval(int interval) {
 #endif
 }
 
-#define EVMASK 	KeyPressMask | ButtonPressMask | ButtonReleaseMask |\
+#define EVMASK 	KeyPressMask | KeyReleaseMask |\
+                ButtonPressMask | ButtonReleaseMask |\
                 PointerMotionMask | StructureNotifyMask
 static Display * g_dpy;
 static Atom g_del;
@@ -227,6 +228,9 @@ static void handle(aw * w, XEvent * e) {
 		break;
 	case KeyPress:
 		got(w, AW_EVENT_DOWN, mapKey(e->xkey.keycode), 0);
+		break;
+	case KeyRelease:
+		got(w, AW_EVENT_UP, mapKey(e->xkey.keycode), 0);
 		break;
 	default:
 		got(w, AW_EVENT_UNKNOWN, 0, 0);

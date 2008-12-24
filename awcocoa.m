@@ -46,6 +46,23 @@ static void resetPool() {
 }
 
 @implementation View
+
+- (void) handleKeyEvent: (NSEvent *)ev mode: (int) mode {
+	NSString * s = [ev characters];
+	int sl = [s length];
+	int i;
+	for (i = 0; i < sl; i++)
+		got(_w, mode, [s characterAtIndex: i], 0);
+}
+
+- (void) keyUp: (NSEvent *)ev {
+	[self handleKeyEvent: ev mode: AW_EVENT_UP];
+}
+
+- (void) keyDown: (NSEvent *)ev {
+	[self handleKeyEvent: ev mode: AW_EVENT_DOWN];
+}
+
 - (void) handleMouseEvent: (NSEvent *)ev mode: (int)mode{
 	got(_w, mode, [ev buttonNumber] + AW_KEY_MOUSELEFT, 0);
 }
@@ -77,26 +94,11 @@ static void resetPool() {
 @end
 
 @implementation Delegate
+
 - (void)windowDidResize:(NSNotification *)n {
 	NSSize sz = [_w->view frame].size;
 	[_w->ctx update];
 	got(_w, AW_EVENT_RESIZE, (int)sz.width, (int)sz.height);	
-}
-
-- (void) handleKeyEvent: (NSEvent *)ev mode: (int) mode {
-	NSString * s = [ev characters];
-	int sl = [s length];
-	int i;
-	for (i = 0; i < sl; i++)
-		got(_w, AW_EVENT_UP, [s characterAtIndex: i], 0);
-}
-
-- (void) keyUp: (NSEvent *)ev {
-	[self handleKeyEvent: ev mode: AW_EVENT_UP];
-}
-
-- (void) keyDown: (NSEvent *)ev {
-	[self handleKeyEvent: ev mode: AW_EVENT_DOWN];
 }
 
 - (BOOL) windowShouldClose: (id)s {
