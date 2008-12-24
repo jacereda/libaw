@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <GL/glx.h>
+#include <X11/keysym.h>
 
 #include "aw.h"
 #include "awos.h"
@@ -198,8 +199,26 @@ static int mapButton(int button) {
 	return which;
 }
 
+
+static int translateModifiers(int k) {
+	int ret = k;
+	switch (k) {
+	case XK_Shift_L:
+	case XK_Shift_R: ret = AW_KEY_SHIFT; break;
+	case XK_Control_L:
+	case XK_Control_R: ret = AW_KEY_CONTROL; break;
+	case XK_Meta_L:
+	case XK_Meta_R: ret = AW_KEY_META; break;
+	case XK_Mode_switch:
+	case XK_Alt_L:
+	case XK_Alt_R: ret = AW_KEY_ALT; break;
+	default: ret = k;
+	}
+	return ret;
+}
+
 static int mapKey(KeyCode keycode) {
-	return XKeycodeToKeysym(g_dpy, keycode, 0);
+	return translateModifiers(XKeycodeToKeysym(g_dpy, keycode, 0));
 }
 
 static void configure(aw * w, int x, int y, int width, int height) {
