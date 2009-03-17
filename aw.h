@@ -53,14 +53,14 @@ enum {
   AW_KEY_META,
 };
 
-typedef struct awEvent {
+typedef struct _awEvent {
   int type;
   union {
     int p[2];
-    struct { int w, h; } resize;
-    struct { int which; } down;
-    struct { int which; } up;
-    struct { int x, y; } motion;
+    struct _resize { int w, h; } resize;
+    struct _down { int which; } down;
+    struct _up { int which; } up;
+    struct _motion { int x, y; } motion;
   } u;
 } awEvent;
 
@@ -74,7 +74,8 @@ typedef struct _aw aw;
 
 EXPORTED int awInit();
 EXPORTED void awEnd();
-EXPORTED aw * awOpen(const char * title, int x, int y, int w, int h);
+EXPORTED aw * awOpen(int x, int y, int w, int h);
+EXPORTED void awSetTitle(aw *, const char *);
 EXPORTED void awClose(aw *);
 EXPORTED void awSwapBuffers(aw *);
 EXPORTED void awPushCurrent(aw *);

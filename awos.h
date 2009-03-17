@@ -11,8 +11,9 @@ typedef struct awHeader {
 
 int awosInit();
 void awosEnd();
-aw * awosOpen(int, int, int, int, const char *, void *);
-int awosClose(aw *, int);
+aw * awosOpen(int, int, int, int, void *);
+int awosSetTitle(aw *, const char *);
+int awosClose(aw *);
 void * awosGetCurrentContext();
 void * awosGetCurrentDrawable();
 void * awosGetContext(aw *);
