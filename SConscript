@@ -7,6 +7,7 @@ backend = {
 'x11': 'awx.c',
 'nt': 'aww.c',
 }[aw['BACKEND']]
+aw.Append(CPPDEFINES=['BUILDING_AW'])
 aw.SharedLibrary('aw', ['aw.c', backend])
 aw.Install('include/aw', ['aw.h', 'sysgl.h', 'sysglu.h'])
 awtest = env.Clone()
@@ -20,4 +21,4 @@ awtest.Program('robot', 'test/robot.c')
 awtest.Program('picksquare', 'test/picksquare.c')
 awtest.Program('cube', 'test/cube.c')
 awtest.Program('multi', 'test/multi.c')
-#awtest.Program('movelight', 'test/movelight.c')
+awtest.Program('movelight', 'test/movelight.c')

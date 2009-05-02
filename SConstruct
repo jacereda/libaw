@@ -2,12 +2,21 @@
 import sys
 import os
 backends = []
-if sys.platform == 'darwin':
-	backends += ['cocoa']
-if os.name == 'posix':
-	backends += ['x11']
-if os.name == 'nt':
-	backends += ['nt']
+
+tools = 0
+
+target = ARGUMENTS.get('target', 'native')
+if target == 'native':
+	target = sys.platform
+else:
+	tools = 'crossmingw'
+	toolpath = '.'
+
+backends = {
+	'darwin' : ['cocoa', 'x11'],
+	'linux' : ['x11'],
+	'win32' : ['nt'],
+	}[target]
 
 class Env(Environment):
 	def UsesOpenGL(self):
@@ -18,7 +27,7 @@ class Env(Environment):
 			self.Append(CPPPATH=['/usr/X11R6/include'])
 			self.Append(LIBS=['GL', 'GLU', 'X11'])
 		if self['BACKEND'] == 'nt':
-			print "XXX TODO"
+			self.Append(LIBS=['opengl32', 'gdi32', 'glu32'])
 
 confCCFLAGS = {
 	'debug': '-g -Wall',
@@ -31,9 +40,11 @@ confCPPDEFINES = {
 }	
 
 for backend in backends:
-	for conf in ['debug', 'release']:
+	for conf in ['debug']:
 		cnf = Env(CCFLAGS=confCCFLAGS[conf],
 			  CPPDEFINES=confCPPDEFINES[conf])
+		if tools:
+			cnf.Tool(tools, toolpath)
 		dir = conf + '/' + backend
 		cnf.BuildDir(dir, '.', duplicate=0)
 		env = cnf.Clone()
