@@ -19,30 +19,8 @@ struct _aw {
 	int lastmx, lastmy;
 };
 
-static aw * g_w[MAX_WINDOWS];
-
-static unsigned indexFor(HWND win) {
-	unsigned i = MAX_WINDOWS;
-	unsigned ret = ~0;
-	while (i--) {
-		aw * w = g_w[i];
-		if (w && w->win == win)
-			ret = i;
-	}
-	return ret;
-}
-
-static unsigned emptySlot() {
-	unsigned i = MAX_WINDOWS;
-	unsigned ret = ~0;
-	while (i--)
-		if (!g_w[i])
-			ret = i;
-	return ret;
-}
-
 static aw * awFor(HWND win) {
-	return g_w[indexFor(win)];
+	return (aw*)GetWindowLongPtrW(win, GWL_USERDATA);
 }
 
 static void wgot(HWND win, int type, int p1, int p2) {
@@ -108,6 +86,12 @@ LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
 	LONG r;
 	int handled = 1;
 	switch (msg) {
+	case WM_NCCREATE: 
+		SetWindowLongPtrW(
+			win, GWL_USERDATA, 
+			(LONG_PTR)((CREATESTRUCT*)l)->lpCreateParams);
+		handled = 0;
+		break;
 	case WM_MOUSEMOVE: r = HANDLE_WM_MOUSEMOVE(win, w, l, onMMove); break;
 	case WM_SIZE: r = HANDLE_WM_SIZE(win, w, l, onSize); break;
 	case WM_CLOSE: r = HANDLE_WM_CLOSE(win, w, l, onClose); break;
@@ -125,7 +109,7 @@ LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
 	if (handled)
 		r = 0;
 	else
-		r = DefWindowProc(win, msg, w, l);
+		r = DefWindowProcW(win, msg, w, l);
 	return r;
 }
 
@@ -134,7 +118,7 @@ int awosInit() {
 	memset(&wc, 0, sizeof(WNDCLASS));
 	wc.style			= CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc		= handle;
-	wc.hInstance		= GetModuleHandle(NULL);
+	wc.hInstance		= GetModuleHandleW(NULL);
 	wc.lpszClassName	= L"AW";
 	return 0 != RegisterClassW(&wc);
 }
@@ -170,6 +154,7 @@ int awosSetTitle(aw * w, const char * t) {
 	WCHAR wt[1024];
 	MultiByteToWideChar(CP_UTF8, 0, t, strlen(t)+1, wt, sizeof(wt));
 	return SetWindowTextW(w->win, wt);
+	return 1;
 }
 
 
@@ -193,7 +178,7 @@ aw * awosOpen(int x, int y, int width, int height, void * ct) {
 	w->win = CreateWindowW(L"AW", L"AW", style,
 			       r.left, r.top, 
 			       r.right - r.left, r.bottom - r.top,
-			       NULL, NULL, GetModuleHandle(NULL), NULL);
+			       NULL, NULL, GetModuleHandle(NULL), w);
 	if (w->win) {
 		dc = GetDC(w->win);
 		setPF(dc);
@@ -202,10 +187,8 @@ aw * awosOpen(int x, int y, int width, int height, void * ct) {
 			wglShareLists(ct, w->ctx);
 		ReleaseDC(w->win, dc);
 	}
-	if (w->win && w->ctx) {
+	if (w->win && w->ctx)
 		ret = w;
-		g_w[emptySlot()] = w;
-	}
 	else
 		awosClose(w);
 	return ret;
@@ -214,7 +197,6 @@ aw * awosOpen(int x, int y, int width, int height, void * ct) {
 int awosClose(aw * w) {
 	int ret = 1;
 	wglMakeCurrent(0, 0);
-	if (w->win && w->ctx) g_w[indexFor(w->win)] = 0;
 	if (w->win) ret &= 0 != DestroyWindow(w->win);
 	if (w->ctx) ret &= 0 != wglDeleteContext(w->ctx);
 	free(w);
@@ -261,9 +243,9 @@ int awosHide(aw * w) {
 
 static void dispatch(HWND win) {
 	MSG msg;
-	if (PeekMessage(&msg, win, 0, 0, PM_REMOVE)) {
+	if (PeekMessageW(&msg, win, 0, 0, PM_REMOVE)) {
 		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		DispatchMessageW(&msg);
 	}
 }
 
