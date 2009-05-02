@@ -7,7 +7,7 @@ typedef struct awHeader {
 	unsigned head, tail;
 	void * pushctx;
 	void * pushdrw;
-	} awHeader;
+} awHeader;
 
 int awosInit();
 void awosEnd();
