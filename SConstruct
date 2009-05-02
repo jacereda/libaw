@@ -35,7 +35,7 @@ confCCFLAGS = {
 }
 
 confCPPDEFINES = {
-	'debug': [''],
+	'debug': [],
 	'release': ['NDEBUG'],
 }	
 
