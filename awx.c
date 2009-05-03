@@ -30,7 +30,7 @@ static int sync() {
 	return XSync(g_dpy, False);
 }
 
-static XVisualInfo * chooseVisual() {
+static XVisualInfo * chooseVisual(Display * dpy, int screen) {
 	int att[64];
 	int * p = att;
 	*p++ = GLX_RGBA;
@@ -40,7 +40,7 @@ static XVisualInfo * chooseVisual() {
 	*p++ = GLX_BLUE_SIZE; *p++ = 1;
 	*p++ = GLX_DEPTH_SIZE; *p++ = 1;
 	*p++ = None;
-	return glXChooseVisual(g_dpy, g_screen, att);
+	return glXChooseVisual(dpy, screen, att);
 }
 
 static void fillWA(unsigned long * swam, XSetWindowAttributes * swa) {

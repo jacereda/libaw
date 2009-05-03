@@ -16,13 +16,15 @@
 #include <OpenGL/gl.h>
 
 @interface Window : NSWindow {
+@public
 	aw * _w;
 }
 @end
 
 @interface View : NSView {
+	unsigned _prevflags;
+@public
 	aw * _w;
-	unsigned prevflags;
 }
 @end
 
@@ -84,7 +86,7 @@ static void resetPool() {
 
 - (void) handleMod: (unsigned)mask 
 	     flags: (unsigned)flags {
-	unsigned delta = flags ^ prevflags;
+	unsigned delta = flags ^ _prevflags;
 	unsigned pressed = delta & flags;
 	unsigned released = delta & ~flags;
 	if (mask & pressed)
@@ -99,7 +101,7 @@ static void resetPool() {
 	[self handleMod: NSControlKeyMask flags: flags];
 	[self handleMod: NSAlternateKeyMask flags: flags];
 	[self handleMod: NSCommandKeyMask flags: flags];
-	prevflags = flags;
+	_prevflags = flags;
 }
 
 - (void) handleMouseEvent: (NSEvent *)ev mode: (int)mode{
