@@ -15,8 +15,12 @@
 struct _aw {
 	awHeader hdr;
 	HWND win;
-	HGLRC ctx;
 	int lastmx, lastmy;
+};
+
+struct _ac {
+	acHeader hdr;
+	HGLRC ctx;
 };
 
 static aw * awFor(HWND win) {
@@ -113,8 +117,11 @@ LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
 	return r;
 }
 
+static BOOL (APIENTRY *wglSwapIntervalEXT) (int interval) = 0;
+
 int awosInit() {
 	WNDCLASSW  wc;
+	wglSwapIntervalEXT = (void*)wglGetProcAddress("wglSwapIntervalEXT");
 	memset(&wc, 0, sizeof(WNDCLASS));
 	wc.style			= CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
 	wc.lpfnWndProc		= handle;
@@ -123,7 +130,8 @@ int awosInit() {
 	return 0 != RegisterClassW(&wc);
 }
 
-void awosEnd() {
+int awosEnd() {
+	return 1;
 }
 
 static void setPF(HDC dc) {
@@ -157,48 +165,42 @@ int awosSetTitle(aw * w, const char * t) {
 	return 1;
 }
 
-
-aw * awosOpen(int x, int y, int width, int height, void * ct) {
-	aw * ret = NULL;
-	aw * w = calloc(1, sizeof(*ret));
-	HDC dc;
+aw * awosOpen(int x, int y, int width, int height) {
+	aw * w = calloc(1, sizeof(*w));
 	RECT r;
+	HWND win;
 	DWORD style = 0
 		| WS_OVERLAPPED
 		| WS_CAPTION 
 		| WS_SYSMENU 
 		| WS_SIZEBOX
 		| WS_MINIMIZEBOX
+		| WS_MAXIMIZEBOX
 		| WS_CLIPSIBLINGS
 		| WS_CLIPCHILDREN
 		;
 	r.left = x; r.top = y;
 	r.right = x + width; r.bottom = y + height;
 	AdjustWindowRect(&r, style, FALSE);
-	w->win = CreateWindowW(L"AW", L"AW", style,
-			       r.left, r.top, 
-			       r.right - r.left, r.bottom - r.top,
-			       NULL, NULL, GetModuleHandle(NULL), w);
-	if (w->win) {
-		dc = GetDC(w->win);
+	win = CreateWindowW(L"AW", L"AW", style,
+			    r.left, r.top, 
+			    r.right - r.left, r.bottom - r.top,
+			    NULL, NULL, GetModuleHandle(NULL), w);
+	if (win) {
+		HDC dc = GetDC(win);
 		setPF(dc);
-		w->ctx = wglCreateContext(dc);
-		if (ct) 
-			wglShareLists(ct, w->ctx);
-		ReleaseDC(w->win, dc);
+		ReleaseDC(win, dc);
 	}
-	if (w->win && w->ctx)
-		ret = w;
+	if (w)
+		w->win = win;
 	else
-		awosClose(w);
-	return ret;
+		free(w);
+	return w;
 }
 
 int awosClose(aw * w) {
 	int ret = 1;
-	wglMakeCurrent(0, 0);
 	if (w->win) ret &= 0 != DestroyWindow(w->win);
-	if (w->ctx) ret &= 0 != wglDeleteContext(w->ctx);
 	free(w);
 	return ret;
 }
@@ -211,24 +213,12 @@ int awosSwapBuffers(aw * w) {
 	return ret;
 }
 
-void * awosGetCurrentContext() {
-	return (void*)wglGetCurrentDC();
-}
-
-void * awosGetCurrentDrawable() {
-	return wglGetCurrentDC();
-}
-
-void * awosGetContext(aw * w) {
-	return w->ctx;
-}
-
-void * awosGetDrawable(aw * w) {
-	return GetDC(w->win);
-}
-
-int awosMakeCurrent(void * c, void * d) {
-	return wglMakeCurrent(d, c);
+int awosMakeCurrent(aw * w) {
+	int ret;
+	HDC dc = GetDC(w->win);
+	ret = wglMakeCurrent(dc, w->hdr.ctx? w->hdr.ctx->ctx : 0);
+	ReleaseDC(w->win, dc);
+	return ret;
 }
 
 int awosShow(aw * w) {
@@ -254,14 +244,39 @@ void awosPollEvent(aw * w) {
 }
 
 int awosSetSwapInterval(int si) {
-	static int first = 1;
-	static BOOL (APIENTRY *wglSwapIntervalEXT) (int interval) = 0;
-	if (first) {
-		wglSwapIntervalEXT = 
-			(void*)wglGetProcAddress("wglSwapIntervalEXT");
-		first = 0;
-	}
 	return wglSwapIntervalEXT? wglSwapIntervalEXT(si) : 0;
+}
+
+ac * acosNew(ac * share) {
+	ac * c = 0;
+	HGLRC ctx;
+	aw * dummy = awosOpen(0, 0, 0, 0);
+	HDC dc = GetDC(dummy->win);
+	setPF(dc);
+	ctx = wglCreateContext(dc);
+	ReleaseDC(dummy->win, dc);
+	awosClose(dummy);
+	if (ctx && share) 
+		wglShareLists(share->ctx, ctx);
+	if (ctx)
+		c = calloc(1, sizeof(*c));
+	if (c)
+		c->ctx = ctx;
+	return c;
+}
+
+int acosDel(ac * c) {
+	int ret = 0 != wglDeleteContext(c->ctx);
+	free(c);
+	return ret;
+}
+
+int acosInit() {
+	return 1;
+}
+
+int acosEnd() {
+	return 1;
 }
 
 /* 

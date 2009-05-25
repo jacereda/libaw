@@ -36,20 +36,24 @@ static void draw() {
 
 int main(int argc, char ** argv) {
 	aw * w;
+	ac * c;
 	g_progname = argv[0];
 	awInit();
 	w = awOpen(100, 100, 300, 400);
+	c = acNew(0);
 	if (!w) {
 		Log("unable to open window (is DISPLAY set?)");
 		return 1;
 	}
-	awPushCurrent(w);
+	acSetInterval(c, 1);
+	awMakeCurrent(w, c);
 	while (!g_exit) {
 		draw();
 		awSwapBuffers(w);
 		processEvents(w);
 	}
-	awPopCurrent(w);
+	awMakeCurrent(w, 0);
+	acDel(c);
 	awClose(w);
 	awEnd();
 	return 0;

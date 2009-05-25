@@ -64,13 +64,14 @@ typedef struct _awEvent {
 	} u;
 } awEvent;
 
-typedef struct _aw aw;
-
 #if defined(__GNUC__)
 #define EXPORTED extern __attribute__((visibility("default")))
 #else
 #define EXPORTED extern __declspec(dllexport)
 #endif
+
+typedef struct _aw aw;
+typedef struct _ac ac;
 
 EXPORTED int awInit();
 EXPORTED void awEnd();
@@ -78,6 +79,9 @@ EXPORTED aw * awOpen(int x, int y, int w, int h);
 EXPORTED void awSetTitle(aw *, const char *);
 EXPORTED void awClose(aw *);
 EXPORTED void awSwapBuffers(aw *);
-EXPORTED void awPushCurrent(aw *);
-EXPORTED void awPopCurrent(aw *);
+EXPORTED void awMakeCurrent(aw *, ac *);
 EXPORTED const awEvent * awNextEvent(aw *);
+
+EXPORTED ac * acNew(ac *);
+EXPORTED void acDel(ac *);
+EXPORTED void acSetInterval(ac *, int);

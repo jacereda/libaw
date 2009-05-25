@@ -23,7 +23,7 @@ static void processEvents(aw * w, int n) {
 	}
 }
 
-#define NWIN 64
+#define NWIN 6
 
 static void draw(int n) {
 	float f = (float)n / NWIN;
@@ -31,25 +31,27 @@ static void draw(int n) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-static void handle(aw * w, int n) {
-	awPushCurrent(w);
+static void handle(aw * w, ac * c, int n) {
+	awMakeCurrent(w, c);
 	draw(n);
 	awSwapBuffers(w);
+	awMakeCurrent(w, 0);
 	processEvents(w, n);
-	awPopCurrent(w);
 }
 
 int main(int argc, char ** argv) {
 	int i;
 	aw * w[NWIN];
+	ac * c;
 	awInit();
+	c = acNew(0);
 	for (i = 0; i < NWIN; i++)
 		w[i] = awOpen(100 + 16*i, 100+16*i, 300, 400);
 	for (i = 0; i < NWIN; i++)
 		awSetTitle(w[i], argv[0]);
 	while (!g_exit) 
 		for (i = 0; i < NWIN; i++) 
-			handle(w[i], i);
+			handle(w[i], c, i);
 	for (i = 0; i < NWIN; i++) 
 		awClose(w[i]);
 	awEnd();

@@ -28,7 +28,7 @@ void display(void)
 
 static void reshape (int w, int h)
 {
-	glViewport (0, 0, (GLsizei) w, (GLsizei) h); 
+	glViewport (0, 0, w, h); 
 	glMatrixMode (GL_PROJECTION);
 	glLoadIdentity ();
 	glFrustum (-1.0, 1.0, -1.0, 1.0, 1.5, 20.0);

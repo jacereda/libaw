@@ -16,8 +16,6 @@ void report(const char * fmt, ...) {
 	fflush(stderr);
 }
 
-static aw * g_share = 0;
-
 static int check(const aw * w) {
 	if (!w)
 		report("Null handle");
@@ -25,14 +23,15 @@ static int check(const aw * w) {
 }
 
 int awInit() {
-	int ret = awosInit();
-	g_share = awOpen(0, 0, 1, 1);
+	int ret = awosInit() && acosInit();
+	if (!ret)
+		report("initializing aw");
 	return ret;
 }
 
 void awEnd() {
-	awClose(g_share); g_share = 0;
-	awosEnd();
+	if (!(acosEnd() && awosEnd()))
+		report("terminating aw");
 }
 
 static void show(aw * w) {
@@ -52,14 +51,11 @@ void awSetTitle(aw * w, const char * t) {
 }
 
 aw * awOpen(int x, int y, int width, int height) { 
-	void * share = g_share? awosGetContext(g_share) : 0;
-	aw * w = awosOpen(x, y, width, height, share);
+	aw * w = awosOpen(x, y, width, height);
 	if (!w)
 		report("Unable to open window");
-	if (w && g_share)
+	if (w)
 		show(w);
-	if (!g_share && w)
-		g_share = awosGetContext(w);
 	return w;
 }
 
@@ -76,36 +72,22 @@ void awSwapBuffers(aw * w) {
 		report("awSwapBuffers failed");
 }
 
-static void setInterval(aw * w, int interval) {
-	awHeader * hdr = (awHeader*)w;
-	if (check(w) && hdr->interval != interval && !awosSetSwapInterval(1)) {
+static void setInterval(ac * c) {
+	acHeader * hdr = (acHeader*)c;
+	if (!awosSetSwapInterval(hdr->interval)) 
 		report("Unable to set swap interval");
-		hdr->interval = interval;
-	}
 }
 
-static void makeCurrent(void * c, void * d) {
-	if (!awosMakeCurrent(c, d))
-		report("Unable to establish context");
-}
-
-void awPushCurrent(aw * w) {
+void awMakeCurrent(aw * w, ac * c) {
+	awHeader * hdr = (awHeader*)w;
+	hdr->ctx = c;
 	if (check(w)) {
-		awHeader * hdr = (awHeader*)w;
-		hdr->pushctx = awosGetCurrentContext();
-		hdr->pushdrw = awosGetCurrentDrawable();
-		makeCurrent(awosGetContext(w), awosGetDrawable(w));
-		setInterval(w, 1);
+		if (!awosMakeCurrent(w))
+			report("Unable to establish context");
+		if (c)
+			setInterval(c);
 	}
 }
-
-void awPopCurrent(aw * w) {
-	if (check(w)) {
-		awHeader * hdr = (awHeader*)w;
-		makeCurrent(hdr->pushctx, hdr->pushdrw);
-	}
-}
-
 
 const awEvent * awNextEvent(aw * w) {
 	const awEvent * ret = 0;
@@ -121,7 +103,7 @@ const awEvent * awNextEvent(aw * w) {
 	return ret;
 }
 
-void got(aw	 * w, int type, int p1, int p2) {
+void got(aw * w, int type, int p1, int p2) {
 	awHeader * hdr = (awHeader*)w;
 	awEvent * e = hdr->ev + hdr->head;
 	hdr->head++;
@@ -130,6 +112,25 @@ void got(aw	 * w, int type, int p1, int p2) {
 	e->u.p[0] = p1;
 	e->u.p[1] = p2;
 }
+
+ac * acNew(ac * share) {
+	ac * ret = acosNew(share);
+	((acHeader*)ret)->interval = 0;
+	if (!ret)
+		report("unable to create context sharing with %p", share);
+	return ret;
+}
+
+void acDel(ac * c) {
+	if (!acosDel(c))
+		report("unable to delete context %p", c);
+}
+
+void acSetInterval(ac * c, int interval) {
+	acHeader * hdr = (acHeader*)c;
+	hdr->interval = interval;
+}
+
 
 
 /* 
