@@ -7,10 +7,6 @@
 #include "aw.h"
 #include "awos.h"
 
-int setSwapInterval(int interval) {
-	return 0 == glXSwapIntervalSGI(interval);
-}
-
 #define EVMASK	KeyPressMask | KeyReleaseMask |\
 				ButtonPressMask | ButtonReleaseMask |\
 				PointerMotionMask | StructureNotifyMask
@@ -21,9 +17,12 @@ static int g_screen;
 struct _aw {
 	awHeader hdr;
 	Window win;
-	GLXContext ctx;
-	int x, y, w, h;
 	int lastw, lasth;
+};
+
+struct _ac {
+	acHeader hdr;
+	GLXContext ctx;
 };
 
 static int sync() {
@@ -95,23 +94,17 @@ static void findBorderSize() {
 }
 
 int awosInit() {
-	int hasExtensions = 0;
 	g_dpy = XOpenDisplay(0);
 	if (g_dpy) {
 		g_screen = XDefaultScreen(g_dpy);
 		g_del = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
-		hasExtensions = 0 != glXQueryExtension(g_dpy, 0, 0);
 		findBorderSize();
-		
 	}
-//	if (hasExtensions)
-//		glXSwapIntervalSGI = (void*)glXGetProcAddress(
-//			(GLubyte*)"glXSwapIntervalSGI");
-	return hasExtensions;
+	return g_dpy != 0;
 }
 
-void awosEnd() {
-	XCloseDisplay(g_dpy);
+int awosEnd() {
+	return 0 == XCloseDisplay(g_dpy);
 }
 
 int awosSetTitle(aw * w, const char * t) {
@@ -119,35 +112,20 @@ int awosSetTitle(aw * w, const char * t) {
 				      (char**)NULL, 0, NULL);
 }
 
-static void cleanup(aw * w) {
-	if (g_dpy) glXMakeCurrent(g_dpy, 0, 0);
-	if (w->ctx) glXDestroyContext(g_dpy, w->ctx);
-	if (w->win) XDestroyWindow(g_dpy, w->win);
-}
-
-aw * awosOpen(int x, int y, int width, int height, void * ct) {
-	aw * ret = NULL;
-	aw w;
-	XVisualInfo * vinfo = chooseVisual(g_dpy, g_screen);
-	w.x = x; w.y = y; w.w = width; w.h = height;
-	if (vinfo) {
-		w.ctx = glXCreateContext(g_dpy, vinfo, ct, True);
-		w.win = createWin(x - g_bw, y - g_bh, width, height);
-		XFree(vinfo);
-	}
-	if (w.ctx && w.win) {
-		ret = malloc(sizeof(w));
-		*ret = w;
-	}
-	if (!ret)
-		cleanup(&w);
+aw * awosOpen(int x, int y, int width, int height) {
+	aw * w = NULL;
+	Window win = createWin(x - g_bw, y - g_bh, width, height);
+	if (win)
+		w = calloc(1, sizeof(*w));
+	if (w)
+		w->win = win;
 	if (g_dpy)
 		sync();
-	return ret;
+	return w;
 }
 
 int awosClose(aw * w) {
-	cleanup(w);
+	XDestroyWindow(g_dpy, w->win);
 	free(w);
 	return 1;
 }
@@ -157,24 +135,9 @@ int awosSwapBuffers(aw * w) {
 	return 1;
 }
 
-int awosMakeCurrent(void * c, void * d) {
-	return glXMakeCurrent(g_dpy, (GLXDrawable)d, (GLXContext)c);
-}
-
-void * awosGetCurrentContext() {
-	return (void*)glXGetCurrentContext();
-}
-
-void * awosGetCurrentDrawable() {
-	return (void*)glXGetCurrentDrawable();
-}
-
-void * awosGetContext(aw * w) {
-	return (void*)w->ctx;
-}
-
-void * awosGetDrawable(aw * w) {
-	return (void*)w->win;
+int awosMakeCurrent(aw * w) {
+	return glXMakeCurrent(g_dpy, w->hdr.ctx? w->win : 0, 
+			      w->hdr.ctx? w->hdr.ctx->ctx : 0);
 }
 
 int awosShow(aw * w) {
@@ -267,7 +230,6 @@ static int pollEvent(aw * w, XEvent * e) {
 		|| XCheckTypedWindowEvent(g_dpy, w->win, ClientMessage, e);
 }
 
-
 void awosPollEvent(aw * w) {
 	XEvent e;
 	sync();
@@ -275,8 +237,39 @@ void awosPollEvent(aw * w) {
 		handle(w, &e);
 }
 
-int awosSetSwapInterval(int i) {
-	return setSwapInterval(i);
+int awosSetSwapInterval(int interval) {
+	return 0 == glXSwapIntervalSGI(interval);
+}
+
+ac * acosNew(ac * share) {
+	XVisualInfo * vinfo = chooseVisual(g_dpy, g_screen);
+	GLXContext ctx;
+	ac * c = 0;
+	if (vinfo)
+		ctx = glXCreateContext(g_dpy, vinfo, 
+				       share? share->ctx : 0, True);
+	if (ctx)
+		c = calloc(1, sizeof(*c));
+	if (c)
+		c->ctx = ctx;
+	if (vinfo) 
+		XFree(vinfo);
+	return c;
+}
+
+int acosDel(ac * c) {
+	glXDestroyContext(g_dpy, c->ctx);
+	free(c);
+	return 1;
+}
+
+int acosInit() {
+	int hasExtensions = 0 != glXQueryExtension(g_dpy, 0, 0);
+	return hasExtensions;
+}
+
+int acosEnd() {
+	return 1;
 }
 
 /* 

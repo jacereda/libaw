@@ -100,7 +100,7 @@ static void display(void)
 
 static void resize(int w, int h)
 {
-	glViewport(0, 0, (GLsizei) w, (GLsizei) h);
+	glViewport(0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	if (w <= h)

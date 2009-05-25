@@ -5,25 +5,31 @@ static void loop(aw * w) {
 	}
 }
 
-static void go(aw * w) {
-	awPushCurrent(w);
+static void go(aw * w, ac * c) {
+	awMakeCurrent(w, c);
 	init();
 	loop(w);
-	awPopCurrent(w);
+	awMakeCurrent(w, 0);
+	acDel(c);
 	awClose(w);
 	awEnd();
 }
 
 int main(int argc, char ** argv) {
 	aw * w = 0;
-	if (!awInit())
-		Log("unable to initialize AW");
-	else
+	ac * c = 0;
+	if (awInit())
 		w = awOpen(100, 100, 500, 500);
-	if (w) 
-		go(w);
 	else
+		Log("unable to initialize AW");
+	if (!w)
 		Log("unable to open window (is DISPLAY set?)");
+	if (w)
+		c = acNew(0);
+	if (c)
+		acSetInterval(c, 1);
+	if (c) 
+		go(w, c);
 	return w == 0;
 }
 

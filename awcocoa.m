@@ -18,6 +18,7 @@
 @interface Window : NSWindow {
 @public
 	aw * _w;
+	ac * _c;
 }
 @end
 
@@ -32,6 +33,10 @@ struct _aw {
 	awHeader hdr;
 	View * view;
 	Window * win;
+};
+
+struct _ac {
+	acHeader hdr;
 	NSOpenGLContext * ctx;
 };
 
@@ -47,7 +52,7 @@ static void resetPool() {
 
 - (void)windowDidResize:(NSNotification *)n {
 	NSSize sz = [_w->view frame].size;
-	[_w->ctx update];
+	if (_w->hdr.ctx->ctx) [_w->hdr.ctx->ctx update];
 	got(_w, AW_EVENT_RESIZE, (int)sz.width, (int)sz.height);	
 }
 
@@ -150,22 +155,11 @@ int awosInit() {
 	return 1;
 }
 
-void awosEnd() {
+int awosEnd() {
 	[g_pool release];
 	[NSApp release];
 	[g_apppool release];
-}
-
-static NSOpenGLContext * createContext(NSOpenGLContext * share) {
-	NSOpenGLContext *ctx = 0;
-	NSOpenGLPixelFormatAttribute attr[] = {0};
-	NSOpenGLPixelFormat * fmt;
-	fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
-	if (fmt)
-		ctx = [[NSOpenGLContext alloc] 
-			      initWithFormat:fmt shareContext:share];
-	[fmt release];
-	return ctx;
+	return 1;
 }
 
 int awosSetTitle(aw * w, const char * t) {
@@ -175,7 +169,7 @@ int awosSetTitle(aw * w, const char * t) {
 	return 1;
 }
 
-aw * awosOpen(int x, int y, int width, int height, void * ct) {
+aw * awosOpen(int x, int y, int width, int height) {
 	aw * w = 0;
 	NSSize scr = [[NSScreen mainScreen] frame].size;
 	NSRect rect = NSMakeRect(x, scr.height - y - height, width, height);
@@ -189,7 +183,6 @@ aw * awosOpen(int x, int y, int width, int height, void * ct) {
 				      styleMask: style
 				      backing: NSBackingStoreBuffered
 				      defer:NO];
-	NSOpenGLContext * ctx = createContext((NSOpenGLContext*)ct);
 	NSRect frm = [Window contentRectForFrameRect: [win frame]
 			     styleMask: style];
 	View * view = [[View alloc] initWithFrame: frm];
@@ -199,13 +192,11 @@ aw * awosOpen(int x, int y, int width, int height, void * ct) {
 	[win makeFirstResponder: view];
 	[win setAcceptsMouseMovedEvents: YES];
 
-	w = malloc(sizeof(*w));
+	w = calloc(1, sizeof(*w));
 	w->view = view;
 	w->win = win;
 	w->view->_w = w;
 	w->win->_w = w;
-	w->ctx = ctx;
-	[ctx setView: [win contentView]];
 	got(w, AW_EVENT_RESIZE, width, height);
 	return w;
 }
@@ -223,14 +214,13 @@ int awosClose(aw * w) {
 	while (nextEvent(w->win))
 		;
 	[w->win release];
-	[w->ctx release];
 	[w->view release];
 	return 1;
 }
 
 int awosSwapBuffers(aw * w) {
 	glFlush();
-	[w->ctx flushBuffer];
+	if (w->hdr.ctx->ctx) [w->hdr.ctx->ctx flushBuffer];
 	return 1;
 }
 
@@ -255,27 +245,54 @@ int awosSetSwapInterval(int i) {
 	return 1;
 }
 
-void * awosGetCurrentContext() {
-	return [NSOpenGLContext currentContext];
-}
-
-void * awosGetCurrentDrawable() {
-	return 0;
-}
-
-void * awosGetContext(aw * w) {
-	return w->ctx;
-}
-
-void * awosGetDrawable(aw * w) {
-	return w->win;
-}
-
-int awosMakeCurrent(void * c, void * d) {
-	NSOpenGLContext * cc = (NSOpenGLContext*)c;
-	[cc makeCurrentContext];
+int awosMakeCurrent(aw * w) {
+	if (w->hdr.ctx) {
+		[w->hdr.ctx->ctx setView: [w->win contentView]];
+		[w->hdr.ctx->ctx makeCurrentContext];
+	}
+	else
+		[NSOpenGLContext clearCurrentContext];
 	return 1;
 }
+
+int acosInit() {
+	return 1;
+}
+
+int acosEnd() {
+	return 1;
+}
+
+ac * acosNew(ac * share) {
+	ac * c = 0;
+	NSOpenGLContext *ctx = 0;
+	NSOpenGLPixelFormatAttribute attr[] = {0};
+	NSOpenGLPixelFormat * fmt;
+	fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
+	if (fmt)
+		ctx = [[NSOpenGLContext alloc] 
+			      initWithFormat:fmt 
+			      shareContext: share? share->ctx : 0];
+	[fmt release];
+	if (ctx)
+		c = malloc(sizeof(*c));
+	if (c)
+		c->ctx = ctx;
+	return c;
+}
+
+int acosDel(ac * c) {
+	[c->ctx release];
+	return 1;
+}
+
+/* 
+   Local variables: **
+   c-file-style: "bsd" **
+   c-basic-offset: 8 **
+   End: **
+*/
+
 
 /* 
    Local variables: **
