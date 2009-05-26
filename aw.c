@@ -46,21 +46,36 @@ static void hide(aw * w) {
 }
 
 void awSetTitle(aw * w, const char * t) {
-	if (check(w) && !awosSetTitle(w, t))
+	awHeader * hdr = (awHeader*)w;
+	if (check(w) && !hdr->fullscreen && !awosSetTitle(w, t))
 		report("Unable to set window title");
 }
 
-aw * awOpen(int x, int y, int width, int height) { 
-	aw * w = awosOpen(x, y, width, height);
+static aw * open(int x, int y, int width, int height, int fs) {
+	aw * w = awosOpen(x, y, width, height, fs);
 	if (!w)
 		report("Unable to open window");
+	if (w)
+		((awHeader*)w)->fullscreen = fs;
 	if (w)
 		show(w);
 	return w;
 }
 
+aw * awOpen(int x, int y, int w, int h) { 
+	return open(x, y, w, h, 0);
+}
+
+aw * awOpenFullscreen() {
+	return open(0, 0, 0, 0, 1);
+}
+
 void awClose(aw * w) {	
 	if (check(w)) {
+		if (((awHeader*)w)->ctx) {
+			report("Closing window with active context");
+			awMakeCurrent(w, 0);
+		}
 		hide(w);
 		if (!awosClose(w))
 			report("Unable to close window");
@@ -72,20 +87,22 @@ void awSwapBuffers(aw * w) {
 		report("awSwapBuffers failed");
 }
 
-static void setInterval(ac * c) {
+static void setInterval(aw * w, ac * c) {
 	acHeader * hdr = (acHeader*)c;
-	if (!awosSetSwapInterval(hdr->interval)) 
+	if (!awosSetSwapInterval(w, hdr->interval)) 
 		report("Unable to set swap interval");
 }
 
 void awMakeCurrent(aw * w, ac * c) {
 	awHeader * hdr = (awHeader*)w;
-	hdr->ctx = c;
 	if (check(w)) {
-		if (!awosMakeCurrent(w))
+		if (hdr->ctx && hdr->ctx != c)
+			awosClearCurrent(w);
+		if (c && !awosMakeCurrent(w, c))
 			report("Unable to establish context");
+		hdr->ctx = c;
 		if (c)
-			setInterval(c);
+			setInterval(w, c);
 	}
 }
 
