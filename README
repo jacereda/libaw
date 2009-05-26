@@ -23,7 +23,7 @@ BUILDING
 - Install scons ( http://scons.org )
 - Type 'scons' in this directory. 
 
-This should build a .dylib and some test programs.
+This should build a dynamic library and some test programs.
 
 FEEDBACK
 
