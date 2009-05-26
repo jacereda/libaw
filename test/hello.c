@@ -7,26 +7,12 @@
 #include <aw/aw.h>
 #include "log.h"
 
-static void resize(int w, int h) {
+static void reshape(int w, int h) {
 	glViewport(0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
 	glOrtho(0.0, 1.0, 0.0, 1.0, -1.0, 1.0);
 	glMatrixMode(GL_MODELVIEW);
-}
-
-static int processEvents(aw * w) {
-	int keepgoing = 1;
-	const awEvent * awe;
-	while ((awe = awNextEvent(w))) switch (awe->type) {
-	case AW_EVENT_RESIZE:
-		resize(awe->u.resize.w, awe->u.resize.h);
-		break;
-	case AW_EVENT_CLOSE:
-		keepgoing = 0; 
-		break;
-	}
-	return keepgoing;
 }
 
 static void display(void) {

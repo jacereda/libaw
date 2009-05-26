@@ -2,9 +2,10 @@
 #define MAX_EVENTS 16
 
 typedef struct awHeader {
-	awEvent ev[MAX_EVENTS];
-	unsigned head, tail;
 	ac * ctx;
+	unsigned head, tail;
+	int fullscreen;
+	awEvent ev[MAX_EVENTS];
 } awHeader;
 
 typedef struct acHeader {
@@ -13,15 +14,16 @@ typedef struct acHeader {
 
 int awosInit();
 int awosEnd();
-aw * awosOpen(int, int, int, int);
+aw * awosOpen(int, int, int, int, int);
 int awosSetTitle(aw *, const char *);
 int awosClose(aw *);
-int awosMakeCurrent(aw *);
+int awosMakeCurrent(aw *, ac *);
+int awosClearCurrent(aw *);
 int awosSwapBuffers(aw *);
 int awosShow(aw *);
 int awosHide(aw *);
 void awosPollEvent(aw *);
-int awosSetSwapInterval(int);
+int awosSetSwapInterval(aw *, int);
 
 int acosInit();
 int acosEnd();

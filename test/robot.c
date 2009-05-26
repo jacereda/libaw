@@ -111,12 +111,15 @@ void keyboard (unsigned char key)
 	}
 }
 
-static int processEvents(aw * w) {
+static void updateTitle(aw * w, int x, int y);
+
+static int processEvents(aw ** w, ac * c) {
 	int keepgoing = 1;
 	const awEvent * awe;
-	while ((awe = awNextEvent(w))) switch (awe->type) {
+	while ((awe = awNextEvent(*w))) switch (awe->type) {
 	case AW_EVENT_RESIZE:
 		reshape(awe->u.resize.w, awe->u.resize.h);
+		updateTitle(*w, awe->u.resize.w, awe->u.resize.h);
 		break;
 	case AW_EVENT_CLOSE:
 		keepgoing = 0; 
@@ -129,6 +132,7 @@ static int processEvents(aw * w) {
 	return keepgoing;
 }
 
+#define NO_HANDLER
 #include "redbook.h"
 
 /* 

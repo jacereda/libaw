@@ -165,27 +165,19 @@ int awosSetTitle(aw * w, const char * t) {
 	return 1;
 }
 
-aw * awosOpen(int x, int y, int width, int height) {
+static aw * openwin(int x, int y, int width, int height, 
+		    DWORD style, DWORD exstyle) {
 	aw * w = calloc(1, sizeof(*w));
 	RECT r;
 	HWND win;
-	DWORD style = 0
-		| WS_OVERLAPPED
-		| WS_CAPTION 
-		| WS_SYSMENU 
-		| WS_SIZEBOX
-		| WS_MINIMIZEBOX
-		| WS_MAXIMIZEBOX
-		| WS_CLIPSIBLINGS
-		| WS_CLIPCHILDREN
-		;
 	r.left = x; r.top = y;
 	r.right = x + width; r.bottom = y + height;
 	AdjustWindowRect(&r, style, FALSE);
-	win = CreateWindowW(L"AW", L"AW", style,
-			    r.left, r.top, 
-			    r.right - r.left, r.bottom - r.top,
-			    NULL, NULL, GetModuleHandle(NULL), w);
+	win = CreateWindowExW(exstyle, 
+			      L"AW", L"AW", style,
+			      r.left, r.top, 
+			      r.right - r.left, r.bottom - r.top,
+			      NULL, NULL, GetModuleHandle(NULL), w);
 	if (win) {
 		HDC dc = GetDC(win);
 		setPF(dc);
@@ -195,6 +187,32 @@ aw * awosOpen(int x, int y, int width, int height) {
 		w->win = win;
 	else
 		free(w);
+	return w;
+}
+
+aw * awosOpen(int x, int y, int width, int height, int fs) {
+	aw * w;
+	DWORD style, exstyle;
+	if (fs) {
+		RECT rect;
+		style = WS_POPUP;
+		exstyle = WS_EX_TOPMOST, 
+		GetWindowRect(GetDesktopWindow(), &rect);
+		width = rect.right;
+		height = rect.bottom;
+	}
+	else {
+		style = 0
+			| WS_OVERLAPPED
+			| WS_CAPTION 
+			| WS_SYSMENU 
+			| WS_SIZEBOX
+			| WS_MINIMIZEBOX
+			| WS_MAXIMIZEBOX
+			;
+		exstyle = 0;
+	}
+	w = openwin(x, y, width, height, style, exstyle);
 	return w;
 }
 
@@ -213,12 +231,16 @@ int awosSwapBuffers(aw * w) {
 	return ret;
 }
 
-int awosMakeCurrent(aw * w) {
+int awosMakeCurrent(aw * w, ac * c) {
 	int ret;
 	HDC dc = GetDC(w->win);
-	ret = wglMakeCurrent(dc, w->hdr.ctx? w->hdr.ctx->ctx : 0);
+	ret = wglMakeCurrent(dc, c->ctx);
 	ReleaseDC(w->win, dc);
 	return ret;
+}
+
+int awosClearCurrent(aw * w) {
+	return wglMakeCurrent(0, 0);
 }
 
 int awosShow(aw * w) {
@@ -243,14 +265,14 @@ void awosPollEvent(aw * w) {
 	dispatch(w->win);
 }
 
-int awosSetSwapInterval(int si) {
+int awosSetSwapInterval(aw * w, int si) {
 	return wglSwapIntervalEXT? wglSwapIntervalEXT(si) : 0;
 }
 
 ac * acosNew(ac * share) {
 	ac * c = 0;
 	HGLRC ctx;
-	aw * dummy = awosOpen(0, 0, 0, 0);
+	aw * dummy = awosOpen(0, 0, 0, 0, 0);
 	HDC dc = GetDC(dummy->win);
 	setPF(dc);
 	ctx = wglCreateContext(dc);
