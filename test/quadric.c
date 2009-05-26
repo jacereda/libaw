@@ -113,7 +113,7 @@ static void resize(int w, int h)
 	glLoadIdentity();
 }
 
-static int processEvents(aw * w) {
+static int processEvents(aw * w, ac * c) {
 	int keepgoing = 1;
 	const awEvent * awe;
 	while ((awe = awNextEvent(w))) switch (awe->type) {

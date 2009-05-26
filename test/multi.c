@@ -4,7 +4,7 @@
 
 static int g_exit = 0;
 
-static void processEvents(aw * w, int n) {
+static void processEvents(aw * w, ac * c, int n) {
 	const awEvent * awe;
 	while ((awe = awNextEvent(w))) switch (awe->type) {
 	case AW_EVENT_RESIZE:
@@ -36,7 +36,7 @@ static void handle(aw * w, ac * c, int n) {
 	draw(n);
 	awSwapBuffers(w);
 	awMakeCurrent(w, 0);
-	processEvents(w, n);
+	processEvents(w, c, n);
 }
 
 int main(int argc, char ** argv) {

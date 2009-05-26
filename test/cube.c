@@ -35,27 +35,6 @@ static void reshape (int w, int h)
 	glMatrixMode (GL_MODELVIEW);
 }
 
-static void updateTitle(aw * w, int x, int y) {
-	char buf[16] = {0};
-	snprintf(buf, sizeof(buf), "%dx%d", x, y);
-	awSetTitle(w, buf);
-}
-
-static int processEvents(aw * w) {
-	int keepgoing = 1;
-	const awEvent * awe;
-	while ((awe = awNextEvent(w))) switch (awe->type) {
-	case AW_EVENT_RESIZE:
-		reshape(awe->u.resize.w, awe->u.resize.h);
-		updateTitle(w, awe->u.resize.w, awe->u.resize.h);
-		break;
-	case AW_EVENT_CLOSE:
-		keepgoing = 0; 
-		break;
-	}
-	return keepgoing;
-}
-
 #include "redbook.h"
 
 /* 

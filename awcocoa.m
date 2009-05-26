@@ -140,6 +140,10 @@ static void resetPool() {
 @end
 
 @implementation Window
+- (BOOL) canBecomeKeyWindow
+{
+	return YES;
+}
 @end
 
 
@@ -169,23 +173,20 @@ int awosSetTitle(aw * w, const char * t) {
 	return 1;
 }
 
-aw * awosOpen(int x, int y, int width, int height) {
+static aw * openwin(int x, int y, int width, int height, unsigned style) {
 	aw * w = 0;
 	NSSize scr = [[NSScreen mainScreen] frame].size;
-	NSRect rect = NSMakeRect(x, scr.height - y - height, width, height);
-	unsigned int style = 0
-		| NSTitledWindowMask
-		| NSClosableWindowMask
-		| NSMiniaturizableWindowMask 
-		| NSResizableWindowMask
-		;
-	Window *win = [[Window alloc] initWithContentRect: rect 
-				      styleMask: style
-				      backing: NSBackingStoreBuffered
-				      defer:NO];
-	NSRect frm = [Window contentRectForFrameRect: [win frame]
-			     styleMask: style];
-	View * view = [[View alloc] initWithFrame: frm];
+	NSRect rect;
+	Window * win;
+	NSRect frm;
+	View * view;
+	rect = NSMakeRect(x, scr.height - y - height, width, height);
+	win = [[Window alloc] initWithContentRect: rect 
+			      styleMask: style
+			      backing: NSBackingStoreBuffered
+			      defer:NO];
+	frm = [Window contentRectForFrameRect: [win frame] styleMask: style];
+	view = [[View alloc] initWithFrame: frm];
 
 	[win setContentView: view];
 	[win setDelegate: view];
@@ -198,6 +199,29 @@ aw * awosOpen(int x, int y, int width, int height) {
 	w->view->_w = w;
 	w->win->_w = w;
 	got(w, AW_EVENT_RESIZE, width, height);
+	return w;
+}
+
+aw * awosOpen(int x, int y, int width, int height, int fs) {
+	unsigned style;
+	aw * w;
+	if (fs) {
+		NSSize scr = [[NSScreen mainScreen] frame].size;
+		width = scr.width;
+		height = scr.height;
+		style = NSBorderlessWindowMask;
+	}
+	else {
+		style = 0
+			| NSTitledWindowMask
+			| NSClosableWindowMask
+			| NSMiniaturizableWindowMask 
+			| NSResizableWindowMask
+			;
+	}
+	w = openwin(x, y, width, height, style);
+	if (fs) 
+		[w->win setLevel: NSPopUpMenuWindowLevel];
 	return w;
 }
 
@@ -239,19 +263,21 @@ void awosPollEvent(aw * w) {
 	resetPool();
 }
 
-int awosSetSwapInterval(int i) {
+int awosSetSwapInterval(aw * w, int i) {
         long param = i;
-        CGLSetParameter(CGLGetCurrentContext(), kCGLCPSwapInterval, &param);
+	[w->hdr.ctx->ctx setValues:&param forParameter:NSOpenGLCPSwapInterval];
 	return 1;
 }
 
-int awosMakeCurrent(aw * w) {
-	if (w->hdr.ctx) {
-		[w->hdr.ctx->ctx setView: [w->win contentView]];
-		[w->hdr.ctx->ctx makeCurrentContext];
-	}
-	else
-		[NSOpenGLContext clearCurrentContext];
+int awosClearCurrent(aw * w) {
+	[w->hdr.ctx->ctx clearDrawable];
+	[NSOpenGLContext clearCurrentContext];
+	return 1;
+}
+
+int awosMakeCurrent(aw * w, ac * c) {
+	[c->ctx setView: [w->win contentView]];
+	[c->ctx makeCurrentContext];
 	return 1;
 }
 
@@ -266,7 +292,17 @@ int acosEnd() {
 ac * acosNew(ac * share) {
 	ac * c = 0;
 	NSOpenGLContext *ctx = 0;
-	NSOpenGLPixelFormatAttribute attr[] = {0};
+	CGDirectDisplayID dpy = kCGDirectMainDisplay;
+	NSOpenGLPixelFormatAttribute attr[] = {
+		NSOpenGLPFAFullScreen,
+		NSOpenGLPFAScreenMask, CGDisplayIDToOpenGLDisplayMask(dpy),
+		NSOpenGLPFAColorSize, 24,
+		NSOpenGLPFAAlphaSize, 8,
+		NSOpenGLPFADepthSize, 16,
+		NSOpenGLPFADoubleBuffer,
+		NSOpenGLPFAAccelerated,
+		NSOpenGLPFANoRecovery,
+		0};
 	NSOpenGLPixelFormat * fmt;
 	fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
 	if (fmt)
@@ -275,7 +311,7 @@ ac * acosNew(ac * share) {
 			      shareContext: share? share->ctx : 0];
 	[fmt release];
 	if (ctx)
-		c = malloc(sizeof(*c));
+		c = calloc(1, sizeof(*c));
 	if (c)
 		c->ctx = ctx;
 	return c;
@@ -285,14 +321,6 @@ int acosDel(ac * c) {
 	[c->ctx release];
 	return 1;
 }
-
-/* 
-   Local variables: **
-   c-file-style: "bsd" **
-   c-basic-offset: 8 **
-   End: **
-*/
-
 
 /* 
    Local variables: **

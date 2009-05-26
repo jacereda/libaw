@@ -45,10 +45,6 @@ static XVisualInfo * chooseVisual(Display * dpy, int screen) {
 static void fillWA(unsigned long * swam, XSetWindowAttributes * swa) {
 	*swam = 0;
 	swa->event_mask = EVMASK; *swam |= CWEventMask;
-//	swa->border_pixel = 0; *swam |= CWBorderPixel;
-//	swa->colormap = XDefaultColormap(g_dpy, g_screen); *swam |= CWColormap;
-//	swa->win_gravity = StaticGravity; *swam |= CWWinGravity;
-//	swa->bit_gravity = StaticGravity; *swam |= CWBitGravity;
 }
 
 
@@ -80,10 +76,13 @@ static void findBorderSize() {
 	XEvent e;
 	Window w = createWin(-100, -100, 1, 1);
 	XMapWindow(g_dpy, w);
+	g_bw = 0;
+	g_bh = 0;
 	while (g_bh < 0) {
 		XCheckWindowEvent(g_dpy, w, StructureNotifyMask, &e);
 		if (e.type == ConfigureNotify 
-		    && !e.xconfigure.override_redirect) {
+		    && !e.xconfigure.override_redirect
+) {
 			g_bw = e.xconfigure.x;
 			g_bh = e.xconfigure.y;
 		}
@@ -112,13 +111,32 @@ int awosSetTitle(aw * w, const char * t) {
 				      (char**)NULL, 0, NULL);
 }
 
-aw * awosOpen(int x, int y, int width, int height) {
+static aw * openwin(int x, int y, int width, int height) {
 	aw * w = NULL;
 	Window win = createWin(x - g_bw, y - g_bh, width, height);
 	if (win)
 		w = calloc(1, sizeof(*w));
 	if (w)
 		w->win = win;
+	return w;
+}
+
+aw * awosOpen(int x, int y, int width, int height, int fs) {
+	aw * w;
+	if (fs) {
+		width = DisplayWidth(g_dpy, g_screen);
+		height = DisplayHeight(g_dpy, g_screen);
+	}
+	w = openwin(x, y, width, height);
+	if (fs) {
+		long flags[5] = {0};
+		Atom hatom = XInternAtom(g_dpy, "_MOTIF_WM_HINTS", 1);
+		flags[0] = 2; //mwm.flags = MWM_HINTS_DECORATIONS;
+		flags[2] = 0;
+		XChangeProperty(g_dpy, w->win, hatom, hatom, 
+				32, PropModeReplace,
+				(unsigned char*)flags, sizeof(flags) / 4);
+	}
 	if (g_dpy)
 		sync();
 	return w;
@@ -135,9 +153,12 @@ int awosSwapBuffers(aw * w) {
 	return 1;
 }
 
-int awosMakeCurrent(aw * w) {
-	return glXMakeCurrent(g_dpy, w->hdr.ctx? w->win : 0, 
-			      w->hdr.ctx? w->hdr.ctx->ctx : 0);
+int awosMakeCurrent(aw * w, ac * c) {
+	return glXMakeCurrent(g_dpy, w->win, c->ctx);
+}
+
+int awosClearCurrent(aw * w) {
+	return glXMakeCurrent(g_dpy, 0, 0);
 }
 
 int awosShow(aw * w) {
@@ -237,7 +258,7 @@ void awosPollEvent(aw * w) {
 		handle(w, &e);
 }
 
-int awosSetSwapInterval(int interval) {
+int awosSetSwapInterval(aw * w, int interval) {
 	return 0 == glXSwapIntervalSGI(interval);
 }
 
