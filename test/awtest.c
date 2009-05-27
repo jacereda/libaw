@@ -22,6 +22,10 @@ static aw * processEvents(aw * w) {
 			awClose(w);
 			w = awOpenFullscreen();
 		}
+		if (awe->u.down.which == 'b') {
+			awClose(w);
+			w = awOpenBorderless(100, 100, 300, 400);
+		}
 		if (awe->u.down.which == 'w') {
 			awClose(w);
 			w = awOpen(100, 100, 300, 400);
@@ -51,7 +55,7 @@ int main(int argc, char ** argv) {
 	g_progname = argv[0];
 	awInit();
 	c = acNew(0);
-	w = awOpen(100, 100, 300, 400);
+	w = awOpen(10, 10, 300, 400);
 	if (!w) {
 		Log("unable to open window (is DISPLAY set?)");
 		return 1;

@@ -202,17 +202,16 @@ static aw * openwin(int x, int y, int width, int height, unsigned style) {
 	return w;
 }
 
-aw * awosOpen(int x, int y, int width, int height, int fs) {
-	unsigned style;
+aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
+	unsigned style = 0;
 	aw * w;
 	if (fs) {
 		NSSize scr = [[NSScreen mainScreen] frame].size;
 		width = scr.width;
 		height = scr.height;
-		style = NSBorderlessWindowMask;
 	}
-	else {
-		style = 0
+	if (!bl) {
+		style += 0
 			| NSTitledWindowMask
 			| NSClosableWindowMask
 			| NSMiniaturizableWindowMask 
@@ -220,7 +219,7 @@ aw * awosOpen(int x, int y, int width, int height, int fs) {
 			;
 	}
 	w = openwin(x, y, width, height, style);
-	if (fs) 
+	if (bl) 
 		[w->win setLevel: NSPopUpMenuWindowLevel];
 	return w;
 }

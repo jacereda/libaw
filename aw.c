@@ -51,8 +51,8 @@ void awSetTitle(aw * w, const char * t) {
 		report("Unable to set window title");
 }
 
-static aw * open(int x, int y, int width, int height, int fs) {
-	aw * w = awosOpen(x, y, width, height, fs);
+static aw * open(int x, int y, int width, int height, int fs, int bl) {
+	aw * w = awosOpen(x, y, width, height, fs, bl);
 	if (!w)
 		report("Unable to open window");
 	if (w)
@@ -63,11 +63,15 @@ static aw * open(int x, int y, int width, int height, int fs) {
 }
 
 aw * awOpen(int x, int y, int w, int h) { 
-	return open(x, y, w, h, 0);
+	return open(x, y, w, h, 0, 0);
+}
+
+aw * awOpenBorderless(int x, int y, int w, int h) { 
+	return open(x, y, w, h, 0, 1);
 }
 
 aw * awOpenFullscreen() {
-	return open(0, 0, 0, 0, 1);
+	return open(0, 0, 0, 0, 1, 1);
 }
 
 void awClose(aw * w) {	
@@ -132,9 +136,10 @@ void got(aw * w, int type, int p1, int p2) {
 
 ac * acNew(ac * share) {
 	ac * ret = acosNew(share);
-	((acHeader*)ret)->interval = 0;
 	if (!ret)
 		report("unable to create context sharing with %p", share);
+	else
+		((acHeader*)ret)->interval = 0;
 	return ret;
 }
 
