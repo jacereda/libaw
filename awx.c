@@ -91,12 +91,14 @@ static void findBorderSize() {
 
 int awosInit() {
 	g_dpy = XOpenDisplay(0);
+	int hasExtensions = 0;
 	if (g_dpy) {
 		g_screen = XDefaultScreen(g_dpy);
 		g_del = XInternAtom(g_dpy, "WM_DELETE_WINDOW", False);
 		findBorderSize();
+		hasExtensions = 0 != glXQueryExtension(g_dpy, 0, 0);
 	}
-	return g_dpy != 0;
+	return hasExtensions;
 }
 
 int awosEnd() {
@@ -282,15 +284,6 @@ ac * acosNew(ac * share) {
 int acosDel(ac * c) {
 	glXDestroyContext(g_dpy, c->ctx);
 	free(c);
-	return 1;
-}
-
-int acosInit() {
-	int hasExtensions = 0 != glXQueryExtension(g_dpy, 0, 0);
-	return hasExtensions;
-}
-
-int acosEnd() {
 	return 1;
 }
 
