@@ -6,8 +6,12 @@
 #include "aw.h"
 #include "awos.h"
 
-#if !defined(HANDLE_WM_MOUSEWHEEL) // XXX mingw doesn't seem to define this one
+#if !defined HANDLE_WM_MOUSEWHEEL // XXX mingw doesn't seem to define this one
 #define HANDLE_WM_MOUSEWHEEL(hwnd,wParam,lParam,fn) ((fn)((hwnd),(int)(short)LOWORD(lParam),(int)(short)HIWORD(lParam),(int)(short)HIWORD(wParam),(UINT)(short)LOWORD(wParam)),0L)
+#endif
+
+#if !defined MAPVK_VK_TO_CHAR
+#define MAPVK_VK_TO_CHAR 2
 #endif
 
 #define MAX_WINDOWS 256
@@ -48,12 +52,46 @@ static void onClose(HWND win){
 	wgot(win, AW_EVENT_CLOSE, 0, 0);
 }
 
+static int vkMap(UINT vk) {
+	int ret;
+	switch (vk) {
+	case VK_CONTROL:
+		ret = AW_KEY_CONTROL; 
+		break;
+	case VK_SHIFT:
+		ret = AW_KEY_SHIFT; 
+		break;
+	case VK_MENU:
+		ret = AW_KEY_ALT;
+		break;
+	case VK_LWIN:
+	case VK_RWIN:
+		ret = AW_KEY_META;
+		break;
+	default:
+		ret = MapVirtualKeyW(vk, MAPVK_VK_TO_CHAR);
+		break;
+	}
+	report("mapped %d to %d", vk, ret);
+	return ret;
+}
+
+static void onSysKeyDown(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
+	if (vk == VK_MENU)
+		wgot(win, AW_EVENT_DOWN, vkMap(vk), 0);
+}
+
+static void onSysKeyUp(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
+	if (vk == VK_MENU)
+		wgot(win, AW_EVENT_UP, vkMap(vk), 0);
+}
+
 static void onKeyDown(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-	wgot(win, AW_EVENT_DOWN, vk, 0);
+	wgot(win, AW_EVENT_DOWN, vkMap(vk), 0);
 }
 
 static void onKeyUp(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-	wgot(win, AW_EVENT_UP, vk, 0);
+	wgot(win, AW_EVENT_UP, vkMap(vk), 0);
 }
 
 static void onLD(HWND win, BOOL dbl, int x, int y, UINT flags) {
@@ -100,6 +138,8 @@ LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
 	case WM_SIZE: r = HANDLE_WM_SIZE(win, w, l, onSize); break;
 	case WM_CLOSE: r = HANDLE_WM_CLOSE(win, w, l, onClose); break;
 	case WM_KEYDOWN: r = HANDLE_WM_KEYDOWN(win, w, l, onKeyDown); break;
+	case WM_SYSKEYDOWN: r = HANDLE_WM_SYSKEYDOWN(win, w, l, onSysKeyDown); break;
+	case WM_SYSKEYUP: r = HANDLE_WM_SYSKEYUP(win, w, l, onSysKeyUp); break;
 	case WM_KEYUP: r = HANDLE_WM_KEYUP(win, w, l, onKeyUp); break;
 	case WM_LBUTTONDOWN: r = HANDLE_WM_LBUTTONDOWN(win, w, l, onLD); break;
 	case WM_RBUTTONDOWN: r = HANDLE_WM_RBUTTONDOWN(win, w, l, onRD); break;
