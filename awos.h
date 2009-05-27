@@ -14,7 +14,7 @@ typedef struct acHeader {
 
 int awosInit();
 int awosEnd();
-aw * awosOpen(int, int, int, int, int);
+aw * awosOpen(int, int, int, int, int, int);
 int awosSetTitle(aw *, const char *);
 int awosClose(aw *);
 int awosMakeCurrent(aw *, ac *);

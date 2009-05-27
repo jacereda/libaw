@@ -76,6 +76,7 @@ typedef struct _ac ac;
 EXPORTED int awInit();
 EXPORTED void awEnd();
 EXPORTED aw * awOpen(int x, int y, int w, int h);
+EXPORTED aw * awOpenBorderless(int x, int y, int w, int h);
 EXPORTED aw * awOpenFullscreen();
 EXPORTED void awSetTitle(aw *, const char *);
 EXPORTED void awClose(aw *);

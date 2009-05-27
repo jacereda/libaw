@@ -190,16 +190,18 @@ static aw * openwin(int x, int y, int width, int height,
 	return w;
 }
 
-aw * awosOpen(int x, int y, int width, int height, int fs) {
+aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
 	aw * w;
 	DWORD style, exstyle;
 	if (fs) {
 		RECT rect;
-		style = WS_POPUP;
-		exstyle = WS_EX_TOPMOST, 
 		GetWindowRect(GetDesktopWindow(), &rect);
 		width = rect.right;
 		height = rect.bottom;
+	}
+	if (bl) {
+		style = WS_POPUP;
+		exstyle = WS_EX_TOPMOST; 
 	}
 	else {
 		style = 0
@@ -272,7 +274,7 @@ int awosSetSwapInterval(aw * w, int si) {
 ac * acosNew(ac * share) {
 	ac * c = 0;
 	HGLRC ctx;
-	aw * dummy = awosOpen(0, 0, 0, 0, 0);
+	aw * dummy = awosOpen(0, 0, 0, 0, 0, 0);
 	HDC dc = GetDC(dummy->win);
 	setPF(dc);
 	ctx = wglCreateContext(dc);

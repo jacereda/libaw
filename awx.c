@@ -76,13 +76,10 @@ static void findBorderSize() {
 	XEvent e;
 	Window w = createWin(-100, -100, 1, 1);
 	XMapWindow(g_dpy, w);
-	g_bw = 0;
-	g_bh = 0;
 	while (g_bh < 0) {
 		XCheckWindowEvent(g_dpy, w, StructureNotifyMask, &e);
 		if (e.type == ConfigureNotify 
-		    && !e.xconfigure.override_redirect
-) {
+		    && !e.xconfigure.override_redirect) {
 			g_bw = e.xconfigure.x;
 			g_bh = e.xconfigure.y;
 		}
@@ -113,7 +110,7 @@ int awosSetTitle(aw * w, const char * t) {
 
 static aw * openwin(int x, int y, int width, int height) {
 	aw * w = NULL;
-	Window win = createWin(x - g_bw, y - g_bh, width, height);
+	Window win = createWin(x, y, width, height);
 	if (win)
 		w = calloc(1, sizeof(*w));
 	if (w)
@@ -121,14 +118,18 @@ static aw * openwin(int x, int y, int width, int height) {
 	return w;
 }
 
-aw * awosOpen(int x, int y, int width, int height, int fs) {
+aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
 	aw * w;
 	if (fs) {
 		width = DisplayWidth(g_dpy, g_screen);
 		height = DisplayHeight(g_dpy, g_screen);
 	}
+	if (!bl) {
+		x -= g_bw;
+		y -= g_bh;
+	}
 	w = openwin(x, y, width, height);
-	if (fs) {
+	if (bl) {
 		long flags[5] = {0};
 		Atom hatom = XInternAtom(g_dpy, "_MOTIF_WM_HINTS", 1);
 		flags[0] = 2; //mwm.flags = MWM_HINTS_DECORATIONS;
