@@ -16,7 +16,8 @@ static aw * processEvents(aw * w) {
 	while ((awe = awNextEvent(w))) switch (awe->type) {
 	case AW_EVENT_RESIZE:
 		resize(w, awe->u.resize.w, awe->u.resize.h);
-		Log("Resized to %d %d", awe->u.resize.w, awe->u.resize.h); break;
+		Log("Resized to %d %d", awe->u.resize.w, awe->u.resize.h); 
+		break;
 	case AW_EVENT_DOWN:
 		if (awe->u.down.which == 'f') {
 			awClose(w);
@@ -30,16 +31,24 @@ static aw * processEvents(aw * w) {
 			awClose(w);
 			w = awOpen(100, 100, 300, 400);
 		}
+		if (awe->u.down.which == 'm') {
+			awClose(w);
+			w = awOpenMaximized();
+		}
 		if (awe->u.down.which == 'q') 
 			g_exit = 1;
-		Log("Down: %d", awe->u.down.which); break;
+		Log("Down: %d", awe->u.down.which); 
+		break;
 	case AW_EVENT_UP:
-		Log("Up: %d", awe->u.up.which); break;
+		Log("Up: %d", awe->u.up.which); 
+		break;
 	case AW_EVENT_MOTION:
-		Log("Motion: %d,%d", awe->u.motion.x, awe->u.motion.y); break;
+		Log("Motion: %d,%d", awe->u.motion.x, awe->u.motion.y); 
+		break;
 	case AW_EVENT_CLOSE:
 		Log("Exit requested");
-		g_exit = 1; break;
+		g_exit = 1; 
+		break;
 	}
 	return w;
 }
@@ -50,12 +59,13 @@ static void draw() {
 }
 
 int main(int argc, char ** argv) {
-	aw * w;
-	ac * c;
+	aw * w = 0;
+	ac * c = 0;
 	g_progname = argv[0];
-	awInit();
-	c = acNew(0);
-	w = awOpen(10, 10, 300, 400);
+	if (awInit())
+		c = acNew(0);
+	if (c)
+		w = awOpen(10, 10, 300, 400);
 	if (!w) {
 		Log("unable to open window (is DISPLAY set?)");
 		return 1;
@@ -63,9 +73,9 @@ int main(int argc, char ** argv) {
 	acSetInterval(c, 1);
 	while (!g_exit) {
 		awMakeCurrent(w, c);
+		w = processEvents(w);
 		draw();
 		awSwapBuffers(w);
-		w = processEvents(w);
 	}
 	awMakeCurrent(w, 0);
 	acDel(c);

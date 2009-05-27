@@ -193,12 +193,14 @@ static aw * openwin(int x, int y, int width, int height,
 aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
 	aw * w;
 	DWORD style, exstyle;
+#if 0
 	if (fs) {
 		RECT rect;
 		GetWindowRect(GetDesktopWindow(), &rect);
 		width = rect.right;
 		height = rect.bottom;
 	}
+#endif
 	if (bl) {
 		style = WS_POPUP;
 		exstyle = WS_EX_TOPMOST; 
@@ -214,6 +216,8 @@ aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
 			;
 		exstyle = 0;
 	}
+//	if (fs)
+//		style += WS_MAXIMIZE;
 	w = openwin(x, y, width, height, style, exstyle);
 	return w;
 }
@@ -246,7 +250,7 @@ int awosClearCurrent(aw * w) {
 }
 
 int awosShow(aw * w) {
-	ShowWindow(w->win, SW_SHOWNORMAL);
+	ShowWindow(w->win, w->hdr.fullscreen? SW_MAXIMIZE : SW_SHOWNORMAL);
 	return 1;
 }
 
@@ -293,14 +297,6 @@ int acosDel(ac * c) {
 	int ret = 0 != wglDeleteContext(c->ctx);
 	free(c);
 	return ret;
-}
-
-int acosInit() {
-	return 1;
-}
-
-int acosEnd() {
-	return 1;
 }
 
 /* 

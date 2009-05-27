@@ -52,7 +52,7 @@ static void resetPool() {
 
 - (void)windowDidResize:(NSNotification *)n {
 	NSSize sz = [_w->view frame].size;
-	if (_w->hdr.ctx->ctx) [_w->hdr.ctx->ctx update];
+	if (_w->hdr.ctx) [_w->hdr.ctx->ctx update];
 	got(_w, AW_EVENT_RESIZE, (int)sz.width, (int)sz.height);	
 }
 
@@ -174,12 +174,12 @@ int awosSetTitle(aw * w, const char * t) {
 }
 
 static aw * openwin(int x, int y, int width, int height, unsigned style) {
-	aw * w = 0;
-	NSSize scr = [[NSScreen mainScreen] frame].size;
 	NSRect rect;
 	Window * win;
 	NSRect frm;
 	View * view;
+	aw * w = 0;
+	NSSize scr = [[NSScreen mainScreen] frame].size;
 	rect = NSMakeRect(x, scr.height - y - height, width, height);
 	win = [[Window alloc] initWithContentRect: rect 
 			      styleMask: style
@@ -277,14 +277,6 @@ int awosClearCurrent(aw * w) {
 int awosMakeCurrent(aw * w, ac * c) {
 	[c->ctx setView: [w->win contentView]];
 	[c->ctx makeCurrentContext];
-	return 1;
-}
-
-int acosInit() {
-	return 1;
-}
-
-int acosEnd() {
 	return 1;
 }
 

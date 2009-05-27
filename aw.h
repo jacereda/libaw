@@ -78,11 +78,17 @@ EXPORTED void awEnd();
 EXPORTED aw * awOpen(int x, int y, int w, int h);
 EXPORTED aw * awOpenBorderless(int x, int y, int w, int h);
 EXPORTED aw * awOpenFullscreen();
+EXPORTED aw * awOpenMaximized();
 EXPORTED void awSetTitle(aw *, const char *);
 EXPORTED void awClose(aw *);
 EXPORTED void awSwapBuffers(aw *);
 EXPORTED void awMakeCurrent(aw *, ac *);
 EXPORTED const awEvent * awNextEvent(aw *);
+EXPORTED unsigned awWidth(aw *);
+EXPORTED unsigned awHeight(aw *);
+EXPORTED int awMouseX(aw *);
+EXPORTED int awMouseY(aw *);
+
 
 EXPORTED ac * acNew(ac *);
 EXPORTED void acDel(ac *);

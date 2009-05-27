@@ -20,7 +20,7 @@ void display(void)
 	glLoadIdentity ();             /* clear the matrix */
 	/* viewing transformation  */
 	gluLookAt (0.0, 0.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
-	glScalef (1.0, 2.0, 1.0);      /* modeling transformation */ 
+	glScalef (1.0, 1.0, 1.0);      /* modeling transformation */ 
 	glRotatef(angle++, 0,0,1);
 	drawBox(1.0, GL_LINE_LOOP);
 	glFlush ();
@@ -28,10 +28,11 @@ void display(void)
 
 static void reshape (int w, int h)
 {
+	float aspect = (float)w / h;
 	glViewport (0, 0, w, h); 
 	glMatrixMode (GL_PROJECTION);
 	glLoadIdentity ();
-	glFrustum (-1.0, 1.0, -1.0, 1.0, 1.5, 20.0);
+	glFrustum (-aspect, aspect, -1.0, 1.0, 1.5, 20.0);
 	glMatrixMode (GL_MODELVIEW);
 }
 

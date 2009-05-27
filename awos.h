@@ -4,6 +4,8 @@
 typedef struct awHeader {
 	ac * ctx;
 	unsigned head, tail;
+	unsigned width, height;
+	int mx, my;
 	int fullscreen;
 	awEvent ev[MAX_EVENTS];
 } awHeader;

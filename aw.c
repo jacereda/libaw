@@ -23,14 +23,14 @@ static int check(const aw * w) {
 }
 
 int awInit() {
-	int ret = awosInit() && acosInit();
+	int ret = awosInit();
 	if (!ret)
 		report("initializing aw");
 	return ret;
 }
 
 void awEnd() {
-	if (!(acosEnd() && awosEnd()))
+	if (!awosEnd())
 		report("terminating aw");
 }
 
@@ -74,6 +74,10 @@ aw * awOpenFullscreen() {
 	return open(0, 0, 0, 0, 1, 1);
 }
 
+aw * awOpenMaximized() {
+	return open(0, 0, 0, 0, 1, 0);
+}
+
 void awClose(aw * w) {	
 	if (check(w)) {
 		if (((awHeader*)w)->ctx) {
@@ -111,17 +115,48 @@ void awMakeCurrent(aw * w, ac * c) {
 }
 
 const awEvent * awNextEvent(aw * w) {
-	const awEvent * ret = 0;
+	const awEvent * awe = 0;
 	awHeader * hdr = (awHeader*)w;
 	if (!check(w))
-		return ret;
+		return 0;
 	awosPollEvent(w);
-	if (hdr->head == hdr->tail)
-		return ret;
-	ret = hdr->ev + hdr->tail;
-	hdr->tail++;
-	hdr->tail %= MAX_EVENTS;
-	return ret;
+	if (hdr->head != hdr->tail) {
+		awe = hdr->ev + hdr->tail;
+		hdr->tail++;
+		hdr->tail %= MAX_EVENTS;
+	}
+	if (awe) switch (awe->type) {	
+	case AW_EVENT_RESIZE:
+		hdr->width = awe->u.resize.w;
+		hdr->height = awe->u.resize.h;
+		break;
+	case AW_EVENT_MOTION:
+		hdr->mx = awe->u.motion.x;
+		hdr->my = awe->u.motion.y;
+		break;
+	default: break;
+	}
+	return awe;
+}
+
+unsigned awWidth(aw * w) {
+	awHeader * hdr = (awHeader*)w;
+	return hdr->width;
+}
+
+unsigned awHeight(aw * w) {
+	awHeader * hdr = (awHeader*)w;
+	return hdr->height;
+}
+
+int awMouseX(aw * w) {
+	awHeader * hdr = (awHeader*)w;
+	return hdr->mx;
+}
+
+int awMouseY(aw * w) {
+	awHeader * hdr = (awHeader*)w;
+	return hdr->my;
 }
 
 void got(aw * w, int type, int p1, int p2) {
