@@ -69,7 +69,7 @@ static int vkMap(UINT vk) {
 		ret = AW_KEY_META;
 		break;
 	default:
-		ret = MapVirtualKeyW(vk, MAPVK_VK_TO_CHAR);
+		ret = towlower(MapVirtualKeyW(vk, MAPVK_VK_TO_CHAR));
 		break;
 	}
 	report("mapped %d to %d", vk, ret);
