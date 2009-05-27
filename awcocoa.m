@@ -62,7 +62,7 @@ static void resetPool() {
 }
 
 - (void) handleKeyEvent: (NSEvent *)ev mode: (int) mode {
-	NSString * s = [ev characters];
+	NSString * s = [[ev characters] lowercaseString];
 	int sl = [s length];
 	int i;
 	for (i = 0; i < sl; i++)
