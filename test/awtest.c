@@ -11,6 +11,31 @@ static void resize(aw * w, int ww, int wh) {
 	awSetTitle(w, buf);
 }
 
+static const char * keyName(int k) {
+	const char * ret = 0;
+	static char buf[2] = {0};
+	switch (k) {
+	case AW_KEY_NONE: ret = "NONE"; break;
+	case AW_KEY_MOUSEWHEELUP: ret = "MOUSEWHEELUP"; break;
+	case AW_KEY_MOUSEWHEELDOWN: ret = "MOUSEWHEELDOWN"; break;
+	case AW_KEY_MOUSELEFT: ret = "MOUSELEFT"; break;
+	case AW_KEY_MOUSEMIDDLE: ret = "MOUSEMIDDLE"; break;
+	case AW_KEY_MOUSERIGHT: ret = "MOUSERIGHT"; break;
+	case AW_KEY_SHIFT: ret = "SHIFT"; break;
+	case AW_KEY_ALT: ret = "ALT"; break;
+	case AW_KEY_CONTROL: ret = "CONTROL"; break;
+	case AW_KEY_META: ret = "META"; break;
+	default:
+		if (k >= 32 && k < 256) {
+			buf[0] = k;
+			ret = buf;
+		}
+		else
+			ret = "unknown";
+	}
+	return ret;
+}
+
 static aw * processEvents(aw * w) {
 	const awEvent * awe;
 	while ((awe = awNextEvent(w))) switch (awe->type) {
@@ -37,10 +62,10 @@ static aw * processEvents(aw * w) {
 		}
 		if (awe->u.down.which == 'q') 
 			g_exit = 1;
-		Log("Down: %d", awe->u.down.which); 
+		Log("Down: %s", keyName(awe->u.down.which));
 		break;
 	case AW_EVENT_UP:
-		Log("Up: %d", awe->u.up.which); 
+		Log("Up: %s", keyName(awe->u.down.which));
 		break;
 	case AW_EVENT_MOTION:
 		Log("Motion: %d,%d", awe->u.motion.x, awe->u.motion.y); 
