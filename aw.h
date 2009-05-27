@@ -82,8 +82,6 @@ EXPORTED void awClose(aw *);
 EXPORTED void awSwapBuffers(aw *);
 EXPORTED void awMakeCurrent(aw *, ac *);
 EXPORTED const awEvent * awNextEvent(aw *);
-EXPORTED void awEnterFullscreen(aw *);
-EXPORTED void awLeaveFullscreen(aw *);
 
 EXPORTED ac * acNew(ac *);
 EXPORTED void acDel(ac *);
