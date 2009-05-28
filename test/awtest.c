@@ -96,9 +96,10 @@ int main(int argc, char ** argv) {
 		return 1;
 	}
 	acSetInterval(c, 1);
+	awMakeCurrent(w, c);
 	while (!g_exit) {
-		awMakeCurrent(w, c);
 		w = processEvents(w);
+		awMakeCurrent(w, c);
 		draw();
 		awSwapBuffers(w);
 	}
