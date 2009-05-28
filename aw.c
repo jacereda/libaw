@@ -91,8 +91,13 @@ void awClose(aw * w) {
 }
 
 void awSwapBuffers(aw * w) {
-	if (check(w) && !awosSwapBuffers(w))
-		report("awSwapBuffers failed");
+	if (check(w)) {
+		awHeader * hdr = (acHeader*)w;
+		if (!hdr->ctx)
+			report("awSwapBuffers called without context");
+		else if (!awosSwapBuffers(w))
+			report("awSwapBuffers failed");
+	}
 }
 
 static void setInterval(aw * w, ac * c) {
