@@ -10,6 +10,7 @@
 #define HANDLE_WM_MOUSEWHEEL(hwnd,wParam,lParam,fn) ((fn)((hwnd),(int)(short)LOWORD(lParam),(int)(short)HIWORD(lParam),(int)(short)HIWORD(wParam),(UINT)(short)LOWORD(wParam)),0L)
 #endif
 
+
 #if !defined MAPVK_VK_TO_CHAR
 #define MAPVK_VK_TO_CHAR 2
 #endif
@@ -72,7 +73,6 @@ static int vkMap(UINT vk) {
 		ret = towlower(MapVirtualKeyW(vk, MAPVK_VK_TO_CHAR));
 		break;
 	}
-	report("mapped %d to %d", vk, ret);
 	return ret;
 }
 
@@ -140,6 +140,7 @@ LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
 	case WM_KEYDOWN: r = HANDLE_WM_KEYDOWN(win, w, l, onKeyDown); break;
 	case WM_SYSKEYDOWN: r = HANDLE_WM_SYSKEYDOWN(win, w, l, onSysKeyDown); break;
 	case WM_SYSKEYUP: r = HANDLE_WM_SYSKEYUP(win, w, l, onSysKeyUp); break;
+	case WM_CHAR: wgot(win, AW_EVENT_UNICODE, w, 0); break;
 	case WM_KEYUP: r = HANDLE_WM_KEYUP(win, w, l, onKeyUp); break;
 	case WM_LBUTTONDOWN: r = HANDLE_WM_LBUTTONDOWN(win, w, l, onLD); break;
 	case WM_RBUTTONDOWN: r = HANDLE_WM_RBUTTONDOWN(win, w, l, onRD); break;

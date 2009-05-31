@@ -36,12 +36,13 @@ enum {
 	AW_EVENT_RESIZE,
 	AW_EVENT_DOWN,
 	AW_EVENT_UP,
+	AW_EVENT_UNICODE,
 	AW_EVENT_MOTION,
 	AW_EVENT_CLOSE,
 };
 
 enum {
-	AW_KEY_NONE = 0x40000000,
+	AW_KEY_NONE = 14,
 	AW_KEY_MOUSEWHEELUP, 
 	AW_KEY_MOUSEWHEELDOWN,
 	AW_KEY_MOUSELEFT,
@@ -57,10 +58,11 @@ typedef struct _awEvent {
 	int type;
 	union {
 		int p[2];
-		struct _resize { int w, h; } resize;
-		struct _down { int which; } down;
-		struct _up { int which; } up;
+		struct _resize { unsigned w, h; } resize;
+		struct _down { unsigned which; } down;
+		struct _up { unsigned which; } up;
 		struct _motion { int x, y; } motion;
+		struct _unicode { unsigned which; } unicode;
 	} u;
 } awEvent;
 
@@ -88,7 +90,7 @@ EXPORTED unsigned awWidth(aw *);
 EXPORTED unsigned awHeight(aw *);
 EXPORTED int awMouseX(aw *);
 EXPORTED int awMouseY(aw *);
-
+EXPORTED int awPressed(aw *, unsigned key);
 
 EXPORTED ac * acNew(ac *);
 EXPORTED void acDel(ac *);
