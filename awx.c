@@ -160,6 +160,7 @@ aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
 }
 
 int awosClose(aw * w) {
+	XDestroyIC(w->xic);
 	XDestroyWindow(g_dpy, w->win);
 	free(w);
 	return 1;
