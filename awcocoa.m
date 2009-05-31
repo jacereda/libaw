@@ -3,6 +3,7 @@
 #include <assert.h>
 #include <Foundation/NSAutoreleasePool.h>
 #include <Foundation/NSString.h>
+#include <Foundation/NSArray.h>
 #include <Foundation/NSRunLoop.h>
 #include <Foundation/NSNotification.h>
 #include <AppKit/NSApplication.h>
@@ -10,7 +11,7 @@
 #include <AppKit/NSWindow.h>
 #include <AppKit/NSEvent.h>
 #include <AppKit/NSOpenGL.h>
-#include <AppKit/NSView.h>
+#include <AppKit/NSTextView.h>
 #include <OpenGL/CGLTypes.h>
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
@@ -22,10 +23,10 @@
 }
 @end
 
-@interface View : NSView {
-	unsigned _prevflags;
+@interface View : NSTextView {
+unsigned _prevflags;
 @public
-	aw * _w;
+aw * _w;
 }
 @end
 
@@ -50,10 +51,14 @@ static void resetPool() {
 
 @implementation View
 
-- (void)windowDidResize:(NSNotification *)n {
+- (BOOL) acceptsFirstResponder {
+	return YES;
+}
+
+- (void) windowDidResize:(NSNotification *)n {
 	NSSize sz = [_w->view frame].size;
 	if (_w->hdr.ctx) [_w->hdr.ctx->ctx update];
-	got(_w, AW_EVENT_RESIZE, (int)sz.width, (int)sz.height);	
+	got(_w, AW_EVENT_RESIZE, (int)sz.width, (int)sz.height);
 }
 
 - (BOOL) windowShouldClose: (id)s {
@@ -62,7 +67,7 @@ static void resetPool() {
 }
 
 - (void) handleKeyEvent: (NSEvent *)ev mode: (int) mode {
-	NSString * s = [[ev characters] lowercaseString];
+	NSString * s = [[ev charactersIgnoringModifiers] lowercaseString];
 	int sl = [s length];
 	int i;
 	for (i = 0; i < sl; i++)
@@ -73,8 +78,20 @@ static void resetPool() {
 	[self handleKeyEvent: ev mode: AW_EVENT_UP];
 }
 
+
+- (void)deleteBackward:(id)sender {
+}
+
 - (void) keyDown: (NSEvent *)ev {
 	[self handleKeyEvent: ev mode: AW_EVENT_DOWN];
+	[self interpretKeyEvents: [NSArray arrayWithObject: ev]];
+}
+
+- (void)insertText:(id)s {
+	int sl = [s length];
+	int i;
+	for (i = 0; i < sl; i++)
+		got(_w, AW_EVENT_UNICODE, [s characterAtIndex: i], 0);
 }
 
 - (unsigned) keyFor: (unsigned)mask {
@@ -107,6 +124,7 @@ static void resetPool() {
 	[self handleMod: NSAlternateKeyMask flags: flags];
 	[self handleMod: NSCommandKeyMask flags: flags];
 	_prevflags = flags;
+	[super flagsChanged: ev];
 }
 
 - (void) handleMouseEvent: (NSEvent *)ev mode: (int)mode{
@@ -242,8 +260,7 @@ int awosClose(aw * w) {
 }
 
 int awosSwapBuffers(aw * w) {
-	glFlush();
-	if (w->hdr.ctx->ctx) [w->hdr.ctx->ctx flushBuffer];
+	[w->hdr.ctx->ctx flushBuffer];
 	return 1;
 }
 

@@ -16,6 +16,18 @@ void report(const char * fmt, ...) {
 	fflush(stderr);
 }
 
+static void bitset(unsigned char * b, unsigned bit) {
+	b[bit>>3] |= 1 << (bit & 7);
+}
+
+static void bitclear(unsigned char * b, unsigned bit) {
+	b[bit>>3] &= ~(1 << (bit & 7));
+}
+
+static int bittest(unsigned char * b, unsigned bit) {
+	return b[bit>>3] & (1 << (bit & 7));
+}
+
 static int check(const aw * w) {
 	if (!w)
 		report("Null handle");
@@ -92,7 +104,7 @@ void awClose(aw * w) {
 
 void awSwapBuffers(aw * w) {
 	if (check(w)) {
-		awHeader * hdr = (acHeader*)w;
+		awHeader * hdr = (awHeader*)w;
 		if (!hdr->ctx)
 			report("awSwapBuffers called without context");
 		else if (!awosSwapBuffers(w))
@@ -121,6 +133,7 @@ void awMakeCurrent(aw * w, ac * c) {
 
 const awEvent * awNextEvent(aw * w) {
 	const awEvent * awe = 0;
+	static const awEvent none = {AW_EVENT_NONE};
 	awHeader * hdr = (awHeader*)w;
 	if (!check(w))
 		return 0;
@@ -138,6 +151,18 @@ const awEvent * awNextEvent(aw * w) {
 	case AW_EVENT_MOTION:
 		hdr->mx = awe->u.motion.x;
 		hdr->my = awe->u.motion.y;
+		break;
+	case AW_EVENT_DOWN:
+		if (awe->u.down.which < 256) {
+			if (bittest(hdr->pressed, awe->u.down.which))
+				awe = &none;
+			else
+				bitset(hdr->pressed, awe->u.down.which);
+		}
+		break;
+	case AW_EVENT_UP:
+		if (awe->u.up.which < 256)
+			bitclear(hdr->pressed, awe->u.up.which);
 		break;
 	default: break;
 	}
@@ -162,6 +187,11 @@ int awMouseX(aw * w) {
 int awMouseY(aw * w) {
 	awHeader * hdr = (awHeader*)w;
 	return hdr->my;
+}
+
+int awPressed(aw * w, unsigned key) {
+	awHeader * hdr = (awHeader*)w;
+	return key < 256 && bittest(hdr->pressed, key);
 }
 
 void got(aw * w, int type, int p1, int p2) {
@@ -192,8 +222,6 @@ void acSetInterval(ac * c, int interval) {
 	acHeader * hdr = (acHeader*)c;
 	hdr->interval = interval;
 }
-
-
 
 /* 
    Local variables: **

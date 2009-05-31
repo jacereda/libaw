@@ -13,11 +13,13 @@
 static Display * g_dpy;
 static Atom g_del;
 static int g_screen;
+static XIM g_xim = 0;
 
 struct _aw {
 	awHeader hdr;
 	Window win;
 	int lastw, lasth;
+	XIC xic;
 };
 
 struct _ac {
@@ -98,7 +100,9 @@ int awosInit() {
 		findBorderSize();
 		hasExtensions = 0 != glXQueryExtension(g_dpy, 0, 0);
 	}
-	return hasExtensions;
+	if (g_dpy)
+		g_xim = XOpenIM (g_dpy, NULL, NULL, NULL);
+	return hasExtensions && g_xim;
 }
 
 int awosEnd() {
@@ -113,10 +117,20 @@ int awosSetTitle(aw * w, const char * t) {
 static aw * openwin(int x, int y, int width, int height) {
 	aw * w = NULL;
 	Window win = createWin(x, y, width, height);
+	XIC xic = 0;
 	if (win)
+		xic = XCreateIC(
+			g_xim,
+			XNInputStyle, XIMPreeditNothing | XIMStatusNothing,
+			XNClientWindow, win,
+			XNFocusWindow, win,
+			NULL);
+	if (xic)
 		w = calloc(1, sizeof(*w));
-	if (w)
+	if (w) {
 		w->win = win;
+		w->xic = xic;
+	}
 	return w;
 }
 
@@ -219,6 +233,14 @@ static void configure(aw * w, int x, int y, int width, int height) {
 	w->lastw = width; w->lasth = height;
 }
 
+static int isAutoRepeat(XEvent * e, Window win) {
+	XEvent next;
+	XCheckTypedWindowEvent(g_dpy, win, KeyPress, &next);
+	XPutBackEvent(g_dpy, &next);
+	return next.xkey.keycode == e->xkey.keycode
+		&& next.xkey.time - e->xkey.time < 2;
+}
+
 static void handle(aw * w, XEvent * e) {
 	switch(e->type) {
 	case ClientMessage:
@@ -238,10 +260,29 @@ static void handle(aw * w, XEvent * e) {
 		got(w, AW_EVENT_MOTION, e->xmotion.x, e->xmotion.y);
 		break;
 	case KeyPress:
-		got(w, AW_EVENT_DOWN, mapKey(e->xkey.keycode), 0);
+		{
+			#define MAXCHARS 64
+			wchar_t buf[MAXCHARS];
+			KeySym ks;
+			Status st;
+			int i;
+			int n = XwcLookupString(w->xic,
+						&e->xkey, 
+						buf, 
+						MAXCHARS,
+						&ks, 
+						&st);
+			if (st == XLookupKeySym || st == XLookupBoth) 
+				got(w, AW_EVENT_DOWN, 
+				    translateModifiers(ks), 0);
+			if (st == XLookupChars || st == XLookupBoth) 
+				for (i = 0; i < n; i++)
+					got(w, AW_EVENT_UNICODE, buf[i], 0);
+		}
 		break;
 	case KeyRelease:
-		got(w, AW_EVENT_UP, mapKey(e->xkey.keycode), 0);
+		if (!isAutoRepeat(e, w->win))
+			got(w, AW_EVENT_UP, mapKey(e->xkey.keycode), 0);
 		break;
 	default:
 		got(w, AW_EVENT_UNKNOWN, 0, 0);

@@ -13,7 +13,7 @@ static void resize(aw * w, int ww, int wh) {
 
 static const char * keyName(int k) {
 	const char * ret = 0;
-	static char buf[2] = {0};
+	static char buf[16] = {0};
 	switch (k) {
 	case AW_KEY_NONE: ret = "NONE"; break;
 	case AW_KEY_MOUSEWHEELUP: ret = "MOUSEWHEELUP"; break;
@@ -26,12 +26,11 @@ static const char * keyName(int k) {
 	case AW_KEY_CONTROL: ret = "CONTROL"; break;
 	case AW_KEY_META: ret = "META"; break;
 	default:
-		if (k >= 32 && k < 256) {
-			buf[0] = k;
-			ret = buf;
-		}
+		if (k >= 32 && k < 127)
+			sprintf(buf, "%c", k);
 		else
-			ret = "unknown";
+			sprintf(buf, "0x%x", k);
+		ret = buf;
 	}
 	return ret;
 }
@@ -42,6 +41,9 @@ static aw * processEvents(aw * w) {
 	case AW_EVENT_RESIZE:
 		resize(w, awe->u.resize.w, awe->u.resize.h);
 		Log("Resized to %d %d", awe->u.resize.w, awe->u.resize.h); 
+		break;
+	case AW_EVENT_UNICODE:
+		Log("Unicode: %s", keyName(awe->u.unicode.which));
 		break;
 	case AW_EVENT_DOWN:
 		if (awe->u.down.which == 'f') {
@@ -65,7 +67,7 @@ static aw * processEvents(aw * w) {
 		Log("Down: %s", keyName(awe->u.down.which));
 		break;
 	case AW_EVENT_UP:
-		Log("Up: %s", keyName(awe->u.down.which));
+		Log("Up: %s", keyName(awe->u.up.which));
 		break;
 	case AW_EVENT_MOTION:
 		Log("Motion: %d,%d", awe->u.motion.x, awe->u.motion.y); 
@@ -75,6 +77,8 @@ static aw * processEvents(aw * w) {
 		g_exit = 1; 
 		break;
 	}
+	if (awPressed(w, 'a'))
+		Log("a pressed");
 	return w;
 }
 
