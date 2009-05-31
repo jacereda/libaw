@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2008, Jorge Acereda Maciá
+  Copyright (c) 2008-2009, Jorge Acereda Maciá
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without
