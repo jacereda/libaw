@@ -104,11 +104,11 @@ static aw * open(int x, int y, int width, int height, int fs, int bl) {
 	return w;
 }
 
-aw * awOpen(int x, int y, int w, int h) { 
+aw * awOpen(int x, int y, unsigned w, unsigned h) { 
 	return open(x, y, w, h, 0, 0);
 }
 
-aw * awOpenBorderless(int x, int y, int w, int h) { 
+aw * awOpenBorderless(int x, int y, unsigned w, unsigned h) { 
 	return open(x, y, w, h, 0, 1);
 }
 
