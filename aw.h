@@ -42,16 +42,27 @@ enum {
 };
 
 enum {
-	AW_KEY_NONE = 14,
+	AW_KEY_NONE = 0x40000000,
 	AW_KEY_MOUSEWHEELUP, 
 	AW_KEY_MOUSEWHEELDOWN,
 	AW_KEY_MOUSELEFT,
-	AW_KEY_MOUSEMIDDLE,
 	AW_KEY_MOUSERIGHT,
+	AW_KEY_MOUSEMIDDLE,
 	AW_KEY_SHIFT,
 	AW_KEY_ALT,
 	AW_KEY_CONTROL,
 	AW_KEY_META,
+	AW_KEY_CURSORUP,
+	AW_KEY_CURSORDOWN,
+	AW_KEY_CURSORLEFT,
+	AW_KEY_CURSORRIGHT,
+	AW_KEY_PAGEUP,
+	AW_KEY_PAGEDOWN,
+	AW_KEY_HOME,
+	AW_KEY_END,
+	AW_KEY_MAX,
+	AW_KEY_BACKSPACE = 8,
+	AW_KEY_RETURN = 10,
 };
 
 typedef struct _awEvent {
@@ -75,12 +86,12 @@ typedef struct _awEvent {
 typedef struct _aw aw;
 typedef struct _ac ac;
 
-EXPORTED int awInit();
-EXPORTED void awEnd();
+EXPORTED int awInit(void);
+EXPORTED void awEnd(void);
 EXPORTED aw * awOpen(int x, int y, unsigned w, unsigned h);
 EXPORTED aw * awOpenBorderless(int x, int y, unsigned w, unsigned h);
-EXPORTED aw * awOpenFullscreen();
-EXPORTED aw * awOpenMaximized();
+EXPORTED aw * awOpenFullscreen(void);
+EXPORTED aw * awOpenMaximized(void);
 EXPORTED void awSetTitle(aw *, const char *);
 EXPORTED void awClose(aw *);
 EXPORTED void awSwapBuffers(aw *);

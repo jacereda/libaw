@@ -236,9 +236,28 @@ static int mapButton(int button) {
 	return which;
 }
 
-static int translateModifiers(int k) {
+static unsigned uc2aw(unsigned k) {
 	int ret = k;
 	switch (k) {
+	case 0xd: ret = AW_KEY_RETURN; break;
+	case 8: ret = AW_KEY_BACKSPACE; break;
+	}
+	return ret;
+}
+
+static unsigned key2aw(unsigned k) {
+	int ret = k;
+	switch (k) {
+	case XK_Home: ret = AW_KEY_HOME; break;
+	case XK_End: ret = AW_KEY_END; break;
+	case XK_Up: ret = AW_KEY_CURSORUP; break;
+	case XK_Down: ret = AW_KEY_CURSORDOWN; break;
+	case XK_Left: ret = AW_KEY_CURSORLEFT; break;
+	case XK_Right: ret = AW_KEY_CURSORRIGHT; break;
+	case XK_Page_Up: ret = AW_KEY_PAGEUP; break;
+	case XK_Page_Down: ret = AW_KEY_PAGEDOWN; break;
+	case XK_Return: ret = AW_KEY_RETURN; break;
+	case XK_BackSpace: ret = AW_KEY_BACKSPACE; break;
 	case XK_Shift_L:
 	case XK_Shift_R: ret = AW_KEY_SHIFT; break;
 	case XK_Control_L:
@@ -254,7 +273,7 @@ static int translateModifiers(int k) {
 }
 
 static int mapKey(KeyCode keycode) {
-	return translateModifiers(XKeycodeToKeysym(g_dpy, keycode, 0));
+	return key2aw(XKeycodeToKeysym(g_dpy, keycode, 0));
 }
 
 static void configure(aw * w, int x, int y, int width, int height) {
@@ -304,10 +323,11 @@ static void handle(aw * w, XEvent * e) {
 						&st);
 			if (st == XLookupKeySym || st == XLookupBoth) 
 				got(w, AW_EVENT_DOWN, 
-				    translateModifiers(ks), 0);
+				    key2aw(ks), 0);
 			if (st == XLookupChars || st == XLookupBoth) 
 				for (i = 0; i < n; i++)
-					got(w, AW_EVENT_UNICODE, buf[i], 0);
+					got(w, AW_EVENT_UNICODE, 
+					    uc2aw(buf[i]), 0);
 		}
 		break;
 	case KeyRelease:
@@ -334,21 +354,22 @@ void awosPollEvent(aw * w) {
 
 int awosSetSwapInterval(aw * w, int interval) {
 	return 0 == glXSwapIntervalSGI(interval);
+//	return 1;
 }
 
 ac * acosNew(ac * share) {
 	XVisualInfo * vinfo = chooseVisual(g_dpy, g_screen);
 	GLXContext ctx;
 	ac * c = 0;
-	if (vinfo)
+	if (vinfo) {
 		ctx = glXCreateContext(g_dpy, vinfo, 
 				       share? share->ctx : 0, True);
+		XFree(vinfo);
+	}
 	if (ctx)
 		c = calloc(1, sizeof(*c));
 	if (c)
 		c->ctx = ctx;
-	if (vinfo) 
-		XFree(vinfo);
 	return c;
 }
 

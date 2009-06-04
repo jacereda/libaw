@@ -97,20 +97,42 @@ static void resetPool() {
 	return NO;
 }
 
+static unsigned uc2aw(unsigned x) {
+	unsigned ret = x;
+	switch (x) {
+	case 0x7f: ret = AW_KEY_BACKSPACE; break;
+	case 0xa: ret = AW_KEY_RETURN; break;
+	}
+	return ret;
+}
+
+static unsigned key2aw(unsigned x) {
+	unsigned ret = x;
+	switch (x) {
+	case NSUpArrowFunctionKey: ret = AW_KEY_CURSORUP; break;
+	case NSDownArrowFunctionKey: ret = AW_KEY_CURSORDOWN; break;
+	case NSLeftArrowFunctionKey: ret = AW_KEY_CURSORLEFT; break;
+	case NSRightArrowFunctionKey: ret = AW_KEY_CURSORRIGHT; break;
+	case NSHomeFunctionKey: ret = AW_KEY_HOME; break;
+	case NSEndFunctionKey: ret = AW_KEY_END; break;
+	case NSPageUpFunctionKey: ret = AW_KEY_PAGEUP; break;
+	case NSPageDownFunctionKey: ret = AW_KEY_PAGEDOWN; break;
+	case 0x7f: ret = AW_KEY_BACKSPACE; break;
+	case 0xd: ret = AW_KEY_RETURN; break;
+	}
+	return ret;
+}
+
 - (void) handleKeyEvent: (NSEvent *)ev mode: (int) mode {
 	NSString * s = [[ev charactersIgnoringModifiers] lowercaseString];
 	int sl = [s length];
 	int i;
 	for (i = 0; i < sl; i++)
-		got(_w, mode, [s characterAtIndex: i], 0);
+		got(_w, mode, key2aw([s characterAtIndex: i]), 0);
 }
 
 - (void) keyUp: (NSEvent *)ev {
 	[self handleKeyEvent: ev mode: AW_EVENT_UP];
-}
-
-
-- (void)deleteBackward:(id)sender {
 }
 
 - (void) keyDown: (NSEvent *)ev {
@@ -118,11 +140,15 @@ static void resetPool() {
 	[self interpretKeyEvents: [NSArray arrayWithObject: ev]];
 }
 
+- (void)deleteBackward:(id)sender {
+	got(_w, AW_EVENT_UNICODE, AW_KEY_BACKSPACE, 0);
+}
+
 - (void)insertText:(id)s {
 	int sl = [s length];
 	int i;
 	for (i = 0; i < sl; i++)
-		got(_w, AW_EVENT_UNICODE, [s characterAtIndex: i], 0);
+		got(_w, AW_EVENT_UNICODE, uc2aw([s characterAtIndex: i]), 0);
 }
 
 - (unsigned) keyFor: (unsigned)mask {
@@ -168,6 +194,29 @@ static void resetPool() {
 
 - (void) mouseUp: (NSEvent*)ev {
 	[self handleMouseEvent: ev mode: AW_EVENT_UP];
+}
+
+- (void) rightMouseDown: (NSEvent*)ev {
+	[self handleMouseEvent: ev mode: AW_EVENT_DOWN];
+}
+
+- (void) rightMouseUp: (NSEvent*)ev {
+	[self handleMouseEvent: ev mode: AW_EVENT_UP];
+}
+
+- (void) otherMouseDown: (NSEvent*)ev {
+	[self handleMouseEvent: ev mode: AW_EVENT_DOWN];
+}
+
+- (void) otherMouseUp: (NSEvent*)ev {
+	[self handleMouseEvent: ev mode: AW_EVENT_UP];
+}
+
+- (void)scrollWheel:(NSEvent *)ev {
+	unsigned k = [ev deltaY] > 0? 
+		AW_KEY_MOUSEWHEELUP : AW_KEY_MOUSEWHEELDOWN;
+	got(_w, AW_EVENT_DOWN, k, 0);
+	got(_w, AW_EVENT_UP, k, 0);
 }
 
 - (void) handleMotion: (NSEvent *)ev {

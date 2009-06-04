@@ -6,7 +6,7 @@ static int g_exit = 0;
 static const char * g_progname;
 
 static void resize(aw * w, int ww, int wh) {
-	char buf[256];
+	char buf[256] = {0};
 	snprintf(buf, sizeof(buf), "%s %dx%d", g_progname, ww, wh);
 	awSetTitle(w, buf);
 }
@@ -25,11 +25,21 @@ static const char * keyName(int k) {
 	case AW_KEY_ALT: ret = "ALT"; break;
 	case AW_KEY_CONTROL: ret = "CONTROL"; break;
 	case AW_KEY_META: ret = "META"; break;
+	case AW_KEY_CURSORUP: ret = "CURSORUP"; break;
+	case AW_KEY_CURSORDOWN: ret = "CURSORDOWN"; break;
+	case AW_KEY_CURSORLEFT: ret = "CURSORLEFT"; break;
+	case AW_KEY_CURSORRIGHT: ret = "CURSORRIGHT"; break;
+	case AW_KEY_PAGEUP: ret = "PAGEUP"; break;
+	case AW_KEY_PAGEDOWN: ret = "PAGEDOWN"; break;
+	case AW_KEY_HOME: ret = "HOME"; break;
+	case AW_KEY_END: ret = "END"; break;
+	case AW_KEY_RETURN: ret = "RETURN"; break;
+	case AW_KEY_BACKSPACE: ret = "BACKSPACE"; break;
 	default:
 		if (k >= 32 && k < 127)
-			sprintf(buf, "%c", k);
+			snprintf(buf, sizeof(buf), "%c", k);
 		else
-			sprintf(buf, "0x%x", k);
+			snprintf(buf, sizeof(buf), "0x%x", k);
 		ret = buf;
 	}
 	return ret;
