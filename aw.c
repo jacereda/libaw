@@ -161,6 +161,32 @@ void awMakeCurrent(aw * w, ac * c) {
 	}
 }
 
+static unsigned char * bitarrayFor(awHeader * hdr, unsigned * k) {
+	if (*k < MAX_PRESSED)
+		return hdr->pressed;
+	*k -= AW_KEY_NONE;
+	if (*k < MAX_SPRESSED)
+		return hdr->spressed;
+	return 0;
+}
+
+static int pressed(awHeader * hdr, unsigned k) {
+	unsigned char * ba = bitarrayFor(hdr, &k);
+	return ba && bittest(ba, k);
+}
+
+static void press(awHeader * hdr, unsigned k) {
+	unsigned char * ba = bitarrayFor(hdr, &k);
+	if (ba)
+		bitset(ba, k);
+}
+
+static void release(awHeader * hdr, unsigned k) {
+	unsigned char * ba = bitarrayFor(hdr, &k);
+	if (ba)
+		bitclear(ba, k);	
+}
+
 const awEvent * awNextEvent(aw * w) {
 	const awEvent * awe = 0;
 	static const awEvent none = {AW_EVENT_NONE};
@@ -183,16 +209,13 @@ const awEvent * awNextEvent(aw * w) {
 		hdr->my = awe->u.motion.y;
 		break;
 	case AW_EVENT_DOWN:
-		if (awe->u.down.which < 256) {
-			if (bittest(hdr->pressed, awe->u.down.which))
-				awe = &none;
-			else
-				bitset(hdr->pressed, awe->u.down.which);
-		}
+		if (pressed(hdr, awe->u.down.which))
+			awe = &none;
+		else
+			press(hdr, awe->u.down.which);
 		break;
 	case AW_EVENT_UP:
-		if (awe->u.up.which < 256)
-			bitclear(hdr->pressed, awe->u.up.which);
+		release(hdr, awe->u.up.which);
 		break;
 	default: break;
 	}
@@ -219,9 +242,10 @@ int awMouseY(aw * w) {
 	return hdr->my;
 }
 
-int awPressed(aw * w, unsigned key) {
+int awPressed(aw * w, unsigned k) {
 	awHeader * hdr = (awHeader*)w;
-	return key < 256 && bittest(hdr->pressed, key);
+	unsigned char * ba = bitarrayFor(hdr, &k);
+	return ba && bittest(ba, k);
 }
 
 void got(aw * w, int type, int p1, int p2) {

@@ -1,13 +1,17 @@
 
 #define MAX_EVENTS 16
 
+#define MAX_PRESSED 256
+#define MAX_SPRESSED 64
+
 typedef struct awHeader {
 	ac * ctx;
 	unsigned head, tail;
 	unsigned width, height;
 	int mx, my;
 	int fullscreen;
-	unsigned char pressed[256/8];
+	unsigned char pressed[MAX_PRESSED/8];
+	unsigned char spressed[MAX_SPRESSED/8];
 	awEvent ev[MAX_EVENTS];
 } awHeader;
 
