@@ -46,6 +46,8 @@ static Atom g_del;
 static int g_screen;
 static XIM g_xim = 0;
 
+static int (*g_SwapInterval)(int);
+
 struct _aw {
 	awHeader hdr;
 	Window win;
@@ -130,6 +132,11 @@ int awosInit() {
 		findBorderSize();
 		hasExtensions = 0 != glXQueryExtension(g_dpy, 0, 0);
 	}
+	if (hasExtensions)
+		g_SwapInterval = (int(*)(int))glXGetProcAddress(
+			"glXSwapIntervalSGI");
+	if (!g_SwapInterval)
+		report("no glXSwapIntervalSGI()");
 	if (g_dpy)
 		g_xim = XOpenIM (g_dpy, NULL, NULL, NULL);
 	return hasExtensions && g_xim;
@@ -353,8 +360,7 @@ void awosPollEvent(aw * w) {
 }
 
 int awosSetSwapInterval(aw * w, int interval) {
-	return 0 == glXSwapIntervalSGI(interval);
-//	return 1;
+	return !g_SwapInterval || 0 == g_SwapInterval(interval);
 }
 
 ac * acosNew(ac * share) {
