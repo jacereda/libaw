@@ -6,13 +6,13 @@ backends = []
 tools = 0
 
 target = ARGUMENTS.get('target', 'native')
-if target == 'linux2':
-	target = 'linux'
+if target == 'native':
+	target = sys.platform
 else:
 	tools = 'crossmingw'
 	toolpath = '.'
-if target == 'native':
-	target = sys.platform
+if target == 'linux2':
+	target = 'linux'
 
 backends = {
 	'darwin' : ['cocoa', 'x11'],
