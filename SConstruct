@@ -6,6 +6,8 @@ backends = []
 tools = 0
 
 target = ARGUMENTS.get('target', 'native')
+if target == 'linux2':
+	target = 'linux'
 if target == 'native':
 	target = sys.platform
 else:
