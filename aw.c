@@ -144,7 +144,7 @@ void awSwapBuffers(aw * w) {
 
 static void setInterval(aw * w, ac * c) {
 	acHeader * hdr = (acHeader*)c;
-	if (!awosSetSwapInterval(w, hdr->interval)) 
+	if (hdr->interval && !awosSetSwapInterval(w, hdr->interval)) 
 		report("Unable to set swap interval");
 }
 
