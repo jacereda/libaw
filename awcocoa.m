@@ -285,6 +285,7 @@ static aw * openwin(int x, int y, int width, int height, unsigned style) {
 			      defer:NO];
 	frm = [Window contentRectForFrameRect: [win frame] styleMask: style];
 	view = [[View alloc] initWithFrame: frm];
+	[view setAutoresizesSubviews:YES];
 
 	[win setContentView: view];
 	[win setDelegate: view];
