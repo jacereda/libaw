@@ -82,6 +82,9 @@ static void resetPool() {
 
 @implementation View
 
+- (void)setConstrainedFrameSize:(NSSize)desiredSize{}
+
+
 - (BOOL) acceptsFirstResponder {
         return YES;
 }
