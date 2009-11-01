@@ -54,7 +54,7 @@
 }
 @end
 
-@interface View : NSTextView {
+@interface View : NSTextView<NSWindowDelegate> {
 unsigned _prevflags;
 @public
 aw * _w;
@@ -361,7 +361,7 @@ void awosPollEvent(aw * w) {
 }
 
 int awosSetSwapInterval(aw * w, int i) {
-        long param = i;
+        GLint param = i;
 	[w->hdr.ctx->ctx setValues:&param forParameter:NSOpenGLCPSwapInterval];
 	return 1;
 }
