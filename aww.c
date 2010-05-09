@@ -46,8 +46,6 @@
 #define MAPVK_VK_TO_CHAR 2
 #endif
 
-#define MAX_WINDOWS 256
-
 struct _aw {
         awHeader hdr;
         HWND win;
