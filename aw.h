@@ -30,6 +30,10 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include <inttypes.h>
+typedef intptr_t awcell;
+typedef uintptr_t awucell;
+
 enum {
 	AW_EVENT_UNKNOWN,
 	AW_EVENT_NONE,
@@ -66,14 +70,14 @@ enum {
 };
 
 typedef struct _awEvent {
-	int type;
+	awcell type;
 	union {
-		int p[2];
-		struct _resize { unsigned w, h; } resize;
-		struct _down { unsigned which; } down;
-		struct _up { unsigned which; } up;
-		struct _motion { int x, y; } motion;
-		struct _unicode { unsigned which; } unicode;
+		awcell p[2];
+		struct _resize { awucell w, h; } resize;
+		struct _down { awucell which; } down;
+		struct _up { awucell which; } up;
+		struct _motion { awcell x, y; } motion;
+		struct _unicode { awucell which; } unicode;
 	} u;
 } awEvent;
 
