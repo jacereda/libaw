@@ -15,7 +15,7 @@ if target == 'linux2':
 	target = 'linux'
 
 backends = {
-	'darwin' : ['cocoa', 'x11'],
+	'darwin' : ['x11', 'cocoa'],
 	'linux' : ['x11'],
 	'win32' : ['nt'],
 	}[target]
@@ -30,6 +30,50 @@ class Env(Environment):
 			self.Append(LIBS=['GL', 'GLU', 'X11'])
 		if self['BACKEND'] == 'nt':
 			self.Append(LIBS=['opengl32', 'gdi32', 'glu32'])
+
+	def _SetCPPFlags(self):
+		self.Append(CPPPATH=['include'])
+		self.Append(LIBPATH='.') 
+
+	def ForProgram(self):
+		ret = self.Clone()
+		ret.UsesOpenGL()
+		ret._SetCPPFlags()
+		ret.Append(LIBS=['aw'])
+		return ret
+
+	def Prg(self, name, sources):
+		self.Default(self.Program(name, sources))
+
+	def CompileAs32Bits(self):
+		self.Append(CCFLAGS=' -m32 ')
+		self.Append(LINKFLAGS=' -m32 ')
+		
+	def ForPlugin(self):
+		ret = self.Clone()
+		ret.UsesOpenGL()
+		ret.CompileAs32Bits()
+		ret._SetCPPFlags()
+		ret.Append(CPPDEFINES=['AWPLUGIN'])
+		ret.Append(LIBS=['awplugin'])
+		ret.Append(FRAMEWORKS=['WebKit', 'QuartzCore'])
+		ret['SHLINKFLAGS'] = '$LINKFLAGS -bundle -flat_namespace'
+		ret['SHLIBPREFIX'] = ''
+		ret['SHLIBSUFFIX'] = ''
+		return ret
+
+	def Plg(self, name, sources):
+		res = self.Command(
+			name + '.rsrc', name + '.r', 
+			'/Developer/Tools/Rez -o $TARGET -useDF $SOURCE')
+		home = os.environ['HOME'] + '/'
+		target = home + 'Library/Internet Plug-Ins/awplugin.webplugin/'
+		plg = self.SharedLibrary(name, sources)
+		self.Default(self.Install(target + 'Contents/', 
+					      'Info.plist'))
+		self.Default(self.Install(target + 'Contents/MacOS/', plg))
+		self.Default(self.Install(target + 'Contents/Resources/', 
+					      res))
 
 confCCFLAGS = {
 	'debug': '-g -Wall -fvisibility=hidden',

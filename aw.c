@@ -36,6 +36,20 @@
 #include "aw.h"
 #include "awos.h"
 
+
+#if defined(AWPLUGIN)
+void report(const char *fmt, ...) {
+	FILE *out = fopen("/tmp/aw.log", "a");
+	va_list ap;
+	va_start(ap, fmt);
+	if(out) {
+		vfprintf(out, fmt, ap);
+		fputs("\n", out);
+		fclose(out);
+	}
+	va_end(ap);
+}
+#else
 void report(const char * fmt, ...) {
         va_list ap;
         va_start(ap, fmt);
@@ -45,6 +59,7 @@ void report(const char * fmt, ...) {
         fprintf(stderr, "\n");
         fflush(stderr);
 }
+#endif
 
 static void bitset(unsigned char * b, unsigned bit) {
         b[bit>>3] |= 1 << (bit & 7);
@@ -275,6 +290,139 @@ void acDel(ac * c) {
 void acSetInterval(ac * c, int interval) {
         acHeader * hdr = (acHeader*)c;
         hdr->interval = interval;
+}
+
+const char * awKeyName(unsigned k) {
+	const char * ret = 0;
+	static char buf[16] = {0};
+	switch (k) {
+	case AW_KEY_NONE: ret = "NONE"; break;
+	case AW_KEY_MOUSEWHEELUP: ret = "MOUSEWHEELUP"; break;
+	case AW_KEY_MOUSEWHEELDOWN: ret = "MOUSEWHEELDOWN"; break;
+	case AW_KEY_MOUSELEFT: ret = "MOUSELEFT"; break;
+	case AW_KEY_MOUSEMIDDLE: ret = "MOUSEMIDDLE"; break;
+	case AW_KEY_MOUSERIGHT: ret = "MOUSERIGHT"; break;
+
+	case AW_KEY_A: ret = "AW_KEY_A"; break;
+	case AW_KEY_S: ret = "AW_KEY_S"; break;
+	case AW_KEY_D: ret = "AW_KEY_D"; break;
+	case AW_KEY_F: ret = "AW_KEY_F"; break;
+	case AW_KEY_H: ret = "AW_KEY_H"; break;
+	case AW_KEY_G: ret = "AW_KEY_G"; break;
+	case AW_KEY_Z: ret = "AW_KEY_Z"; break;
+	case AW_KEY_X: ret = "AW_KEY_X"; break;
+	case AW_KEY_C: ret = "AW_KEY_C"; break;
+	case AW_KEY_V: ret = "AW_KEY_V"; break;
+	case AW_KEY_B: ret = "AW_KEY_B"; break;
+	case AW_KEY_Q: ret = "AW_KEY_Q"; break;
+	case AW_KEY_W: ret = "AW_KEY_W"; break;
+	case AW_KEY_E: ret = "AW_KEY_E"; break;
+	case AW_KEY_R: ret = "AW_KEY_R"; break;
+	case AW_KEY_Y: ret = "AW_KEY_Y"; break;
+	case AW_KEY_T: ret = "AW_KEY_T"; break;
+	case AW_KEY_1: ret = "AW_KEY_1"; break;
+	case AW_KEY_2: ret = "AW_KEY_2"; break;
+	case AW_KEY_3: ret = "AW_KEY_3"; break;
+	case AW_KEY_4: ret = "AW_KEY_4"; break;
+	case AW_KEY_6: ret = "AW_KEY_6"; break;
+	case AW_KEY_5: ret = "AW_KEY_5"; break;
+	case AW_KEY_EQUAL: ret = "AW_KEY_EQUAL"; break;
+	case AW_KEY_9: ret = "AW_KEY_9"; break;
+	case AW_KEY_7: ret = "AW_KEY_7"; break;
+	case AW_KEY_MINUS: ret = "AW_KEY_MINUS"; break;
+	case AW_KEY_8: ret = "AW_KEY_8"; break;
+	case AW_KEY_0: ret = "AW_KEY_0"; break;
+	case AW_KEY_RIGHTBRACKET: ret = "AW_KEY_RIGHTBRACKET"; break;
+	case AW_KEY_O: ret = "AW_KEY_O"; break;
+	case AW_KEY_U: ret = "AW_KEY_U"; break;
+	case AW_KEY_LEFTBRACKET: ret = "AW_KEY_LEFTBRACKET"; break;
+	case AW_KEY_I: ret = "AW_KEY_I"; break;
+	case AW_KEY_P: ret = "AW_KEY_P"; break;
+	case AW_KEY_L: ret = "AW_KEY_L"; break;
+	case AW_KEY_J: ret = "AW_KEY_J"; break;
+	case AW_KEY_QUOTE: ret = "AW_KEY_QUOTE"; break;
+	case AW_KEY_K: ret = "AW_KEY_K"; break;
+	case AW_KEY_SEMICOLON: ret = "AW_KEY_SEMICOLON"; break;
+	case AW_KEY_BACKSLASH: ret = "AW_KEY_BACKSLASH"; break;
+	case AW_KEY_COMMA: ret = "AW_KEY_COMMA"; break;
+	case AW_KEY_SLASH: ret = "AW_KEY_SLASH"; break;
+	case AW_KEY_N: ret = "AW_KEY_N"; break;
+	case AW_KEY_M: ret = "AW_KEY_M"; break;
+	case AW_KEY_PERIOD: ret = "AW_KEY_PERIOD"; break;
+	case AW_KEY_GRAVE: ret = "AW_KEY_GRAVE"; break;
+	case AW_KEY_KEYPADDECIMAL: ret = "AW_KEY_KEYPADDECIMAL"; break;
+	case AW_KEY_KEYPADMULTIPLY: ret = "AW_KEY_KEYPADMULTIPLY"; break;
+	case AW_KEY_KEYPADPLUS: ret = "AW_KEY_KEYPADPLUS"; break;
+	case AW_KEY_KEYPADCLEAR: ret = "AW_KEY_KEYPADCLEAR"; break;
+	case AW_KEY_KEYPADDIVIDE: ret = "AW_KEY_KEYPADDIVIDE"; break;
+	case AW_KEY_KEYPADENTER: ret = "AW_KEY_KEYPADENTER"; break;
+	case AW_KEY_KEYPADMINUS: ret = "AW_KEY_KEYPADMINUS"; break;
+	case AW_KEY_KEYPADEQUALS: ret = "AW_KEY_KEYPADEQUALS"; break;
+	case AW_KEY_KEYPAD0: ret = "AW_KEY_KEYPAD0"; break;
+	case AW_KEY_KEYPAD1: ret = "AW_KEY_KEYPAD1"; break;
+	case AW_KEY_KEYPAD2: ret = "AW_KEY_KEYPAD2"; break;
+	case AW_KEY_KEYPAD3: ret = "AW_KEY_KEYPAD3"; break;
+	case AW_KEY_KEYPAD4: ret = "AW_KEY_KEYPAD4"; break;
+	case AW_KEY_KEYPAD5: ret = "AW_KEY_KEYPAD5"; break;
+	case AW_KEY_KEYPAD6: ret = "AW_KEY_KEYPAD6"; break;
+	case AW_KEY_KEYPAD7: ret = "AW_KEY_KEYPAD7"; break;
+	case AW_KEY_KEYPAD8: ret = "AW_KEY_KEYPAD8"; break;
+	case AW_KEY_KEYPAD9: ret = "AW_KEY_KEYPAD9"; break;
+	case AW_KEY_RETURN: ret = "AW_KEY_RETURN"; break;
+	case AW_KEY_TAB: ret = "AW_KEY_TAB"; break;
+	case AW_KEY_SPACE: ret = "AW_KEY_SPACE"; break;
+	case AW_KEY_DELETE: ret = "AW_KEY_DELETE"; break;
+	case AW_KEY_ESCAPE: ret = "AW_KEY_ESCAPE"; break;
+	case AW_KEY_COMMAND: ret = "AW_KEY_COMMAND"; break;
+	case AW_KEY_SHIFT: ret = "AW_KEY_SHIFT"; break;
+	case AW_KEY_CAPSLOCK: ret = "AW_KEY_CAPSLOCK"; break;
+	case AW_KEY_OPTION: ret = "AW_KEY_OPTION"; break;
+	case AW_KEY_CONTROL: ret = "AW_KEY_CONTROL"; break;
+	case AW_KEY_RIGHTSHIFT: ret = "AW_KEY_RIGHTSHIFT"; break;
+	case AW_KEY_RIGHTOPTION: ret = "AW_KEY_RIGHTOPTION"; break;
+	case AW_KEY_RIGHTCONTROL: ret = "AW_KEY_RIGHTCONTROL"; break;
+	case AW_KEY_FUNCTION: ret = "AW_KEY_FUNCTION"; break;
+	case AW_KEY_F17: ret = "AW_KEY_F17"; break;
+	case AW_KEY_VOLUMEUP: ret = "AW_KEY_VOLUMEUP"; break;
+	case AW_KEY_VOLUMEDOWN: ret = "AW_KEY_VOLUMEDOWN"; break;
+	case AW_KEY_MUTE: ret = "AW_KEY_MUTE"; break;
+	case AW_KEY_F18: ret = "AW_KEY_F18"; break;
+	case AW_KEY_F19: ret = "AW_KEY_F19"; break;
+	case AW_KEY_F20: ret = "AW_KEY_F20"; break;
+	case AW_KEY_F5: ret = "AW_KEY_F5"; break;
+	case AW_KEY_F6: ret = "AW_KEY_F6"; break;
+	case AW_KEY_F7: ret = "AW_KEY_F7"; break;
+	case AW_KEY_F3: ret = "AW_KEY_F3"; break;
+	case AW_KEY_F8: ret = "AW_KEY_F8"; break;
+	case AW_KEY_F9: ret = "AW_KEY_F9"; break;
+	case AW_KEY_F11: ret = "AW_KEY_F11"; break;
+	case AW_KEY_F13: ret = "AW_KEY_F13"; break;
+	case AW_KEY_F16: ret = "AW_KEY_F16"; break;
+	case AW_KEY_F14: ret = "AW_KEY_F14"; break;
+	case AW_KEY_F10: ret = "AW_KEY_F10"; break;
+	case AW_KEY_F12: ret = "AW_KEY_F12"; break;
+	case AW_KEY_F15: ret = "AW_KEY_F15"; break;
+	case AW_KEY_HELP: ret = "AW_KEY_HELP"; break;
+	case AW_KEY_HOME: ret = "AW_KEY_HOME"; break;
+	case AW_KEY_PAGEUP: ret = "AW_KEY_PAGEUP"; break;
+	case AW_KEY_FORWARDDELETE: ret = "AW_KEY_FORWARDDELETE"; break;
+	case AW_KEY_F4: ret = "AW_KEY_F4"; break;
+	case AW_KEY_END: ret = "AW_KEY_END"; break;
+	case AW_KEY_F2: ret = "AW_KEY_F2"; break;
+	case AW_KEY_PAGEDOWN: ret = "AW_KEY_PAGEDOWN"; break;
+	case AW_KEY_F1: ret = "AW_KEY_F1"; break;
+	case AW_KEY_LEFTARROW: ret = "AW_KEY_LEFTARROW"; break;
+	case AW_KEY_RIGHTARROW: ret = "AW_KEY_RIGHTARROW"; break;
+	case AW_KEY_DOWNARROW: ret = "AW_KEY_DOWNARROW"; break;
+	case AW_KEY_UPARROW: ret = "AW_KEY_UPARROW"; break;
+	default:
+		if (k >= 32 && k < 127)
+			snprintf(buf, sizeof(buf), "%c", k);
+		else
+			snprintf(buf, sizeof(buf), "0x%x", k);
+		ret = buf;
+	}
+	return ret;
 }
 
 /* 

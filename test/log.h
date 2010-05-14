@@ -1,5 +1,9 @@
 #include <stdarg.h>
 #include <stdio.h>
+#if defined AWPLUGIN
+extern report(const char * fmt, ...);
+#define Log report
+#else
 static void Log(const char * fmt, ...) {
 	va_list ap;
 	va_start(ap, fmt);
@@ -8,6 +12,7 @@ static void Log(const char * fmt, ...) {
 	fflush(stdout);
 	va_end(ap);
 }
+#endif
 
 /* 
    Local variables: **

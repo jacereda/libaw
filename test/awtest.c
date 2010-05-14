@@ -5,44 +5,15 @@
 static int g_exit = 0;
 static const char * g_progname;
 
+// To test the browser plugin
+EXPORTED void hello() {
+	Log("Hello World!");
+}
+
 static void resize(aw * w, int ww, int wh) {
 	char buf[256] = {0};
 	snprintf(buf, sizeof(buf), "%s %dx%d", g_progname, ww, wh);
 	awSetTitle(w, buf);
-}
-
-static const char * keyName(int k) {
-	const char * ret = 0;
-	static char buf[16] = {0};
-	switch (k) {
-	case AW_KEY_NONE: ret = "NONE"; break;
-	case AW_KEY_MOUSEWHEELUP: ret = "MOUSEWHEELUP"; break;
-	case AW_KEY_MOUSEWHEELDOWN: ret = "MOUSEWHEELDOWN"; break;
-	case AW_KEY_MOUSELEFT: ret = "MOUSELEFT"; break;
-	case AW_KEY_MOUSEMIDDLE: ret = "MOUSEMIDDLE"; break;
-	case AW_KEY_MOUSERIGHT: ret = "MOUSERIGHT"; break;
-	case AW_KEY_SHIFT: ret = "SHIFT"; break;
-	case AW_KEY_ALT: ret = "ALT"; break;
-	case AW_KEY_CONTROL: ret = "CONTROL"; break;
-	case AW_KEY_META: ret = "META"; break;
-	case AW_KEY_CURSORUP: ret = "CURSORUP"; break;
-	case AW_KEY_CURSORDOWN: ret = "CURSORDOWN"; break;
-	case AW_KEY_CURSORLEFT: ret = "CURSORLEFT"; break;
-	case AW_KEY_CURSORRIGHT: ret = "CURSORRIGHT"; break;
-	case AW_KEY_PAGEUP: ret = "PAGEUP"; break;
-	case AW_KEY_PAGEDOWN: ret = "PAGEDOWN"; break;
-	case AW_KEY_HOME: ret = "HOME"; break;
-	case AW_KEY_END: ret = "END"; break;
-	case AW_KEY_RETURN: ret = "RETURN"; break;
-	case AW_KEY_BACKSPACE: ret = "BACKSPACE"; break;
-	default:
-		if (k >= 32 && k < 127)
-			snprintf(buf, sizeof(buf), "%c", k);
-		else
-			snprintf(buf, sizeof(buf), "0x%x", k);
-		ret = buf;
-	}
-	return ret;
 }
 
 static aw * processEvents(aw * w) {
@@ -53,7 +24,7 @@ static aw * processEvents(aw * w) {
 		Log("Resized to %d %d", awe->u.resize.w, awe->u.resize.h); 
 		break;
 	case AW_EVENT_UNICODE:
-		Log("Unicode: %s", keyName(awe->u.unicode.which));
+		Log("Unicode: %s", awKeyName(awe->u.unicode.which));
 		break;
 	case AW_EVENT_DOWN:
 		if (awe->u.down.which == 'f') {
@@ -74,10 +45,10 @@ static aw * processEvents(aw * w) {
 		}
 		if (awe->u.down.which == 'q') 
 			g_exit = 1;
-		Log("Down: %s", keyName(awe->u.down.which));
+		Log("Down: %s", awKeyName(awe->u.down.which));
 		break;
 	case AW_EVENT_UP:
-		Log("Up: %s", keyName(awe->u.up.which));
+		Log("Up: %s", awKeyName(awe->u.up.which));
 		break;
 	case AW_EVENT_MOTION:
 		Log("Motion: %d,%d", awe->u.motion.x, awe->u.motion.y); 
@@ -87,13 +58,14 @@ static aw * processEvents(aw * w) {
 		g_exit = 1; 
 		break;
 	}
-	if (awPressed(w, 'a'))
+	if (awPressed(w, AW_KEY_A))
 		Log("a pressed");
 	return w;
 }
 
 static void draw() {
-	glClearColor(0, 0, 1, 0);
+	static int i = 0;
+	glClearColor((i++ & 0xff) / 255.0, 0, 1, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -123,6 +95,9 @@ int main(int argc, char ** argv) {
 	awEnd();
 	return 0;
 }
+
+
+
 /* 
    Local variables: **
    c-file-style: "bsd" **
