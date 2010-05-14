@@ -100,38 +100,10 @@ static void resetPool() {
         return NO;
 }
 
-static unsigned uc2aw(unsigned x) {
-        unsigned ret = x;
-        switch (x) {
-        case 0x7f: ret = AW_KEY_BACKSPACE; break;
-        case 0xa: ret = AW_KEY_RETURN; break;
-        }
-        return ret;
-}
-
-static unsigned key2aw(unsigned x) {
-        unsigned ret = x;
-        switch (x) {
-        case NSUpArrowFunctionKey: ret = AW_KEY_CURSORUP; break;
-        case NSDownArrowFunctionKey: ret = AW_KEY_CURSORDOWN; break;
-        case NSLeftArrowFunctionKey: ret = AW_KEY_CURSORLEFT; break;
-        case NSRightArrowFunctionKey: ret = AW_KEY_CURSORRIGHT; break;
-        case NSHomeFunctionKey: ret = AW_KEY_HOME; break;
-        case NSEndFunctionKey: ret = AW_KEY_END; break;
-        case NSPageUpFunctionKey: ret = AW_KEY_PAGEUP; break;
-        case NSPageDownFunctionKey: ret = AW_KEY_PAGEDOWN; break;
-        case 0x7f: ret = AW_KEY_BACKSPACE; break;
-        case 0xd: ret = AW_KEY_RETURN; break;
-        }
-        return ret;
-}
+extern unsigned mapkeycode(unsigned);
 
 - (void) handleKeyEvent: (NSEvent *)ev mode: (int) mode {
-        NSString * s = [[ev charactersIgnoringModifiers] lowercaseString];
-        int sl = [s length];
-        int i;
-        for (i = 0; i < sl; i++)
-                got(_w, mode, key2aw([s characterAtIndex: i]), 0);
+        got(_w, mode, mapkeycode([ev keyCode]), 0);
 }
 
 - (void) keyUp: (NSEvent *)ev {
@@ -144,14 +116,14 @@ static unsigned key2aw(unsigned x) {
 }
 
 - (void)deleteBackward:(id)sender {
-        got(_w, AW_EVENT_UNICODE, AW_KEY_BACKSPACE, 0);
+        got(_w, AW_EVENT_UNICODE, AW_KEY_DELETE, 0);
 }
 
 - (void)insertText:(id)s {
         int sl = [s length];
         int i;
         for (i = 0; i < sl; i++)
-                got(_w, AW_EVENT_UNICODE, uc2aw([s characterAtIndex: i]), 0);
+                got(_w, AW_EVENT_UNICODE, [s characterAtIndex: i], 0);
 }
 
 - (unsigned) keyFor: (unsigned)mask {
@@ -159,8 +131,8 @@ static unsigned key2aw(unsigned x) {
         switch (mask) {
         case NSShiftKeyMask: ret = AW_KEY_SHIFT; break;
         case NSControlKeyMask: ret = AW_KEY_CONTROL; break;
-        case NSAlternateKeyMask: ret = AW_KEY_ALT; break;
-        case NSCommandKeyMask: ret = AW_KEY_META; break;
+        case NSAlternateKeyMask: ret = AW_KEY_OPTION; break;
+        case NSCommandKeyMask: ret = AW_KEY_COMMAND; break;
         default: assert(0);
         }
         return ret;
@@ -263,7 +235,7 @@ int awosInit() {
 int awosEnd() {
         [g_pool release];
         [NSApp release];
-        [g_apppool release];
+        //[g_apppool release];
         return 1;
 }
 
@@ -287,7 +259,7 @@ static aw * openwin(int x, int y, int width, int height, unsigned style) {
                               backing: NSBackingStoreBuffered
                               defer:NO];
         frm = [Window contentRectForFrameRect: [win frame] styleMask: style];
-        view = [[View alloc] initWithFrame: frm];
+        view = [[View alloc] initWithFrame: [[win contentView] frame]];
         [view setAutoresizesSubviews:YES];
 
         [win setContentView: view];
@@ -332,6 +304,7 @@ static NSEvent * nextEvent(Window * win) {
                            inMode: NSDefaultRunLoopMode 
                            dequeue: YES];
         [NSApp sendEvent: e];
+        [NSApp updateWindows];
         return e;
 }
 
