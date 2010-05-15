@@ -9,7 +9,7 @@ backend = {
 'nt': ['aww.c'],
 }[aw['BACKEND']]
 aw.Append(CPPDEFINES=['BUILDING_AW'])
-aw.SharedLibrary('aw', ['aw.c'] + backend)
+aw.Lib('aw', ['aw.c'] + backend)
 
 aw.Install('include/aw', ['aw.h', 'sysgl.h', 'sysglu.h'])
 awplugin = env.Clone()
@@ -18,7 +18,7 @@ awplugin.Append(CPPPATH=['include'])
 awplugin.Append(CPPDEFINES=['AWPLUGIN', 'HAVE_CONFIG_H'])
 awplugin.Append(CPPPATH=['pcl', 'pcl/include'])
 if aw['BACKEND'] == 'cocoa':
-    plg = awplugin.Library('awplugin', [
+    plg = awplugin.Lib('awplugin', [
         'awplugin.m', 
         'awmackeycodes.c',
         'aw.c', 
