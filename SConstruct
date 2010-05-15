@@ -8,6 +8,9 @@ tools = 0
 target = ARGUMENTS.get('target', 'native')
 if target == 'native':
 	target = sys.platform
+	if target == 'win32':
+		tools = 'mingw'
+		toolpath = None
 else:
 	tools = 'crossmingw'
 	toolpath = '.'
@@ -31,15 +34,18 @@ class Env(Environment):
 		if self['BACKEND'] == 'nt':
 			self.Append(LIBS=['opengl32', 'gdi32', 'glu32'])
 
+	def Lib(self, name, sources):
+		return self.Library(name, sources)
+
 	def _SetCPPFlags(self):
 		self.Append(CPPPATH=['include'])
 		self.Append(LIBPATH='.') 
 
 	def ForProgram(self):
 		ret = self.Clone()
+		ret.Append(LIBS=['aw'])
 		ret.UsesOpenGL()
 		ret._SetCPPFlags()
-		ret.Append(LIBS=['aw'])
 		return ret
 
 	def Prg(self, name, sources):
@@ -76,8 +82,8 @@ class Env(Environment):
 					      res))
 
 confCCFLAGS = {
-	'debug': '-g -Wall -fvisibility=hidden',
-	'release': '-O2'
+	'debug': '-g -Wall ',
+	'release': '-O2',
 }
 
 confCPPDEFINES = {
@@ -85,10 +91,18 @@ confCPPDEFINES = {
 	'release': ['NDEBUG'],
 }	
 
+targetCCFLAGS = {
+	'win32' : '',
+	'darwin' : '-fvisibility=hidden',
+	'linux' : '-fvisibility=hidden',
+}
+
+
 for backend in backends:
 	for conf in ['debug']:
-		cnf = Env(CCFLAGS=confCCFLAGS[conf],
-			  CPPDEFINES=confCPPDEFINES[conf])
+		cnf = Env(CCFLAGS=confCCFLAGS[conf] + targetCCFLAGS[target],
+			  CPPDEFINES=confCPPDEFINES[conf],
+			  )
 		if tools:
 			cnf.Tool(tools, toolpath)
 		if ARGUMENTS.get('useclang', 0):

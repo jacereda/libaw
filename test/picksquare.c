@@ -107,14 +107,14 @@ static void pickSquares(int x, int y)
 	processHits (hits, selectBuf);
 } 
 
-void display(void)
+static void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
 	drawSquares (GL_RENDER);
 	glFlush();
 }
 
-void reshape(int w, int h)
+static void reshape(int w, int h)
 {
 	glViewport(0, 0, w, h);
 	glMatrixMode(GL_PROJECTION);

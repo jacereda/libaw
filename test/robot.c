@@ -51,13 +51,13 @@ drawBox(GLfloat size, GLenum type)
 	}
 }
 
-void init(void) 
+static void init(void) 
 {
 	glClearColor (0.0, 0.0, 0.0, 0.0);
 	glShadeModel (GL_FLAT);
 }
 
-void display(void)
+static void display(void)
 {
 	glClear (GL_COLOR_BUFFER_BIT);
 	glPushMatrix();
@@ -80,7 +80,7 @@ void display(void)
 	glPopMatrix();
 }
 
-void reshape (int w, int h)
+static void reshape (int w, int h)
 {
 	glViewport (0, 0, w, h); 
 	glMatrixMode (GL_PROJECTION);
@@ -91,7 +91,7 @@ void reshape (int w, int h)
 	glTranslatef (0.0, 0.0, -5.0);
 }
 
-void keyboard (unsigned char key)
+static void keyboard (unsigned char key)
 {
 	switch (key) {
 	case 's':

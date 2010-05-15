@@ -6,13 +6,13 @@
 #include "log.h"
 #include "drawbox.h"
 
-void init(void) 
+static void init(void) 
 {
 	glClearColor (0.0, 0.0, 0.0, 0.0);
 	glShadeModel (GL_FLAT);
 }
 
-void display(void)
+static void display(void)
 {
 	static int angle = 0;
 	glClear (GL_COLOR_BUFFER_BIT);
