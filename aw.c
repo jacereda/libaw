@@ -177,12 +177,10 @@ void awMakeCurrent(aw * w, ac * c) {
 }
 
 static unsigned char * bitarrayFor(awHeader * hdr, unsigned * k) {
-        if (*k < MAX_PRESSED)
-                return hdr->pressed;
+        int good = *k >= AW_KEY_NONE && *k < AW_KEY_MAX;
+        assert(good);
         *k -= AW_KEY_NONE;
-        if (*k < MAX_SPRESSED)
-                return hdr->spressed;
-        return 0;
+        return good? hdr->pressed : 0;
 }
 
 static int pressed(awHeader * hdr, unsigned k) {

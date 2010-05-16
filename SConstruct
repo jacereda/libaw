@@ -71,11 +71,11 @@ class Env(Environment):
 		ret.CompileAs32Bits()
 		ret._SetCPPFlags()
 		ret.Append(CPPDEFINES=['AWPLUGIN'])
-		ret.Append(LIBS=['awplugin'])
+		ret.Append(LIBS=['awnpapi'])
 		ret.Append(FRAMEWORKS=['WebKit', 'QuartzCore'])
-		if target == 'cocoa':
-			ret['SHLINKFLAGS'] = '$LINKFLAGS'
-			+ ' -bundle -flat_namespace'
+		if target == 'darwin':
+			ret['SHLINKFLAGS'] = '$LINKFLAGS' +\
+			    ' -bundle -flat_namespace'
 			ret['SHLIBPREFIX'] = ''
 			ret['SHLIBSUFFIX'] = ''
 		return ret
@@ -85,23 +85,25 @@ class Env(Environment):
 		return self.Library(name, self.SharedObjects(name, sources))
 
 	def Plg(self, name, sources):
-		plg = self.Default(
-			self.SharedLibrary(name, 
-					   self.SharedObjects(name, sources)))
-		if target == 'cocoa':
+		plg = self.SharedLibrary(
+			name, 
+			self.SharedObjects(name + 'plugin', sources))
+		self.Default(plg)
+		if target == 'darwin':
 			res = self.Command(
 				name + '.rsrc', name + '.r', 
 				'/Developer/Tools/Rez -o $TARGET' +
 				' -useDF $SOURCE')
 			home = os.environ['HOME'] + '/'
-			instarget = home + 'Library/Internet Plug-Ins/'
-			+ name + '.webplugin/'
+			instarget = home + 'Library/Internet Plug-Ins/' +\
+			name + '.webplugin/'
 			self.Default(
 				self.Install(instarget + 'Contents/', 
 					     'Info.plist'))
 			self.Default(
 				self.Install(instarget + 'Contents/MacOS/', 
 					     plg))
+			print plg
 			self.Default(
 				self.Install(instarget + 'Contents/Resources/',
 					     res))

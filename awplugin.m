@@ -7,10 +7,10 @@
 #include <pcl.h>
 
 #include "aw.h"
-//#define report xxx
+#define report xxx
 #include "awos.h"
-//#undef report
-//static void report(const char * fmt, ...) {}
+#undef report
+static void report(const char * fmt, ...) {}
 #define OSCALL
 
 typedef void (*awmethod)(void);
@@ -113,6 +113,7 @@ static void ev(obj * o, int ev, int x, int y) {
 }
 
 static void entry(void * data) {
+	extern int main(int argc, char ** argv);
 	int argc = 1;
 	char * argv0 = "awplugin";
 	main(argc, &argv0);
@@ -124,7 +125,6 @@ static void entry(void * data) {
 static NPError nnew(NPMIMEType type, NPP i,
 		    uint16 mode, int16 argc, char* argn[],
 		    char* argv[], NPSavedData* saved) {
-	int ii;
 	report("new");
 	obj * o = [[Layer layer] retain];
 	memset(&o->w, 0, sizeof(o->w));
@@ -396,7 +396,7 @@ int acosDel(ac * c) {
 	     displayTime:(const CVTimeStamp *)dt
 {
 	CGLSetCurrentContext(ct);
-	report("drawInCGLContext cocall");
+//	report("drawInCGLContext cocall");
 	co_call(co);
 	CGLSetCurrentContext(ct);
 	report("drawInCGLContext /cocall");
@@ -409,7 +409,7 @@ int acosDel(ac * c) {
 	       forLayerTime:(CFTimeInterval)lt 
 		displayTime:(const CVTimeStamp *)ts
 {
-	report("candraw %f", (float)lt);
+//	report("candraw %f", (float)lt);
 	BOOL ret = lt - lastdraw > 1 / 60.;
 	if (ret)
 		lastdraw = lt;
