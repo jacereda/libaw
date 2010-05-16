@@ -118,7 +118,6 @@ unsigned mapkeycode(unsigned k) {
 	case kVK_UpArrow: ret = AW_KEY_UPARROW; break;
 	default: ret = k;
 	}
-	report("key: %d", ret);
 	return ret;
 }
 
