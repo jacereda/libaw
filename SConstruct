@@ -130,11 +130,6 @@ for backend in backends:
 			  )
 		if tools:
 			cnf.Tool(tools, toolpath)
-		if ARGUMENTS.get('useclang', 0):
-			cnf.Replace(CC='~/llvm/bld/Release/bin/clang')
-			cnf.Append(LINKFLAGS=' -L/usr/lib/gcc/i686-apple-darwin8/4.0.1/ ')
-			cnf.Append(CCFLAGS=' -Os ')
-			
 		dir = conf + '/' + backend
 		cnf.BuildDir(dir, '.', duplicate=0)
 		env = cnf.Clone()
