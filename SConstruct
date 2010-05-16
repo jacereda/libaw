@@ -35,13 +35,16 @@ class Env(Environment):
 			self.Append(LIBS=['opengl32', 'gdi32', 'glu32'])
 
 	def Objects(self, bdir, sources):
-		return [self.Object(bdir + '/' + s + '.o', s) for s in Split(sources)]
+		return [self.Object('obj' + bdir + '/' + s + '.o', s) 
+			for s in Split(sources)]
 		
 	def SharedObjects(self, bdir, sources):
-		return [self.SharedObject(bdir + '/' + s + '.o', s) for s in Split(sources)]
+		return [self.SharedObject('sobj' + bdir + '/' + s + '.o', s) 
+			for s in Split(sources)]
 
 	def Lib(self, name, sources):
-		return self.Default(self.Library(name, self.Objects(name, sources)))
+		return self.Default(self.Library(name, 
+						 self.Objects(name, sources)))
 
 	def _SetCPPFlags(self):
 		self.Append(CPPPATH=['include'])
@@ -55,8 +58,8 @@ class Env(Environment):
 		return ret
 
 	def Prg(self, name, sources):
-		sho = [str(self.Object(name + '/' + s + '.o', s)[0]) for s in Split(sources)]
-		self.Default(self.Program(name, sho))
+		self.Default(self.Program(name, 
+					  self.SharedObjects(name, sources)))
 
 	def CompileAs32Bits(self):
 		self.Append(CCFLAGS=' -m32 ')
@@ -71,7 +74,8 @@ class Env(Environment):
 		ret.Append(LIBS=['awplugin'])
 		ret.Append(FRAMEWORKS=['WebKit', 'QuartzCore'])
 		if target == 'cocoa':
-			ret['SHLINKFLAGS'] = '$LINKFLAGS -bundle -flat_namespace'
+			ret['SHLINKFLAGS'] = '$LINKFLAGS'
+			+ ' -bundle -flat_namespace'
 			ret['SHLIBPREFIX'] = ''
 			ret['SHLIBSUFFIX'] = ''
 		return ret
@@ -81,18 +85,26 @@ class Env(Environment):
 		return self.Library(name, self.SharedObjects(name, sources))
 
 	def Plg(self, name, sources):
-		plg = self.Default(self.SharedLibrary(name, self.SharedObjects(name, sources)))
+		plg = self.Default(
+			self.SharedLibrary(name, 
+					   self.SharedObjects(name, sources)))
 		if target == 'cocoa':
 			res = self.Command(
 				name + '.rsrc', name + '.r', 
-				'/Developer/Tools/Rez -o $TARGET -useDF $SOURCE')
+				'/Developer/Tools/Rez -o $TARGET' +
+				' -useDF $SOURCE')
 			home = os.environ['HOME'] + '/'
-			instarget = home + 'Library/Internet Plug-Ins/%s.webplugin/' % name
-			self.Default(self.Install(instarget + 'Contents/', 
-						  'Info.plist'))
-			self.Default(self.Install(instarget + 'Contents/MacOS/', plg))
-			self.Default(self.Install(instarget + 'Contents/Resources/', 
-						  res))
+			instarget = home + 'Library/Internet Plug-Ins/'
+			+ name + '.webplugin/'
+			self.Default(
+				self.Install(instarget + 'Contents/', 
+					     'Info.plist'))
+			self.Default(
+				self.Install(instarget + 'Contents/MacOS/', 
+					     plg))
+			self.Default(
+				self.Install(instarget + 'Contents/Resources/',
+					     res))
 
 confCCFLAGS = {
 	'debug': '-g -Wall ',
