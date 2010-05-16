@@ -1,7 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #if defined AWPLUGIN
-extern report(const char * fmt, ...);
+extern void report(const char * fmt, ...);
 #define Log report
 #else
 static void Log(const char * fmt, ...) {
