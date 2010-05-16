@@ -34,8 +34,14 @@ class Env(Environment):
 		if self['BACKEND'] == 'nt':
 			self.Append(LIBS=['opengl32', 'gdi32', 'glu32'])
 
+	def Objects(self, bdir, sources):
+		return [self.Object(bdir + '/' + s + '.o', s) for s in Split(sources)]
+		
+	def SharedObjects(self, bdir, sources):
+		return [self.SharedObject(bdir + '/' + s + '.o', s) for s in Split(sources)]
+
 	def Lib(self, name, sources):
-		return self.Library(name, sources)
+		return self.Default(self.Library(name, self.Objects(name, sources)))
 
 	def _SetCPPFlags(self):
 		self.Append(CPPPATH=['include'])
@@ -49,7 +55,8 @@ class Env(Environment):
 		return ret
 
 	def Prg(self, name, sources):
-		self.Default(self.Program(name, sources))
+		sho = [str(self.Object(name + '/' + s + '.o', s)[0]) for s in Split(sources)]
+		self.Default(self.Program(name, sho))
 
 	def CompileAs32Bits(self):
 		self.Append(CCFLAGS=' -m32 ')
@@ -63,27 +70,33 @@ class Env(Environment):
 		ret.Append(CPPDEFINES=['AWPLUGIN'])
 		ret.Append(LIBS=['awplugin'])
 		ret.Append(FRAMEWORKS=['WebKit', 'QuartzCore'])
-		ret['SHLINKFLAGS'] = '$LINKFLAGS -bundle -flat_namespace'
-		ret['SHLIBPREFIX'] = ''
-		ret['SHLIBSUFFIX'] = ''
+		if target == 'cocoa':
+			ret['SHLINKFLAGS'] = '$LINKFLAGS -bundle -flat_namespace'
+			ret['SHLIBPREFIX'] = ''
+			ret['SHLIBSUFFIX'] = ''
 		return ret
 
+
+	def ShLib(self, name, sources):
+		return self.Library(name, self.SharedObjects(name, sources))
+
 	def Plg(self, name, sources):
-		res = self.Command(
-			name + '.rsrc', name + '.r', 
-			'/Developer/Tools/Rez -o $TARGET -useDF $SOURCE')
-		home = os.environ['HOME'] + '/'
-		target = home + 'Library/Internet Plug-Ins/awplugin.webplugin/'
-		plg = self.SharedLibrary(name, sources)
-		self.Default(self.Install(target + 'Contents/', 
-					      'Info.plist'))
-		self.Default(self.Install(target + 'Contents/MacOS/', plg))
-		self.Default(self.Install(target + 'Contents/Resources/', 
-					      res))
+		plg = self.Default(self.SharedLibrary(name, self.SharedObjects(name, sources)))
+		if target == 'cocoa':
+			res = self.Command(
+				name + '.rsrc', name + '.r', 
+				'/Developer/Tools/Rez -o $TARGET -useDF $SOURCE')
+			home = os.environ['HOME'] + '/'
+			instarget = home + 'Library/Internet Plug-Ins/%s.webplugin/' % name
+			self.Default(self.Install(instarget + 'Contents/', 
+						  'Info.plist'))
+			self.Default(self.Install(instarget + 'Contents/MacOS/', plg))
+			self.Default(self.Install(instarget + 'Contents/Resources/', 
+						  res))
 
 confCCFLAGS = {
 	'debug': '-g -Wall ',
-	'release': '-O2',
+	'release': '-O2 -Wall ',
 }
 
 confCPPDEFINES = {

@@ -12,20 +12,24 @@ aw.Append(CPPDEFINES=['BUILDING_AW'])
 aw.Lib('aw', ['aw.c'] + backend)
 
 aw.Install('include/aw', ['aw.h', 'sysgl.h', 'sysglu.h'])
-awplugin = env.Clone()
-awplugin.CompileAs32Bits()
-awplugin.Append(CPPPATH=['include'])
-awplugin.Append(CPPDEFINES=['AWPLUGIN', 'HAVE_CONFIG_H'])
-awplugin.Append(CPPPATH=['pcl', 'pcl/include'])
-if aw['BACKEND'] == 'cocoa':
-    plg = awplugin.Lib('awplugin', [
-        'awplugin.m', 
-        'awmackeycodes.c',
-        'aw.c', 
-        'pcl/pcl/pcl.c',
-        'pcl/pcl/pcl_private.c',
-        'pcl/pcl/pcl_version.c',
-        ])
+if env['BACKEND'] in ['cocoa']:
+    awplugin = env.Clone()
+    awplugin.CompileAs32Bits()
+    awplugin.Append(CPPPATH=['include'])
+    awplugin.Append(CPPDEFINES=['AWPLUGIN'])
+    if awplugin['BACKEND'] == 'nt':
+        awplugin.Append(CPPDEFINES=['HAVE_WINCONFIG_H'])
+    else:
+        awplugin.Append(CPPDEFINES=['HAVE_CONFIG_H'])
+    awplugin.Append(CPPPATH=['pcl', 'pcl/include'])
+    backend = {
+        'cocoa': 'awplugin.m awmackeycodes.c',
+        'x11': 'awplugin.c',
+        'nt': 'awplugin.c',
+        }[awplugin['BACKEND']]
+    plg = awplugin.ShLib('awplugin', backend + '''
+        aw.c pcl/pcl/pcl.c pcl/pcl/pcl_private.c pcl/pcl/pcl_version.c
+        ''')
 
 awtest = env.ForProgram()
 awtest.Prg('awtest', 'test/awtest.c')
@@ -36,6 +40,6 @@ awtest.Prg('cube', 'test/cube.c')
 awtest.Prg('multi', 'test/multi.c')
 awtest.Prg('sharing', 'test/sharing.c')
 
-if aw['BACKEND'] == 'cocoa':
+if env['BACKEND'] in ['cocoa']:
     awplugintest = env.ForPlugin()
-    awplugintest.Plg('awplugin', 'test/awtest.c')
+    awplugintest.Plg('awtestplugin', 'test/awtest.c')
