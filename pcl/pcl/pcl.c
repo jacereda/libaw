@@ -57,7 +57,7 @@ static int co_ctx_sdir(unsigned long psp)
 	return psp > csp ? -1: +1;
 }
 
-static int co_ctx_stackdir(void)
+static inline int co_ctx_stackdir(void)
 {
 	int cav = 0;
 
@@ -377,7 +377,7 @@ static void co_runner(void)
 
 coroutine_t co_create(void (*func)(void *), void *data, void *stack, int size)
 {
-	int alloc = 0, r = CO_STK_COROSIZE;
+	int alloc = 0;
 	coroutine *co;
 
 	if ((size &= ~(sizeof(long) - 1)) < CO_MIN_SIZE)
