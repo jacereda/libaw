@@ -179,7 +179,7 @@ typedef struct _awEvent {
 	} u;
 } awEvent;
 
-#if 0 //defined(__GNUC__) && !defined(_WIN32_)
+#if defined(__GNUC__) && !defined(_WIN32_)
 #define EXPORTED extern __attribute__((visibility("default")))
 #else
 #define EXPORTED extern __declspec(dllexport)
