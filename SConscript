@@ -1,34 +1,32 @@
 #-*-Python-*-
 Import('env')
 import os
-aw = env.Clone()
+aw = env.ForShLib()
 aw.UsesOpenGL()
 backend = {
-'cocoa': ['awcocoa.m', 'awmackeycodes.c'],
-'x11': ['awx.c'],
-'nt': ['aww.c'],
+'cocoa': 'awcocoa.m awmackeycodes.c',
+'x11': 'awx.c',
+'nt': 'aww.c awntkeycodes.c awntevent.c',
 }[aw['BACKEND']]
 aw.Append(CPPDEFINES=['BUILDING_AW'])
-aw.Lib('aw', ['aw.c'] + backend)
+aw.ShLib('aw', 'aw.c ' + backend)
 
 aw.Install('include/aw', ['aw.h', 'sysgl.h', 'sysglu.h'])
-if env['BACKEND'] in ['cocoa']:
-    awnpapi = env.Clone()
+if env['BACKEND'] in ['cocoa', 'nt']:
+    awnpapi = env.ForNPAPI()
     awnpapi.CompileAs32Bits()
     awnpapi.Append(CPPPATH=['include'])
     awnpapi.Append(CPPDEFINES=['AWPLUGIN'])
+    awnpapi.Append(CPPPATH=['coroutine/source',])
     if awnpapi['BACKEND'] == 'nt':
-        awnpapi.Append(CPPDEFINES=['HAVE_WINCONFIG_H'])
-    else:
-        awnpapi.Append(CPPDEFINES=['HAVE_CONFIG_H'])
-    awnpapi.Append(CPPPATH=['pcl', 'pcl/include'])
+        awnpapi.Append(CPPDEFINES=['USE_FIBERS',])
     backend = {
-        'cocoa': 'awplugin.m awmackeycodes.c',
-        'x11': 'awplugin.c',
-        'nt': 'awplugin.c',
+        'cocoa': 'awplugin.m awmackeycodes.c awresolveposix.c',
+        'x11': 'awnpapi.c awresolveposix.c',
+        'nt': 'awnpapi.c awntresolve.c awntkeycodes.c awntevent.c awntnpapi.c',
         }[awnpapi['BACKEND']]
-    plg = awnpapi.ShLib('awnpapi', backend + '''
-        aw.c pcl/pcl/pcl.c pcl/pcl/pcl_private.c pcl/pcl/pcl_version.c
+    plg = awnpapi.ShLinkLib('awnpapi', backend + '''
+        aw.c co.c coroutine/source/Coro.c
         ''')
 
 awtest = env.ForProgram()
@@ -40,6 +38,7 @@ awtest.Prg('cube', 'test/cube.c')
 awtest.Prg('multi', 'test/multi.c')
 awtest.Prg('sharing', 'test/sharing.c')
 
-if env['BACKEND'] in ['cocoa']:
+if env['BACKEND'] in ['cocoa', 'nt']:
     awplugin = env.ForPlugin()
     awplugin.Plg('awplugin', 'test/awtest.c')
+

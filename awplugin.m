@@ -197,6 +197,9 @@ static NPError getvalue(NPP i, NPPVariable variable, void *v) {
                 o.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
 		*(CALayer**)v = o;
 		break;
+	case NPPVpluginTransparentBool:
+		report("getval transp"); // XXX
+		break;
 	}
 	return ret;
 }

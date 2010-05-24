@@ -30,7 +30,11 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#if defined(_MSC_VER)
+#include <assert.h>
+#else
 #include <inttypes.h>
+#endif
 typedef intptr_t awcell;
 typedef uintptr_t awucell;
 
