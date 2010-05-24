@@ -1,0 +1,45 @@
+#include <Coro.h>
+#include "co.h"
+
+struct _co {
+	Coro * co;
+	void * data;
+	void (*func)(void*);
+};
+
+static co * g_curr;
+
+co * coMain() {
+	co * co = coNew(0, 0);
+	Coro_initializeMainCoro(co->co);
+	g_curr = co;
+	return co;
+}
+
+co * coNew(void (*func)(void*), void * data) {
+	co * co = malloc(sizeof(*co));
+	co->co = Coro_new();
+	co->data = data;
+	co->func = func;
+	return co;
+}
+
+void coSwitchTo(co * next) {
+	co * curr = coCurrent();
+	g_curr = next;
+	if (next->func) {
+		Coro_startCoro_(curr->co, next->co,
+				next->data, next->func);
+		next->func = 0;
+	}
+	else
+		Coro_switchTo_(curr->co, next->co);
+}
+
+co * coCurrent() {
+	return g_curr;
+}
+
+void * coData(co * co) {
+	return co->data;
+}

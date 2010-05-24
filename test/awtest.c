@@ -65,8 +65,15 @@ static aw * processEvents(aw * w) {
 
 static void draw() {
 	static int i = 0;
+	float aspect = (float)640/ 480.0;
+	glViewport (0, 0, 640, 480); 
+	glMatrixMode (GL_PROJECTION);
+	glLoadIdentity ();
+	glFrustum (-aspect, aspect, -1.0, 1.0, 1.5, 20.0);
+	glMatrixMode (GL_MODELVIEW);
 	glClearColor((i++ & 0xff) / 255.0, 0, 1, 0);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glFlush();
 }
 
 int main(int argc, char ** argv) {
@@ -95,8 +102,6 @@ int main(int argc, char ** argv) {
 	awEnd();
 	return 0;
 }
-
-
 
 /* 
    Local variables: **

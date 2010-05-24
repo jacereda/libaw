@@ -35,6 +35,9 @@ int acosEnd();
 ac * acosNew(ac *);
 int acosDel(ac *);
 
+void * awSelf();
+void * awResolve(void *, const char *);
+
 
 // Defined in the frontend
 void got(aw  * w, int, int, int);

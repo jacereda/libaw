@@ -36,10 +36,16 @@
 #include "aw.h"
 #include "awos.h"
 
-
+#if defined(_MSC_VER)
+#define snprintf _snprintf
+#endif
 #if defined(AWPLUGIN)
 void report(const char *fmt, ...) {
+#if 1 //defined(_WIN32)
+	FILE *out = fopen("c:\\Users\\Jorge Acereda\\libaw\\aw.log", "a");
+#else
 	FILE *out = fopen("/tmp/aw.log", "a");
+#endif
 	va_list ap;
 	va_start(ap, fmt);
 	if(out) {

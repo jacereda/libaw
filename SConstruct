@@ -8,14 +8,19 @@ tools = 0
 target = ARGUMENTS.get('target', 'native')
 if target == 'native':
 	target = sys.platform
-	if target == 'win32':
-		tools = 'mingw'
-		toolpath = None
+#	if target == 'win32':
+#		tools = 'mingw'
+#		toolpath = None
 else:
 	tools = 'crossmingw'
 	toolpath = '.'
 if target == 'linux2':
 	target = 'linux'
+
+if target == 'win32':
+	comp = 'cl'
+else:
+	comp = 'gcc'
 
 backends = {
 	'darwin' : ['x11', 'cocoa'],
@@ -32,14 +37,14 @@ class Env(Environment):
 			self.Append(CPPPATH=['/usr/X11R6/include'])
 			self.Append(LIBS=['GL', 'GLU', 'X11'])
 		if self['BACKEND'] == 'nt':
-			self.Append(LIBS=['opengl32', 'gdi32', 'glu32'])
+			self.Append(LIBS=['opengl32', 'gdi32', 'glu32', 'user32'])
 
-	def Objects(self, bdir, sources):
+	def _Objects(self, bdir, sources):
 		return [self.Object('obj' + bdir + '/' + s + '.o', s) 
 			for s in Split(sources)]
 		
-	def SharedObjects(self, bdir, sources):
-		return [self.SharedObject('sobj' + bdir + '/' + s + '.o', s) 
+	def _SharedObjects(self, bdir, sources):
+		return [self.SharedObject('sobj' + bdir + '/' + s + '.os', s) 
 			for s in Split(sources)]
 
 	def Lib(self, name, sources):
@@ -59,18 +64,29 @@ class Env(Environment):
 
 	def Prg(self, name, sources):
 		self.Default(self.Program(name, 
-					  self.SharedObjects(name, sources)))
+					  self._SharedObjects(name, sources)))
 
 	def CompileAs32Bits(self):
-		self.Append(CCFLAGS=' -m32 ')
-		self.Append(LINKFLAGS=' -m32 ')
+		if comp == 'gcc':
+			self.Append(CCFLAGS=' -m32 ')
+			self.Append(LINKFLAGS=' -m32 ')
+
+	def ForNPAPI(self):
+		ret = self.Clone()
+		ret.Append(CPPDEFINES=['AWPLUGIN'])
+		ret.Append(CPPPATH=[target])
+		ret.CompileAs32Bits()
+		if target == 'win32':
+			ret.Append(CPPDEFINES=['XULRUNNER_SDK', 'WIN32', '_WINDOWS', 'XP_WIN32', 'MOZILLA_STRICT_API', 'XPCOM_GLUE', 'XP_WIN', '_X86_', 'NPSIMPLE_EXPORTS',])
+			ret.Append(LIBS=['user32'])
+
+		return ret
 		
 	def ForPlugin(self):
 		ret = self.Clone()
 		ret.UsesOpenGL()
 		ret.CompileAs32Bits()
 		ret._SetCPPFlags()
-		ret.Append(CPPDEFINES=['AWPLUGIN'])
 		ret.Append(LIBS=['awnpapi'])
 		ret.Append(FRAMEWORKS=['WebKit', 'QuartzCore'])
 		if target == 'darwin':
@@ -80,21 +96,38 @@ class Env(Environment):
 			ret['SHLIBSUFFIX'] = ''
 		return ret
 
+	def ForShLib(self):
+		ret = self.Clone()
+		if target == 'win32':
+			ret.Append(LIBS=['user32'])
+		return ret
 
 	def ShLib(self, name, sources):
-		return self.Library(name, self.SharedObjects(name, sources))
+		return self.SharedLibrary(name, self._SharedObjects(name, sources))
+
+	def ShLinkLib(self, name, sources):
+		return self.Library(name, self._SharedObjects(name, sources))
 
 	def Plg(self, name, sources):
-		plg = self.SharedLibrary(
-			name, 
-			self.SharedObjects(name + 'plugin', sources))
+		prefix = ''
+		platobjs = []
+		if target == 'win32':
+			prefix = 'np'
+			res = self.Command(name + '.res', name + '.rc', 
+					   'rc /fo $TARGET $SOURCE')
+			platobjs = ['awnpapi.def', res[0]]
+		plg = self.SharedLibrary(prefix + name, 
+				   self._SharedObjects(name, sources) + platobjs)
 		self.Default(plg)
+		home = os.environ['HOME'] + '/'
+		if target == 'win32':
+			instarget = home + 'Mozilla/Plugins/'
+			self.Default(self.Install(instarget, plg))
 		if target == 'darwin':
 			res = self.Command(
 				name + '.rsrc', name + '.r', 
 				'/Developer/Tools/Rez -o $TARGET' +
 				' -useDF $SOURCE')
-			home = os.environ['HOME'] + '/'
 			instarget = home + 'Library/Internet Plug-Ins/' +\
 			name + '.webplugin/'
 			self.Default(
@@ -103,32 +136,48 @@ class Env(Environment):
 			self.Default(
 				self.Install(instarget + 'Contents/MacOS/', 
 					     plg))
-			print plg
 			self.Default(
 				self.Install(instarget + 'Contents/Resources/',
 					     res))
 
-confCCFLAGS = {
-	'debug': '-g -Wall ',
-	'release': '-O2 -Wall ',
+ccflags = {
+	'gcc': {
+		'debug': '-g -Wall -fvisibility=hidden',
+		'release': '-O2 -Wall -fvisibility=hidden',
+		},
+	'cl': {
+		'debug': ' /EHs-c- /MTd /DEBUG /Z7 /Od ',
+		'release': ' /MT /O2 ',
+		},
 }
 
-confCPPDEFINES = {
+linkflags = {
+	'gcc': {
+		'debug': '',
+		'release': '',
+		},
+	'cl': {
+		'debug': ' /DEBUG ',
+		'release': '',
+		},
+}
+
+confcppdefines = {
 	'debug': [],
 	'release': ['NDEBUG'],
-}	
+}
 
-targetCCFLAGS = {
-	'win32' : '',
-	'darwin' : '-fvisibility=hidden',
-	'linux' : '-fvisibility=hidden',
+compcppdefines= {
+	'gcc': [],
+	'cl' : [['snprintf', '_snprintf']],
 }
 
 
 for backend in backends:
 	for conf in ['debug']:
-		cnf = Env(CCFLAGS=confCCFLAGS[conf] + targetCCFLAGS[target],
-			  CPPDEFINES=confCPPDEFINES[conf],
+		cnf = Env(CCFLAGS=ccflags[comp][conf],
+			  CPPDEFINES=confcppdefines[conf] + compcppdefines[comp],
+			  LINKFLAGS=linkflags[comp][conf],
 			  )
 		if tools:
 			cnf.Tool(tools, toolpath)
