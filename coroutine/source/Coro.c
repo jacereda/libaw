@@ -33,13 +33,20 @@
 	before the setjmp occurs would be helpful also.
  */
 
-#include "Base.h"
+//#include "Base.h"
 #include "Coro.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stddef.h>
-#include "taskimpl.h"
+//#include "taskimpl.h"
+#if defined(USE_FIBERS)
+#include <windows.h>
+typedef unsigned size_t;
+typedef unsigned char uint8_t;
+#define io_calloc calloc
+#define io_free free
+#endif
 
 #ifdef USE_VALGRIND
 #include <valgrind/valgrind.h>

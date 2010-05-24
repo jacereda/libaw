@@ -4,10 +4,12 @@
 #ifndef CORO_DEFINED
 #define CORO_DEFINED 1
 
-#include "Common.h"
+//#include "Common.h"
 //#include "PortableUContext.h"
-#include "taskimpl.h"
-
+//#include "taskimpl.h"
+#if defined(_WIN32)
+typedef unsigned size_t;
+#endif
 #if defined(__SYMBIAN32__)
 	#define CORO_STACK_SIZE     8192
 	#define CORO_STACK_SIZE_MIN 1024
@@ -20,7 +22,7 @@
 	#define CORO_STACK_SIZE_MIN 8192
 #endif
 
-#if !defined(__MINGW32__) && defined(WIN32)
+#if defined(BUILDING_CORO_DLL) && !defined(__MINGW32__) && defined(WIN32)
 #if defined(BUILDING_CORO_DLL) || defined(BUILDING_IOVMALL_DLL)
 #define CORO_API __declspec(dllexport)
 #else
