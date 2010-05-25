@@ -74,12 +74,18 @@ static void ev(ins * o, int ev, int x, int y) {
 	report("event %d %d %d", ev, x, y);
 }
 
+insHeader * getHeader() {
+	return (insHeader*)coData(coCurrent());
+}
+
 void awentry(void * data) {
 	extern int main(int argc, char ** argv);
 	int argc = 1;
 	char * argv0 = "awnpapi";
 	report("entry");
 	main(argc, &argv0);
+	getHeader()->awdone = 1;
+	coSwitchTo(getHeader()->comain);
 }
 
 static NPError nnew(NPMIMEType type, NPP i,
@@ -101,6 +107,7 @@ static NPError nnew(NPMIMEType type, NPP i,
 	h->comain = coMain(o);
 	report("comain: %p", h->comain);
 	h->coaw = coNew(awentry, o);
+	h->awdone = 0;
 	return NPERR_NO_ERROR;
 }
 
@@ -117,6 +124,13 @@ static NPError setwindow(NPP i, NPWindow* w) {
 static NPError destroy(NPP i, NPSavedData **save) {
 	ins * o = (ins*)i->pdata;
 	report("destroy");
+	ev(o, AW_EVENT_CLOSE, 0, 0);
+	report("destroy>aw");
+	while (!getHeader()->awdone) 
+		coSwitchTo(getHeader()->coaw);
+	report("aw>destroy");
+	coDel(getHeader()->coaw);
+	coDel(getHeader()->comain);
 	awosDel(o);
 	if(s_so)
 		s_browser->releaseobject(s_so);
@@ -207,10 +221,6 @@ int awosInit() {
 int awosEnd() { 
 	report("awosEnd");
 	return 1; 
-}
-
-insHeader * getHeader() {
-	return (insHeader*)coData(coCurrent());
 }
 
 aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
