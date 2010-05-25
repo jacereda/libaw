@@ -9,6 +9,9 @@
 //#include "taskimpl.h"
 #if defined(_WIN32)
 typedef unsigned size_t;
+#else
+#include <sys/types.h>
+#include <stdint.h>
 #endif
 #if defined(__SYMBIAN32__)
 	#define CORO_STACK_SIZE     8192
