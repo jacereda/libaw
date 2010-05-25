@@ -9,6 +9,7 @@
 //#include "taskimpl.h"
 #if defined(_WIN32)
 typedef unsigned size_t;
+typedef unsigned char uint8_t;
 #else
 #include <sys/types.h>
 #include <stdint.h>
