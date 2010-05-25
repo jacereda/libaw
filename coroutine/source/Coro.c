@@ -40,13 +40,17 @@
 #include <string.h>
 #include <stddef.h>
 //#include "taskimpl.h"
+#if defined(USE_UCONTEXT)
+#define _XOPEN_SOURCE
+#include <ucontext.h>
+#endif
 #if defined(USE_FIBERS)
 #include <windows.h>
 typedef unsigned size_t;
 typedef unsigned char uint8_t;
+#endif
 #define io_calloc calloc
 #define io_free free
-#endif
 
 #ifdef USE_VALGRIND
 #include <valgrind/valgrind.h>
@@ -283,11 +287,13 @@ void Coro_switchTo_(Coro *self, Coro *next)
 
 // ---- setup ------------------------------------------
 
-#if defined(USE_SETJMP) && defined(__x86_64__)
+#if defined(USE_SETJMP)
 
 void Coro_setup(Coro *self, void *arg)
 {
 	/* since ucontext seems to be broken on amg64 */
+	globalCallbackBlock.context=((CallbackBlock*)arg)->context;
+	globalCallbackBlock.func=((CallbackBlock*)arg)->func;
 
 	setjmp(self->env);
 	/* This is probably not nice in that it deals directly with
@@ -309,8 +315,16 @@ void Coro_setup(Coro *self, void *arg)
 	*   amd64 computer:
 	*   /usr/include/gento-multilib/amd64/bits/setjmp.h
 	*   Which was ultimatly included from setjmp.h in /usr/include. */
+#if defined(__APPLE__) && defined(__x86_64__)
+	*(uintptr_t*)(self->env+4) = (uintptr_t)(Coro_stack(self))+8;
+	*(uintptr_t*)(self->env+14) = ((uintptr_t)Coro_Start);
+#elif defined(__APPLE__)
+	*(uintptr_t*)(self->env+9) = (uintptr_t)(Coro_stack(self))+12;
+	*(uintptr_t*)(self->env+12) = ((uintptr_t)Coro_Start);
+#else
 	self->env[0].__jmpbuf[6] = ((unsigned long)(Coro_stack(self)));
 	self->env[0].__jmpbuf[7] = ((long)Coro_Start);
+#endif
 }
 
 #elif defined(HAS_UCONTEXT_ON_PRE_SOLARIS_10)
