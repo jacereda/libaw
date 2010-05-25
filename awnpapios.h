@@ -29,6 +29,7 @@ typedef struct _insHeader {
 	ac c;
 	co * comain;
 	co * coaw;
+	int awdone;
 } insHeader;
 
 ins * awosNew(NPNetscapeFuncs *, NPP);

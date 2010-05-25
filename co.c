@@ -29,6 +29,11 @@ co * coNew(void (*func)(void*), void * data) {
 	return co;
 }
 
+void coDel(co * co) {
+	Coro_free(co->co);
+	free(co);
+}
+
 void coSwitchTo(co * next) {
 	co * curr = coCurrent();
 	g_curr = next;
