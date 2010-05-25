@@ -20,13 +20,15 @@ if env['BACKEND'] in ['cocoa', 'nt']:
     awnpapi.Append(CPPPATH=['coroutine/source',])
     if awnpapi['BACKEND'] == 'nt':
         awnpapi.Append(CPPDEFINES=['USE_FIBERS',])
+    else:
+        awnpapi.Append(CPPDEFINES=['USE_SETJMP',])        
     backend = {
-        'cocoa': 'awplugin.m awmackeycodes.c awresolveposix.c',
-        'x11': 'awnpapi.c awresolveposix.c',
-        'nt': 'awnpapi.c awntresolve.c awntkeycodes.c awntevent.c awntnpapi.c',
+        'cocoa': 'awposixresolve.c awmackeycodes.c awcocoanpapi.m',
+        'x11': 'awposixresolve.c',
+        'nt': 'awntresolve.c awntkeycodes.c awntevent.c awntnpapi.c',
         }[awnpapi['BACKEND']]
     plg = awnpapi.ShLinkLib('awnpapi', backend + '''
-        aw.c co.c coroutine/source/Coro.c
+        aw.c awnpapi.c co.c coroutine/source/Coro.c
         ''')
 
 awtest = env.ForProgram()
@@ -41,4 +43,5 @@ awtest.Prg('sharing', 'test/sharing.c')
 if env['BACKEND'] in ['cocoa', 'nt']:
     awplugin = env.ForPlugin()
     awplugin.Plg('awplugin', 'test/awtest.c')
+#    awplugin.Prg('cotest', 'cotest.c')
 

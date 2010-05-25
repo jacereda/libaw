@@ -8,7 +8,6 @@ typedef void (*awmethod)(void);
 
 static NPNetscapeFuncs * s_browser = 0;
 static NPObject * s_so = 0;
-static aw * g_aw;
 
 static awmethod resolve(NPIdentifier method) {
 	static void * me = 0;
@@ -99,14 +98,14 @@ static NPError nnew(NPMIMEType type, NPP i,
 	memset(&h->w, 0, sizeof(h->w));
 	memset(&h->c, 0, sizeof(h->c));
 	i->pdata = o;
-	h->comain = coMain();
+	h->comain = coMain(o);
+	report("comain: %p", h->comain);
 	h->coaw = coNew(awentry, o);
 	return NPERR_NO_ERROR;
 }
 
 static NPError setwindow(NPP i, NPWindow* w) {
 	ins * o = (ins*)i->pdata;
-	insHeader * hdr = (insHeader*)o;
 	report("setwindow %p", w->window);
 	report("%dx%d", w->width, w->height);
 	ev(o, AW_EVENT_RESIZE, w->width, w->height);
@@ -243,7 +242,9 @@ int awosClearCurrent(aw * w) {
 int awosSwapBuffers(aw * w) {
 	insHeader * hdr = getHeader();
 	awosUpdate((ins*)hdr);
+	report("aw>main %p", hdr->comain);
 	coSwitchTo(hdr->comain);
+	report("main>aw");
 	return 1;
 }
 
@@ -258,7 +259,7 @@ int awosHide(aw * w) {
 }
 
 void awosPollEvent(aw * w) {
-	report("awosollEvent");
+	report("awosPollEvent");
 }
 
 int awosSetSwapInterval(aw * w, int interval) {

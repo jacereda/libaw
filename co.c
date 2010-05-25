@@ -1,4 +1,5 @@
 #include <Coro.h>
+#include <stdlib.h>
 #include "co.h"
 
 struct _co {
@@ -9,8 +10,11 @@ struct _co {
 
 static co * g_curr;
 
-co * coMain() {
-	co * co = coNew(0, 0);
+co * coMain(void * data) {
+	co * co = malloc(sizeof(*co));
+	co->co = Coro_new();
+	co->data = data;
+	co->func = 0;
 	Coro_initializeMainCoro(co->co);
 	g_curr = co;
 	return co;
@@ -19,6 +23,7 @@ co * coMain() {
 co * coNew(void (*func)(void*), void * data) {
 	co * co = malloc(sizeof(*co));
 	co->co = Coro_new();
+	Coro_setStackSize_(co->co, 8*1024*1024);
 	co->data = data;
 	co->func = func;
 	return co;

@@ -39,9 +39,9 @@
 #if defined(_MSC_VER)
 #define snprintf _snprintf
 #endif
-#if defined(AWPLUGIN)
+#if 1 //defined(AWPLUGIN)
 void report(const char *fmt, ...) {
-#if 1 //defined(_WIN32)
+#if defined(_WIN32)
 	FILE *out = fopen("c:\\Users\\Jorge Acereda\\libaw\\aw.log", "a");
 #else
 	FILE *out = fopen("/tmp/aw.log", "a");
