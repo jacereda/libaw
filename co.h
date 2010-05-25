@@ -1,6 +1,6 @@
 typedef struct _co co;
-co * coMain();
+co * coMain(void *);
 co * coNew(void (*)(void*), void *);
-void coSwitch(co *, co *);
+void coSwitchTo(co *);
 co * coCurrent();
 void * coData(co *);

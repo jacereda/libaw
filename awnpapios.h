@@ -46,5 +46,9 @@ void * awosResolve(void * in, const char * name);
 
 const char * awosResourcesPath(ins *);
 
+#if defined _WIN32
 #undef EXPORTED
 #define EXPORTED
+#else
+#define OSCALL
+#endif
