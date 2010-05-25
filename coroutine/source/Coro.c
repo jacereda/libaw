@@ -291,6 +291,8 @@ void Coro_switchTo_(Coro *self, Coro *next)
 
 void Coro_setup(Coro *self, void *arg)
 {
+	uintptr_t stackend = Coro_stackSize(self) + (uintptr_t)Coro_stack(self);
+	uintptr_t start = (uintptr_t)Coro_Start;
 	/* since ucontext seems to be broken on amg64 */
 	globalCallbackBlock.context=((CallbackBlock*)arg)->context;
 	globalCallbackBlock.func=((CallbackBlock*)arg)->func;
@@ -316,11 +318,15 @@ void Coro_setup(Coro *self, void *arg)
 	*   /usr/include/gento-multilib/amd64/bits/setjmp.h
 	*   Which was ultimatly included from setjmp.h in /usr/include. */
 #if defined(__APPLE__) && defined(__x86_64__)
-	*(uintptr_t*)(self->env+4) = (uintptr_t)(Coro_stack(self))+8;
-	*(uintptr_t*)(self->env+14) = ((uintptr_t)Coro_Start);
+	*(uintptr_t*)(self->env+4) = stackend - 8;
+	*(uintptr_t*)(self->env+14) = start;
 #elif defined(__APPLE__)
-	*(uintptr_t*)(self->env+9) = (uintptr_t)(Coro_stack(self))+12;
-	*(uintptr_t*)(self->env+12) = ((uintptr_t)Coro_Start);
+	*(uintptr_t*)(self->env+9) = stackend - 4;
+	*(uintptr_t*)(self->env+12) = start;
+#elif defined(_MSC_VER)
+	// Broken, use fibers
+	*(uintptr_t*)(self->env+4) = stackend - 8;
+	*(uintptr_t*)(self->env+5) = start;
 #else
 	self->env[0].__jmpbuf[6] = ((unsigned long)(Coro_stack(self)));
 	self->env[0].__jmpbuf[7] = ((long)Coro_Start);
