@@ -160,15 +160,11 @@ NPError awosGetValue(NPP i, NPPVariable var, void * v) {
 	    forLayerTime:(CFTimeInterval)lt
 	     displayTime:(const CVTimeStamp *)dt
 {
-	static int i;
 	ins * o = (ins*)coData(coCurrent());
 	CGLSetCurrentContext(ct);
 	report("drawInCGLContext %p", ct);
 	report("aw>>main");
 	coSwitchTo(o->h.coaw);	
-//	glClearColor((i++ & 0xff) / 255.0, 0, 1, 0);
-//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	report("main>>aw");
 	CGLSetCurrentContext(ct);
 	report("drawInCGLContext /cocall");
