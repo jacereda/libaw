@@ -86,6 +86,7 @@ void awentry(void * data) {
 	main(argc, &argv0);
 	getHeader()->awdone = 1;
 	coSwitchTo(getHeader()->comain);
+	assert(0);
 }
 
 static NPError nnew(NPMIMEType type, NPP i,

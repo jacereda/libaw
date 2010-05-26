@@ -2,7 +2,7 @@
 #include <aw/aw.h>
 #include "log.h"
 
-static int g_exit = 0;
+static int g_exit;
 static const char * g_progname;
 
 // To test the browser plugin
@@ -90,6 +90,7 @@ int main(int argc, char ** argv) {
 	}
 	acSetInterval(c, 1);
 	awMakeCurrent(w, c);
+	g_exit = 0;
 	while (!g_exit) {
 		w = processEvents(w);
 		awMakeCurrent(w, c);

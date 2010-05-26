@@ -36,10 +36,6 @@ ins * awosNew(NPNetscapeFuncs * browser, NPP i) {
 	return calloc(1, sizeof(ins));
 }
 
-void awosDel(ins * o) {
-	free(o);
-}
-
 LONG WINAPI plghandle(HWND win, UINT msg, WPARAM w, LPARAM l) {
 	extern LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l);
 	LONG r;
@@ -50,7 +46,6 @@ LONG WINAPI plghandle(HWND win, UINT msg, WPARAM w, LPARAM l) {
 	case WM_PAINT: 
 	{
 		insHeader * hdr = (insHeader*)GetWindowLongPtrW(win, GWL_USERDATA);
-		extern void awentry(void *);
 		PAINTSTRUCT ps;
 		HDC hdc = BeginPaint(win, &ps);
 		coSwitchTo(hdr->coaw);
@@ -79,6 +74,14 @@ void awosSetWindow(ins * o, void * vwin) {
 		SetTimer(win, 1, 20, 0);
 	}
 }
+
+void awosDel(ins * o) {
+	if (o->oldproc)
+		SubclassWindow(o->h.w.handle, o->oldproc);
+	free(o);
+}
+
+
 static BOOL (APIENTRY *wglSwapInterval) (int interval) = 0;
 
 int awosMakeCurrentI(ins * o) {
