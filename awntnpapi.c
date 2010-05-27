@@ -71,7 +71,7 @@ void awosSetWindow(ins * o, void * vwin) {
 		o->h.c.handle = wglCreateContext(dc);
 		wglMakeCurrent(dc, o->h.c.handle);
 		ReleaseDC(win, dc);
-		SetTimer(win, 1, 20, 0);
+		SetTimer(win, 1, 10, 0);
 	}
 }
 
@@ -113,8 +113,17 @@ NPError awosEvent(ins * o, void * ev) {
 	return NPERR_NO_ERROR;
 }
 
+extern IMAGE_DOS_HEADER __ImageBase;
+
 const char * awosResourcesPath(ins * o) {
-	return ".";
+	static char buf[256];
+	static char * ret = 0;
+	if (!ret) {
+		GetModuleFileName((HINSTANCE)&__ImageBase, buf, sizeof(buf));
+		*(strrchr(buf, '\\') + 1) = 0;
+		ret = buf;
+	}
+	return ret;
 }
 
 NPError awosGetValue(NPP i, NPPVariable var, void * v) {
