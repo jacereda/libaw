@@ -1,6 +1,5 @@
 #-*-Python-*-
 Import('env')
-import os
 aw = env.ForShLib()
 aw.UsesOpenGL()
 backend = {
