@@ -244,7 +244,7 @@ static int mapButton(int button) {
 }
 
 static unsigned key2aw(unsigned k) {
-        int ret = k;
+        int ret;
         switch (k) {
 	case XK_A: ret = AW_KEY_A; break;
 	case XK_S: ret = AW_KEY_S; break;
@@ -358,7 +358,7 @@ static unsigned key2aw(unsigned k) {
 	case XK_Right: ret = AW_KEY_RIGHTARROW; break;
 	case XK_Down: ret = AW_KEY_DOWNARROW; break;
 	case XK_Up: ret = AW_KEY_UPARROW; break;
-        default: ret = k;
+        default: ret = AW_KEY_NONE;
         }
         return ret;
 }
@@ -401,20 +401,18 @@ static void handle(aw * w, XEvent * e) {
                 break;
         case KeyPress:
         {
-#define MAXCHARS 64
-                wchar_t buf[MAXCHARS];
+                wchar_t buf[64];
                 KeySym ks;
                 Status st;
                 int i;
                 int n = XwcLookupString(w->xic,
                                         &e->xkey, 
                                         buf, 
-                                        MAXCHARS,
+                                        sizeof(buf) / sizeof(wchar_t),
                                         &ks, 
                                         &st);
                 if (st == XLookupKeySym || st == XLookupBoth) 
-                        got(w, AW_EVENT_DOWN, 
-                            key2aw(ks), 0);
+                        got(w, AW_EVENT_DOWN, key2aw(ks), 0);
                 if (st == XLookupChars || st == XLookupBoth) 
                         for (i = 0; i < n; i++)
                                 got(w, AW_EVENT_UNICODE, buf[i], 0);
