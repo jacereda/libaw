@@ -195,10 +195,8 @@ shouldChangeCharactersInRange: (NSRange)range
 }
 
 - (void) update {
-	[tf becomeFirstResponder];
         coSwitchTo(coaw);
         [ctx presentRenderbuffer: GL_RENDERBUFFER_OES];
-	[tf becomeFirstResponder];
 }
 
 - (void) applicationDidFinishLaunching: (UIApplication*) application 
