@@ -1,18 +1,24 @@
 #-*-Python-*-
 Import('env')
-aw = env.ForShLib()
+aw = env.ForLib()
 aw.UsesOpenGL()
 backend = {
-'cocoa': 'awcocoa.m awmackeycodes.c',
-'x11': 'awx.c',
-'nt': 'aww.c awntkeycodes.c awntevent.c',
+'iphone' : 'awiphone.m co.c coroutine/source/Coro.c awreportfile.c',
+'cocoa': 'awcocoa.m awmackeycodes.c awmain.c awreportconsole.c',
+'x11': 'awx.c awmain.c awreportconsole.c',
+'nt': 'aww.c awntkeycodes.c awntevent.c awreportconsole.c',
 }[aw['BACKEND']]
+
+if aw['BACKEND'] == 'iphone':
+    aw.Append(CPPPATH=['coroutine/source',])
+    aw.Append(CPPDEFINES=['USE_SETJMP',])
+
 aw.Append(CPPDEFINES=['BUILDING_AW'])
-aw.ShLib('aw', 'aw.c ' + backend)
+aw.Lib('aw', 'aw.c ' + backend)
 
 aw.Install('include/aw', ['aw.h', 'sysgl.h', 'sysglu.h'])
-if env['BACKEND'] in ['cocoa', 'nt']:
-    awnpapi = env.ForNPAPI()
+awnpapi = env.ForNPAPI()
+if awnpapi:
     awnpapi.CompileAs32Bits()
     awnpapi.Append(CPPPATH=['include'])
     awnpapi.Append(CPPDEFINES=['AWPLUGIN'])
@@ -22,25 +28,33 @@ if env['BACKEND'] in ['cocoa', 'nt']:
     else:
         awnpapi.Append(CPPDEFINES=['USE_SETJMP',])        
     backend = {
-        'cocoa': 'awposixresolve.c awmackeycodes.c awcocoanpapi.m',
-        'x11': 'awposixresolve.c',
-        'nt': 'awntresolve.c awntkeycodes.c awntevent.c awntnpapi.c',
+        'cocoa': '''
+           awposixresolve.c awmackeycodes.c awcocoanpapi.m awreportfile.c
+        ''',
+        'nt': '''
+           awntresolve.c awntkeycodes.c awntevent.c awntnpapi.c awreportfile.c
+        ''',
         }[awnpapi['BACKEND']]
     plg = awnpapi.ShLinkLib('awnpapi', backend + '''
         aw.c awnpapi.c co.c coroutine/source/Coro.c
         ''')
 
-awtest = env.ForProgram()
-awtest.Prg('awtest', 'test/awtest.c')
-awtest.Prg('hello', 'test/hello.c')
-awtest.Prg('robot', 'test/robot.c')
-awtest.Prg('picksquare', 'test/picksquare.c')
-awtest.Prg('cube', 'test/cube.c')
-awtest.Prg('multi', 'test/multi.c')
-awtest.Prg('sharing', 'test/sharing.c')
+awtest = env.ForGLPrg()
+if awtest:
+    awtest.Prg('awtest', 'test/awtest.c')
+    awtest.Prg('hello', 'test/hello.c')
+    awtest.Prg('robot', 'test/robot.c')
+    awtest.Prg('picksquare', 'test/picksquare.c')
+    awtest.Prg('cube', 'test/cube.c')
+    awtest.Prg('multi', 'test/multi.c')
+    awtest.Prg('sharing', 'test/sharing.c')
 
-if env['BACKEND'] in ['cocoa', 'nt']:
-    awplugin = env.ForPlugin()
+awestest = env.ForGLESPrg()
+if awestest:
+    awestest.Prg('awtest', 'test/awtest.c')
+
+awplugin = env.ForPlugin()
+if awplugin:
     awplugin.Plg('awplugin', 'test/awtest.c')
-#    awplugin.Prg('cotest', 'cotest.c')
+
 

@@ -8,12 +8,13 @@ tools = 0
 target = ARGUMENTS.get('target', 'native')
 if target == 'native':
 	target = sys.platform
-#	if target == 'win32':
-#		tools = 'mingw'
-#		toolpath = None
+elif target == 'iphone':
+	tools = 'iphone'
+elif target == 'iphonesim':
+	tools = 'iphonesim'
 else:
 	tools = 'crossmingw'
-	toolpath = '.'
+
 if target == 'linux2':
 	target = 'linux'
 
@@ -23,13 +24,17 @@ else:
 	comp = 'gcc'
 
 backends = {
-	'darwin' : ['x11', 'cocoa'],
+	'iphone' : ['iphone'],
+	'iphonesim' : ['iphone'],
+	'darwin' : ['cocoa', 'x11'],
 	'linux' : ['x11'],
 	'win32' : ['nt'],
 	}[target]
 
 class Env(Environment):
 	def UsesOpenGL(self):
+		if self['BACKEND'] == 'iphone':
+			self.Append(FRAMEWORKS=['OpenGLES', 'QuartzCore', 'UIKit', 'Foundation'])
 		if self['BACKEND'] == 'cocoa':
 			self.Append(FRAMEWORKS=['OpenGL', 'AppKit'])
 		if self['BACKEND'] == 'x11':
@@ -44,27 +49,57 @@ class Env(Environment):
 			for s in Split(sources)]
 		
 	def _SharedObjects(self, bdir, sources):
+		if self['BACKEND'] in ['iphone', 'iphonesim']:
+			return self._Objects(bdir, sources)
 		return [self.SharedObject('sobj' + bdir + '/' + s + '.os', s) 
 			for s in Split(sources)]
 
+	def ForLib(self):
+		return self.Clone()
+
 	def Lib(self, name, sources):
 		return self.Default(self.Library(name, 
-						 self.Objects(name, sources)))
+						 self._Objects(name, sources)))
 
 	def _SetCPPFlags(self):
 		self.Append(CPPPATH=['include'])
 		self.Append(LIBPATH='.') 
 
-	def ForProgram(self):
+	def ForGLPrg(self):
+		if self['BACKEND'] in ['iphone']:
+			return None
 		ret = self.Clone()
 		ret.Append(LIBS=['aw'])
 		ret.UsesOpenGL()
 		ret._SetCPPFlags()
 		return ret
 
+	def ForGLESPrg(self):
+		if not self['BACKEND'] in ['iphone']:
+			return None
+		ret = self.Clone()
+		ret.Append(LIBS=['aw'])
+		ret.UsesOpenGL()
+		ret._SetCPPFlags()
+		return ret
+
+
+	def App(self, name, prg):
+		if target != 'iphonesim':
+			return
+		dst = '#/../Library/Application Support/' +\
+		'iPhone Simulator/User/Applications/PC/' + name + '.app/'
+		self.Default(self.Install(dst, prg))
+		self.Default(self.InstallAs(dst + 'Info.plist', 
+					    name + '.plist'))
+		self.Default(self.Install(dst, 'Icon.png'))
+
+
 	def Prg(self, name, sources):
-		self.Default(self.Program(name, 
-					  self._SharedObjects(name, sources)))
+		prg = self.Program(name, 
+				   self._SharedObjects(name, sources))
+		self.Default(prg)
+		self.App(name, prg)
 
 	def CompileAs32Bits(self):
 		if comp == 'gcc':
@@ -72,6 +107,8 @@ class Env(Environment):
 			self.Append(LINKFLAGS=' -m32 ')
 
 	def ForNPAPI(self):
+		if self['BACKEND'] not in ['cocoa', 'nt']:
+			return None
 		ret = self.Clone()
 		ret.Append(CPPDEFINES=['AWPLUGIN'])
 		ret.Append(CPPPATH=[target])
@@ -83,27 +120,20 @@ class Env(Environment):
 		return ret
 		
 	def ForPlugin(self):
+		if self['BACKEND'] not in ['cocoa', 'nt']:
+			return None
 		ret = self.Clone()
 		ret.UsesOpenGL()
 		ret.CompileAs32Bits()
 		ret._SetCPPFlags()
 		ret.Append(LIBS=['awnpapi'])
 		ret.Append(FRAMEWORKS=['WebKit', 'QuartzCore'])
-		if target == 'darwin':
+		if target in ['darwin']:
 			ret['SHLINKFLAGS'] = '$LINKFLAGS' +\
 			    ' -bundle -flat_namespace'
 			ret['SHLIBPREFIX'] = ''
 			ret['SHLIBSUFFIX'] = ''
 		return ret
-
-	def ForShLib(self):
-		ret = self.Clone()
-		if target == 'win32':
-			ret.Append(LIBS=['user32'])
-		return ret
-
-	def ShLib(self, name, sources):
-		return self.SharedLibrary(name, self._SharedObjects(name, sources))
 
 	def ShLinkLib(self, name, sources):
 		return self.Library(name, self._SharedObjects(name, sources))
@@ -117,13 +147,14 @@ class Env(Environment):
 					   'rc /fo $TARGET $SOURCE')
 			platobjs = ['awnpapi.def', res[0]]
 		plg = self.SharedLibrary(prefix + name, 
-				   self._SharedObjects(name, sources) + platobjs)
+					 self._SharedObjects(name, sources) +\
+					 platobjs)
 		self.Default(plg)
 		home = os.environ['HOME'] + '/'
 		if target == 'win32':
 			instarget = home + 'Mozilla/Plugins/'
 			self.Default(self.Install(instarget, plg))
-		if target == 'darwin':
+		if target in ['darwinnn']:
 			res = self.Command(
 				name + '.rsrc', name + '.r', 
 				'/Developer/Tools/Rez -o $TARGET' +
@@ -172,15 +203,14 @@ compcppdefines= {
 	'cl' : [['snprintf', '_snprintf']],
 }
 
-
 for backend in backends:
 	for conf in ['debug']:
 		cnf = Env(CCFLAGS=ccflags[comp][conf],
-			  CPPDEFINES=confcppdefines[conf] + compcppdefines[comp],
+			  CPPDEFINES=confcppdefines[conf]+compcppdefines[comp],
 			  LINKFLAGS=linkflags[comp][conf],
 			  )
 		if tools:
-			cnf.Tool(tools, toolpath)
+			cnf.Tool(tools, '.')
 		dir = conf + '/' + backend
 		cnf.BuildDir(dir, '.', duplicate=0)
 		env = cnf.Clone()
