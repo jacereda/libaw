@@ -39,33 +39,6 @@
 #if defined(_MSC_VER)
 #define snprintf _snprintf
 #endif
-#if 1 //defined(AWPLUGIN)
-void report(const char *fmt, ...) {
-#if defined(_WIN32)
-	FILE *out = fopen("c:\\Users\\Jorge Acereda\\libaw\\aw.log", "a");
-#else
-	FILE *out = fopen("/tmp/aw.log", "a");
-#endif
-	va_list ap;
-	va_start(ap, fmt);
-	if(out) {
-		vfprintf(out, fmt, ap);
-		fputs("\n", out);
-		fclose(out);
-	}
-	va_end(ap);
-}
-#else
-void report(const char * fmt, ...) {
-        va_list ap;
-        va_start(ap, fmt);
-        fprintf(stderr, "AW ERROR: ");
-        vfprintf(stderr, fmt, ap);
-        va_end(ap);
-        fprintf(stderr, "\n");
-        fflush(stderr);
-}
-#endif
 
 static void bitset(unsigned char * b, unsigned bit) {
         b[bit>>3] |= 1 << (bit & 7);
