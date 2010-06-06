@@ -4,9 +4,9 @@ aw = env.ForLib()
 aw.UsesOpenGL()
 backend = {
 'iphone' : 'awiphone.m co.c coroutine/source/Coro.c awreportfile.c',
-'cocoa': 'awcocoa.m awmackeycodes.c awmain.c awreportconsole.c',
-'x11': 'awx.c awmain.c awreportconsole.c',
-'nt': 'aww.c awntkeycodes.c awntevent.c awreportconsole.c',
+'cocoa': 'awmain.c awcocoa.m awmackeycodes.c awreportconsole.c',
+'x11': 'awmain.c awx.c awreportconsole.c',
+'nt': 'awmain.c aww.c awntkeycodes.c awntevent.c awreportconsole.c',
 }[aw['BACKEND']]
 
 if aw['BACKEND'] == 'iphone':
