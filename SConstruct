@@ -31,7 +31,7 @@ backends = {
 	'win32' : ['nt'],
 	}[target]
 
-def genplist(target, source, env):
+def filtertemplate(target, source, env):
 	name = str(target[0])
 	name = name.split('/')[-1].split('.')[0]
 	print name
@@ -103,10 +103,9 @@ class Env(Environment):
 		dst = '#/../Library/Application Support/' +\
 		'iPhone Simulator/User/Applications/%s/%s.app/' % (name, name)
 		plist = self.Command(name + '.plist', 'template.plist',
-				     genplist)
+				     filtertemplate)
 		self.Default(self.Install(dst, prg))
-		self.Default(self.InstallAs(dst + 'Info.plist', 
-					    name + '.plist'))
+		self.Default(self.InstallAs(dst + 'Info.plist', plist))
 #		self.Default(self.Install(dst, name + '.png'))
 
 
@@ -169,9 +168,11 @@ class Env(Environment):
 		if target == 'win32':
 			instarget = home + 'Mozilla/Plugins/'
 			self.Default(self.Install(instarget, plg))
-		if target in ['darwinnn']:
+		if target in ['darwin']:
+			ress = self.Command(name + '.r', 'template.r',
+					    filtertemplate)
 			res = self.Command(
-				name + '.rsrc', name + '.r', 
+				name + '.rsrc', ress, 
 				'/Developer/Tools/Rez -o $TARGET' +
 				' -useDF $SOURCE')
 			instarget = home + 'Library/Internet Plug-Ins/' +\
