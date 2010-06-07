@@ -4,7 +4,7 @@
 #endif
 #include <GL/gl.h>
 #elif defined __IPHONE_OS_VERSION_MIN_REQUIRED
-#include <OpenGLES/ES1/gl.h>
+#include <OpenGLES/ES2/gl.h>
 #else
 #include <OpenGL/gl.h>
 #endif

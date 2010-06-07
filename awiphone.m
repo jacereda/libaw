@@ -217,7 +217,7 @@ shouldChangeCharactersInRange: (NSRange)range
         [win makeKeyAndVisible]; 
         [win addSubview: view]; 
 	[win addSubview: tf];
-        ctx = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES1];
+        ctx = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES2];
         [EAGLContext setCurrentContext: ctx];
         GLuint cb;
         GLuint fb;

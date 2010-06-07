@@ -52,6 +52,7 @@ if awtest:
 awestest = env.ForGLESPrg()
 if awestest:
     awestest.Prg('awtest', 'test/awtest.c')
+    awestest.Prg('gles', 'test/gles.c')
 
 awplugin = env.ForPlugin()
 if awplugin:
