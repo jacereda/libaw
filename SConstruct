@@ -88,7 +88,7 @@ class Env(Environment):
 		if target != 'iphonesim':
 			return
 		dst = '#/../Library/Application Support/' +\
-		'iPhone Simulator/User/Applications/PC/' + name + '.app/'
+		'iPhone Simulator/User/Applications/%s/%s.app/' % (name, name)
 		self.Default(self.Install(dst, prg))
 		self.Default(self.InstallAs(dst + 'Info.plist', 
 					    name + '.plist'))
