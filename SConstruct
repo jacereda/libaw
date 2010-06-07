@@ -157,7 +157,9 @@ class Env(Environment):
 		platobjs = []
 		if target == 'win32':
 			prefix = 'np'
-			res = self.Command(name + '.res', name + '.rc', 
+			ress = self.Command(name + '.rc', 'template.rc',
+					    filtertemplate)
+			res = self.Command(name + '.res', ress, 
 					   'rc /fo $TARGET $SOURCE')
 			platobjs = ['awnpapi.def', res[0]]
 		plg = self.SharedLibrary(prefix + name, 
