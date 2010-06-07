@@ -177,9 +177,13 @@ class Env(Environment):
 				' -useDF $SOURCE')
 			instarget = home + 'Library/Internet Plug-Ins/' +\
 			name + '.webplugin/'
+			plist = self.Command(name + '.plist',
+					     'webtemplate.plist',
+					     filtertemplate)
 			self.Default(
-				self.Install(instarget + 'Contents/', 
-					     'Info.plist'))
+				self.InstallAs(instarget +\
+						       'Contents/Info.plist', 
+					       plist))
 			self.Default(
 				self.Install(instarget + 'Contents/MacOS/', 
 					     plg))
