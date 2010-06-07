@@ -31,6 +31,19 @@ backends = {
 	'win32' : ['nt'],
 	}[target]
 
+def genplist(target, source, env):
+	name = str(target[0])
+	name = name.split('/')[-1].split('.')[0]
+	print name
+	s = open(str(source[0]))
+	d = open(str(target[0]), 'w')
+	c = s.read().replace('NAME', name) 
+	d.write(c)
+	d.close()
+	s.close()
+	
+
+
 class Env(Environment):
 	def UsesOpenGL(self):
 		if self['BACKEND'] == 'iphone':
@@ -89,10 +102,12 @@ class Env(Environment):
 			return
 		dst = '#/../Library/Application Support/' +\
 		'iPhone Simulator/User/Applications/%s/%s.app/' % (name, name)
+		plist = self.Command(name + '.plist', 'template.plist',
+				     genplist)
 		self.Default(self.Install(dst, prg))
 		self.Default(self.InstallAs(dst + 'Info.plist', 
 					    name + '.plist'))
-		self.Default(self.Install(dst, 'Icon.png'))
+#		self.Default(self.Install(dst, name + '.png'))
 
 
 	def Prg(self, name, sources):
