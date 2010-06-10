@@ -12,6 +12,7 @@ struct _ins {
         Display * dpy;
         GLXContext ctx;
         GtkWidget * plug;
+        guint to;
 };
 
 ins * awosNew(NPNetscapeFuncs * browser, NPP i) {
@@ -79,7 +80,6 @@ static gboolean event(GtkWidget * wid, GdkEvent * ev, gpointer data) {
         return ret;
 }
 
-
 static gboolean update(gpointer data) {
         ins * o = (ins*)data;
 	coSwitchTo(o->h.coaw);
@@ -109,7 +109,7 @@ void awosSetWindow(ins * o, NPWindow * win) {
                 o->dpy = info->display;
                 o->plug = plug;
                 o->w = gtk_plug_get_id(GTK_PLUG(o->plug));
-                g_timeout_add(10, update, o);
+                o->to = g_timeout_add(10, update, o);
                 vinfo = chooseVisual(o->dpy, 0);
                 o->ctx = glXCreateContext(o->dpy, vinfo, 0, True);
                 XFree(vinfo);
@@ -118,6 +118,11 @@ void awosSetWindow(ins * o, NPWindow * win) {
 }
 
 void awosDel(ins * o) {
+        g_source_remove(o->to);
+        glXMakeCurrent(o->dpy, 0, 0);
+        if (o->ctx)
+                glXDestroyContext(o->dpy, 0);
+        gtk_widget_destroy(o->plug);
 	free(o);
 }
 
