@@ -44,6 +44,7 @@ NPError awosGetValue(NPP, NPPVariable, void *);
 
 void * awosSelf(const char * plgname);
 void * awosResolve(void * in, const char * name);
+const char * awosModName();
 
 const char * awosResourcesPath(ins *);
 
