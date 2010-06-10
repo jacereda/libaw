@@ -177,13 +177,13 @@ class Env(Environment):
 					 platobjs)
 		self.Default(plg)
 		home = os.environ['HOME'] + '/'
-		if target == 'win32':
+		if target == 'win32' and self['CONF'] == release:
 			instarget = home + 'Mozilla/Plugins/'
 			self.Default(self.Install(instarget, plg))
 		if target == 'linux' and self['CONF'] == 'release':
 			instarget = home + '.mozilla/plugins/'
 			self.Default(self.Install(instarget, plg))
-		if target in ['darwin']:
+		if target == 'darwin' and self['CONF'] == 'release':
 			ress = self.Command(name + '.r', 'template.r',
 					    filtertemplate)
 			res = self.Command(
