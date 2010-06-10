@@ -136,7 +136,7 @@ int awosInit() {
                 g_SwapInterval = (int(*)(int))glXGetProcAddress(
                         (GLubyte*)"glXSwapIntervalSGI");
         if (!g_SwapInterval)
-                report("no glXSwapIntervalSGI()");
+                debug("no glXSwapIntervalSGI()");
         if (g_dpy)
                 g_xim = XOpenIM (g_dpy, NULL, NULL, NULL);
         return hasExtensions && g_xim;

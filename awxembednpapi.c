@@ -84,7 +84,7 @@ static gboolean update(gpointer data) {
         ins * o = (ins*)data;
 	coSwitchTo(o->h.coaw);
         glXSwapBuffers(o->dpy, o->w);
-        return TRUE;
+        return !o->h.awdone;
 }
 
 void awosSetWindow(ins * o, NPWindow * win) {
@@ -140,7 +140,7 @@ void awosUpdate(ins * o) {
 
 NPError awosEvent(ins * o, void * ev) {
 //	NPEvent * e = (NPEvent *)ev;
-	report("osevent");
+	debug("osevent");
 	return NPERR_NO_ERROR;
 }
 
@@ -151,13 +151,13 @@ const char * awosResourcesPath(ins * o) {
 NPError awosGetValue(NPP i, NPPVariable var, void * v) {
 //	ins * o = (ins*)i->pdata;
 	NPError ret = NPERR_NO_ERROR;
-	report("os getvalue"); 
+	debug("os getvalue"); 
 	switch(var) {
         case NPPVpluginNeedsXEmbed:
                 *(int*)v = 1;
                 break;
 	default: 
-		report("os getval default"); 
+		debug("os getval default"); 
 		ret = NPERR_GENERIC_ERROR; 
 		break;
 	}

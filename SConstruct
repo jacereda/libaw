@@ -180,7 +180,7 @@ class Env(Environment):
 		if target == 'win32':
 			instarget = home + 'Mozilla/Plugins/'
 			self.Default(self.Install(instarget, plg))
-		if target == 'linux':
+		if target == 'linux' and self['CONF'] == 'release':
 			instarget = home + '.mozilla/plugins/'
 			self.Default(self.Install(instarget, plg))
 		if target in ['darwin']:
@@ -209,7 +209,7 @@ class Env(Environment):
 ccflags = {
 	'gcc': {
 		'debug': '-g -Wall -fvisibility=hidden',
-		'release': '-O2 -Wall -fvisibility=hidden',
+		'release': '-g -O2 -Wall -fvisibility=hidden',
 		},
 	'cl': {
 		'debug': ' /EHs-c- /MTd /DEBUG /Z7 /Od ',
@@ -239,7 +239,7 @@ compcppdefines= {
 }
 
 for backend in backends:
-	for conf in ['debug']:
+	for conf in ['debug', 'release']:
 		cnf = Env(CCFLAGS=ccflags[comp][conf],
 			  CPPDEFINES=confcppdefines[conf]+compcppdefines[comp],
 			  LINKFLAGS=linkflags[comp][conf],
@@ -248,6 +248,7 @@ for backend in backends:
 			cnf.Tool(tools, '.')
 		dir = conf + '/' + backend
 		cnf.BuildDir(dir, '.', duplicate=0)
+		cnf['CONF'] = conf
 		env = cnf.Clone()
 		env['BACKEND'] = backend
 		env.Append(CPPDEFINES=[['AWBACKEND', backend]])

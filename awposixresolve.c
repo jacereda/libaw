@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include <dlfcn.h>
 #include <stdio.h>
+#include <string.h>
 
 void * awosSelf(const char * name) {
         char buf[256];
@@ -18,7 +19,6 @@ const char * awosModName() {
         dladdr(awosModName, &info);
         snprintf(buf, sizeof buf - 1, "%s", strrchr(info.dli_fname, '/')+1);
         *strrchr(buf, '.') = 0;
-        report("%s", buf+3);
         return buf+3;
 }
 

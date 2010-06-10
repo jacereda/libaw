@@ -1,9 +1,6 @@
 #include <assert.h>
 #include <string.h>
-//#define report xxx
 #include "awnpapios.h"
-//#undef report
-//static void report(const char * fmt, ...) {}
 
 typedef void (*awmethod)(void);
 
@@ -18,7 +15,7 @@ static awmethod resolve(NPIdentifier method) {
 	if (!me)
 		me = awosSelf(s_plgname);
 	ret = awosResolve(me, mname);
-	report("resolve %s %p", mname, ret);
+	debug("resolve %s %p", mname, ret);
 	// leak mname?
 	return ret;
 }
@@ -33,7 +30,7 @@ static bool invoke(NPObject* obj, NPIdentifier method,
 	if (func)
 		func();
 	else {
-		report("no such method");
+		debug("no such method");
 		s_browser->setexception(obj, "no such method");
 	}
 	return func != 0;
@@ -42,17 +39,17 @@ static bool invoke(NPObject* obj, NPIdentifier method,
 static bool invokedefault(NPObject *obj, 
 			  const NPVariant *args, uint32_t nargs, 
 			  NPVariant *res) {
-	report("invokedefault");
+	debug("invokedefault");
 	return 0;
 }
 
 static bool hasproperty(NPObject *obj, NPIdentifier prop) {
-	report("hasproperty");
+	debug("hasproperty");
 	return 0;
 }
 
 static bool getproperty(NPObject *obj, NPIdentifier prop, NPVariant *res) {
-	report("getproperty");
+	debug("getproperty");
 	return 0;
 }
 
@@ -73,7 +70,7 @@ static NPClass scriptable = {
 static void ev(ins * o, int ev, int x, int y) {
 	insHeader * h = (insHeader*)o;
 	got(&h->w, ev, x, y);
-	report("event %d %d %d", ev, x, y);
+	debug("event %d %d %d", ev, x, y);
 }
 
 insHeader * getHeader() {
@@ -84,7 +81,7 @@ void awentry(void * data) {
 	extern int main(int argc, char ** argv);
 	int argc = 1;
 	char * argv0 = "awnpapi";
-	report("entry");
+	debug("entry");
 	main(argc, &argv0);
 	getHeader()->awdone = 1;
 	coSwitchTo(getHeader()->comain);
@@ -98,10 +95,10 @@ static NPError nnew(NPMIMEType type, NPP i,
 	insHeader * h;
 	unsigned j;
         snprintf(s_plgname, sizeof s_plgname - 1, "%s", argv[0]);
-	report("new");
+	debug("new");
 	for (j = 0; j < argc; j++) {
-		report("  %s", argv[j]);
-		report("  %s", argn[j]);
+		debug("  %s", argv[j]);
+		debug("  %s", argn[j]);
 	}
 	o = awosNew(s_browser, i);
 	h = (insHeader*)o;
@@ -109,7 +106,7 @@ static NPError nnew(NPMIMEType type, NPP i,
 	memset(&h->c, 0, sizeof(h->c));
 	i->pdata = o;
 	h->comain = coMain(o);
-	report("comain: %p", h->comain);
+	debug("comain: %p", h->comain);
 	h->coaw = coNew(awentry, o);
 	h->awdone = 0;
 	return NPERR_NO_ERROR;
@@ -117,8 +114,8 @@ static NPError nnew(NPMIMEType type, NPP i,
 
 static NPError setwindow(NPP i, NPWindow* w) {
 	ins * o = (ins*)i->pdata;
-	report("setwindow %p", w->window);
-	report("%dx%d", w->width, w->height);
+	debug("setwindow %p", w->window);
+	debug("%dx%d", w->width, w->height);
 	ev(o, AW_EVENT_RESIZE, w->width, w->height);
 	awosSetWindow(o, w);
 	return NPERR_NO_ERROR;
@@ -126,15 +123,16 @@ static NPError setwindow(NPP i, NPWindow* w) {
 
 static NPError destroy(NPP i, NPSavedData **save) {
 	ins * o = (ins*)i->pdata;
-	report("destroy");
+	debug("destroy");
 	ev(o, AW_EVENT_CLOSE, 0, 0);
-	report("destroy>aw");
+	debug("destroy>aw");
 	while (!getHeader()->awdone) 
 		coSwitchTo(getHeader()->coaw);
-	report("aw>destroy");
+	debug("aw>destroy");
 	coDel(getHeader()->coaw);
 	coDel(getHeader()->comain);
 	awosDel(o);
+        i->pdata = 0;
 	if(s_so)
 		s_browser->releaseobject(s_so);
 	return NPERR_NO_ERROR;
@@ -143,23 +141,23 @@ static NPError destroy(NPP i, NPSavedData **save) {
 static NPError getvalue(NPP i, NPPVariable variable, void *v) {
 	ins * o;
 	NPError ret = NPERR_NO_ERROR;
-	report("getvalue");
+	debug("getvalue");
 	o = i? (ins*)i->pdata : 0;
 	switch(variable) {
 	default: 
-		report("getval default"); 
+		debug("getval default"); 
 		ret = awosGetValue(i, variable, v);
 		break;
 	case NPPVpluginNameString: 
-		report("getval pluginname"); 
+		debug("getval pluginname"); 
 		*(char **)v = "plugin name";
 		break;
 	case NPPVpluginDescriptionString:
-		report("getval plugindesc"); 
+		debug("getval plugindesc"); 
 		*(char **)v = "plugin description";
 		break;
 	case NPPVpluginScriptableNPObject:
-		report("getval scriptable");
+		debug("getval scriptable");
 		if(!s_so)
 			s_so = s_browser->createobject(i, &scriptable);
 		s_browser->retainobject(s_so);
@@ -174,12 +172,12 @@ static NPError getvalue(NPP i, NPPVariable variable, void *v) {
 
 static NPError hevent(NPP i, void * ve) {
 	ins * o = (ins*)i->pdata;
-	report("event");
+	debug("event");
 	return awosEvent(o, ve);
 }
 
 EXPORTED NPError OSCALL NP_GetEntryPoints(NPPluginFuncs* f) {
-	report("getentrypoints %p", f);
+	debug("getentrypoints %p", f);
 	f->size = sizeof (NPPluginFuncs);
 	f->version = (NP_VERSION_MAJOR << 8) | NP_VERSION_MINOR;
 	f->newp = nnew;
@@ -187,7 +185,7 @@ EXPORTED NPError OSCALL NP_GetEntryPoints(NPPluginFuncs* f) {
 	f->destroy = destroy;
 	f->getvalue = getvalue;
 	f->event = hevent;
-	report("/getentrypoints %p", f);
+	debug("/getentrypoints %p", f);
 	return NPERR_NO_ERROR;
 }
 
@@ -196,14 +194,14 @@ EXPORTED NPError OSCALL NP_Initialize(NPNetscapeFuncs* f
                                       ,NPPluginFuncs * funcs
 #endif
         ) {
-	report("initialize");
+	debug("initialize");
 	s_browser = f;
 	if(!f) {
-                report("invalid functable");
+                debug("invalid functable");
 		return NPERR_INVALID_FUNCTABLE_ERROR;
         }
 	if(((f->version & 0xff00) >> 8) > NP_VERSION_MAJOR) {
-                report("incompatible");
+                debug("incompatible");
                 return NPERR_INCOMPATIBLE_VERSION_ERROR;
         }
 #if defined XP_UNIX && !defined XP_MACOSX
@@ -213,13 +211,13 @@ EXPORTED NPError OSCALL NP_Initialize(NPNetscapeFuncs* f
 }
 
 EXPORTED NPError OSCALL NP_Shutdown() {
-	report("shutdown");
+	debug("shutdown");
 	return NPERR_NO_ERROR;
 }
 
 EXPORTED char * NP_GetMIMEDescription(void) {
-        char buf[256];
-        report("getmimedesc");
+        static char buf[256];
+        debug("getmimedesc");
         snprintf(buf, sizeof buf - 1, 
                  "application/%s::xx@foo.bar", awosModName());
         return buf;
@@ -233,92 +231,92 @@ EXPORTED NPError OSCALL NP_GetValue(
 #endif
         npp, 
                                     NPPVariable variable, void *val) {
-	report("npgetvalue");
+	debug("npgetvalue");
 	return getvalue(npp, variable, val);
 }
 
 int awosInit() { 
-	report("awosInit");
+	debug("awosInit");
 	return 1; 
 }
 
 int awosEnd() { 
-	report("awosEnd");
+	debug("awosEnd");
 	return 1; 
 }
 
 aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
 	insHeader * h = getHeader();
-	report("awosOpen");
+	debug("awosOpen");
 	return &h->w;
 }
 
 int awosSetTitle(aw * w, const char * t) {
-	report("awosSetTitle");
+	debug("awosSetTitle");
 	return 1;
 }
 
 int awosClose(aw * w) {
-	report("awosClose");
+	debug("awosClose");
 	return 1;
 }
 
 int awosMakeCurrent(aw * w, ac * c) {
-	report("awosMakeCurrent");
+	debug("awosMakeCurrent");
 	return awosMakeCurrentI((ins*)w);
 }
 
 int awosClearCurrent(aw * w) {
-	report("awosClearCurrent");
+	debug("awosClearCurrent");
 	return awosClearCurrentI((ins*)w);
 }
 
 int awosSwapBuffers(aw * w) {
 	insHeader * hdr = getHeader();
-	report("aw>main %p", hdr->comain);
+	debug("aw>main %p", hdr->comain);
 	coSwitchTo(hdr->comain);
-	report("main>aw");
+	debug("main>aw");
 	awosUpdate((ins*)hdr);
 	return 1;
 }
 
 int awosShow(aw * w) {
-	report("awosShow");
+	debug("awosShow");
 	return 1;
 }
 
 int awosHide(aw * w) {
-	report("awosHide");
+	debug("awosHide");
 	return 1;
 }
 
 void awosPollEvent(aw * w) {
-	report("awosPollEvent");
+	debug("awosPollEvent");
 }
 
 int awosSetSwapInterval(aw * w, int interval) {
-	report("awosSetSwapInterval");
+	debug("awosSetSwapInterval");
 	return 1;
 }
 
 int acosInit() {
-	report("acosInit");
+	debug("acosInit");
 	return 1;
 }
 
 int acosEnd() {
-	report("acosEnd");
+	debug("acosEnd");
 	return 1;
 }
 
 ac * acosNew(ac * c) {
 	insHeader * h = getHeader();
-	report("acosNew");
+	debug("acosNew");
 	return &h->c;
 }
 
 int acosDel(ac * c) {
-	report("acosDel");
+	debug("acosDel");
 	return 1;
 }
 

@@ -109,7 +109,7 @@ void awosUpdate(ins * o) {
 
 NPError awosEvent(ins * o, void * ev) {
 	NPEvent * e = (NPEvent *)ev;
-	report("osevent");
+	debug("osevent");
 	return NPERR_NO_ERROR;
 }
 
@@ -129,10 +129,10 @@ const char * awosResourcesPath(ins * o) {
 NPError awosGetValue(NPP i, NPPVariable var, void * v) {
 	ins * o = (ins*)i->pdata;
 	NPError ret;
-	report("os getvalue"); 
+	debug("os getvalue"); 
 	switch(var) {
 	default: 
-		report("os getval default"); 
+		debug("os getval default"); 
 		ret = NPERR_GENERIC_ERROR; 
 		break;
 	}
