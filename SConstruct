@@ -33,8 +33,7 @@ backends = {
 
 def filtertemplate(target, source, env):
 	name = str(target[0])
-	name = name.split('/')[-1].split('.')[0]
-	print name
+	name = name.split(os.path.sep)[-1].split('.')[0]
 	s = open(str(source[0]))
 	d = open(str(target[0]), 'w')
 	c = s.read().replace('NAME', name) 
