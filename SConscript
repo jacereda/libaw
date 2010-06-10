@@ -63,5 +63,6 @@ if awestest:
 awplugin = env.ForPlugin()
 if awplugin:
     awplugin.Plg('awplugin', 'test/awtest.c')
+    awplugin.Plg('cubeplugin', 'test/cube.c')
 
 

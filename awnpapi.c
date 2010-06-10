@@ -218,8 +218,11 @@ EXPORTED NPError OSCALL NP_Shutdown() {
 }
 
 EXPORTED char * NP_GetMIMEDescription(void) {
-	report("getmimedesc");
-	return "application/awplugin:.foo:xx@foo.bar";
+        char buf[256];
+        report("getmimedesc");
+        snprintf(buf, sizeof buf - 1, 
+                 "application/%s::xx@foo.bar", awosModName());
+        return buf;
 }
 
 EXPORTED NPError OSCALL NP_GetValue(
