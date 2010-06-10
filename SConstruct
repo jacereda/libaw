@@ -177,7 +177,7 @@ class Env(Environment):
 					 platobjs)
 		self.Default(plg)
 		home = os.environ['HOME'] + '/'
-		if target == 'win32' and self['CONF'] == release:
+		if target == 'win32' and self['CONF'] == 'release':
 			instarget = home + 'Mozilla/Plugins/'
 			self.Default(self.Install(instarget, plg))
 		if target == 'linux' and self['CONF'] == 'release':
