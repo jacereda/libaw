@@ -230,6 +230,7 @@ int awosHide(aw * w) {
         return ret;
 }
 
+
 static int mapButton(int button) {
         int which;
         switch (button) {
@@ -241,130 +242,6 @@ static int mapButton(int button) {
         default: which = AW_KEY_NONE;
         }
         return which;
-}
-
-static unsigned key2aw(unsigned k) {
-        int ret;
-        switch (k) {
-	case XK_A: ret = AW_KEY_A; break;
-	case XK_S: ret = AW_KEY_S; break;
-	case XK_D: ret = AW_KEY_D; break;
-	case XK_F: ret = AW_KEY_F; break;
-	case XK_H: ret = AW_KEY_H; break;
-	case XK_G: ret = AW_KEY_G; break;
-	case XK_Z: ret = AW_KEY_Z; break;
-	case XK_X: ret = AW_KEY_X; break;
-	case XK_C: ret = AW_KEY_C; break;
-	case XK_V: ret = AW_KEY_V; break;
-	case XK_B: ret = AW_KEY_B; break;
-	case XK_Q: ret = AW_KEY_Q; break;
-	case XK_W: ret = AW_KEY_W; break;
-	case XK_E: ret = AW_KEY_E; break;
-	case XK_R: ret = AW_KEY_R; break;
-	case XK_Y: ret = AW_KEY_Y; break;
-	case XK_T: ret = AW_KEY_T; break;
-	case XK_1: ret = AW_KEY_1; break;
-	case XK_2: ret = AW_KEY_2; break;
-	case XK_3: ret = AW_KEY_3; break;
-	case XK_4: ret = AW_KEY_4; break;
-	case XK_6: ret = AW_KEY_6; break;
-	case XK_5: ret = AW_KEY_5; break;
-	case XK_equal: ret = AW_KEY_EQUAL; break;
-	case XK_9: ret = AW_KEY_9; break;
-	case XK_7: ret = AW_KEY_7; break;
-	case XK_minus: ret = AW_KEY_MINUS; break;
-	case XK_8: ret = AW_KEY_8; break;
-	case XK_0: ret = AW_KEY_0; break;
-	case XK_bracketright: ret = AW_KEY_RIGHTBRACKET; break;
-	case XK_O: ret = AW_KEY_O; break;
-	case XK_U: ret = AW_KEY_U; break;
-	case XK_bracketleft: ret = AW_KEY_LEFTBRACKET; break;
-	case XK_I: ret = AW_KEY_I; break;
-	case XK_P: ret = AW_KEY_P; break;
-	case XK_L: ret = AW_KEY_L; break;
-	case XK_J: ret = AW_KEY_J; break;
-	case XK_apostrophe: ret = AW_KEY_QUOTE; break;
-	case XK_K: ret = AW_KEY_K; break;
-	case XK_semicolon: ret = AW_KEY_SEMICOLON; break;
-	case XK_backslash: ret = AW_KEY_BACKSLASH; break;
-	case XK_comma: ret = AW_KEY_COMMA; break;
-	case XK_slash: ret = AW_KEY_SLASH; break;
-	case XK_N: ret = AW_KEY_N; break;
-	case XK_M: ret = AW_KEY_M; break;
-	case XK_period: ret = AW_KEY_PERIOD; break;
-	case XK_grave: ret = AW_KEY_GRAVE; break;
-	case XK_KP_Decimal: ret = AW_KEY_KEYPADDECIMAL; break;
-	case XK_KP_Multiply: ret = AW_KEY_KEYPADMULTIPLY; break;
-	case XK_KP_Add: ret = AW_KEY_KEYPADPLUS; break;
-	case XK_Clear: ret = AW_KEY_KEYPADCLEAR; break;
-	case XK_KP_Divide: ret = AW_KEY_KEYPADDIVIDE; break;
-	case XK_KP_Enter: ret = AW_KEY_KEYPADENTER; break;
-	case XK_KP_Subtract: ret = AW_KEY_KEYPADMINUS; break;
-	case XK_KP_Equal: ret = AW_KEY_KEYPADEQUALS; break;
-	case XK_KP_0: ret = AW_KEY_KEYPAD0; break;
-	case XK_KP_1: ret = AW_KEY_KEYPAD1; break;
-	case XK_KP_2: ret = AW_KEY_KEYPAD2; break;
-	case XK_KP_3: ret = AW_KEY_KEYPAD3; break;
-	case XK_KP_4: ret = AW_KEY_KEYPAD4; break;
-	case XK_KP_5: ret = AW_KEY_KEYPAD5; break;
-	case XK_KP_6: ret = AW_KEY_KEYPAD6; break;
-	case XK_KP_7: ret = AW_KEY_KEYPAD7; break;
-	case XK_KP_8: ret = AW_KEY_KEYPAD8; break;
-	case XK_KP_9: ret = AW_KEY_KEYPAD9; break;
-	case XK_Return: ret = AW_KEY_RETURN; break;
-	case XK_Tab: ret = AW_KEY_TAB; break;
-	case XK_KP_Space: ret = AW_KEY_SPACE; break;
-	case XK_BackSpace: ret = AW_KEY_DELETE; break;
-	case XK_Escape: ret = AW_KEY_ESCAPE; break;
-	case XK_Meta_L: ret = AW_KEY_COMMAND; break;
-	case XK_Shift_L: ret = AW_KEY_SHIFT; break;
-	case XK_Caps_Lock: ret = AW_KEY_CAPSLOCK; break;
-	case XK_Alt_L: ret = AW_KEY_OPTION; break;
-	case XK_Control_L: ret = AW_KEY_CONTROL; break;
-	case XK_Shift_R: ret = AW_KEY_RIGHTSHIFT; break;
-	case XK_Alt_R: ret = AW_KEY_RIGHTOPTION; break;
-	case XK_Control_R: ret = AW_KEY_RIGHTCONTROL; break;
-//	case XK_function: ret = AW_KEY_FUNCTION; break;
-	case XK_F17: ret = AW_KEY_F17; break;
-//	case XK_VolumeUp: ret = AW_KEY_VOLUMEUP; break;
-//	case XK_VolumeDown: ret = AW_KEY_VOLUMEDOWN; break;
-//	case XK_Mute: ret = AW_KEY_MUTE; break;
-	case XK_F18: ret = AW_KEY_F18; break;
-	case XK_F19: ret = AW_KEY_F19; break;
-	case XK_F20: ret = AW_KEY_F20; break;
-	case XK_F5: ret = AW_KEY_F5; break;
-	case XK_F6: ret = AW_KEY_F6; break;
-	case XK_F7: ret = AW_KEY_F7; break;
-	case XK_F3: ret = AW_KEY_F3; break;
-	case XK_F8: ret = AW_KEY_F8; break;
-	case XK_F9: ret = AW_KEY_F9; break;
-	case XK_F11: ret = AW_KEY_F11; break;
-	case XK_F13: ret = AW_KEY_F13; break;
-	case XK_F16: ret = AW_KEY_F16; break;
-	case XK_F14: ret = AW_KEY_F14; break;
-	case XK_F10: ret = AW_KEY_F10; break;
-	case XK_F12: ret = AW_KEY_F12; break;
-	case XK_F15: ret = AW_KEY_F15; break;
-	case XK_Help: ret = AW_KEY_HELP; break;
-	case XK_Home: ret = AW_KEY_HOME; break;
-	case XK_Page_Up: ret = AW_KEY_PAGEUP; break;
-	case XK_Delete: ret = AW_KEY_FORWARDDELETE; break;
-	case XK_F4: ret = AW_KEY_F4; break;
-	case XK_End: ret = AW_KEY_END; break;
-	case XK_F2: ret = AW_KEY_F2; break;
-	case XK_Page_Down: ret = AW_KEY_PAGEDOWN; break;
-	case XK_F1: ret = AW_KEY_F1; break;
-	case XK_Left: ret = AW_KEY_LEFTARROW; break;
-	case XK_Right: ret = AW_KEY_RIGHTARROW; break;
-	case XK_Down: ret = AW_KEY_DOWNARROW; break;
-	case XK_Up: ret = AW_KEY_UPARROW; break;
-        default: ret = AW_KEY_NONE;
-        }
-        return ret;
-}
-
-static int mapKey(KeyCode keycode) {
-        return key2aw(XKeycodeToKeysym(g_dpy, keycode, 0));
 }
 
 static void configure(aw * w, int x, int y, int width, int height) {
@@ -382,6 +259,7 @@ static int isAutoRepeat(XEvent * e, Window win) {
 }
 
 static void handle(aw * w, XEvent * e) {
+        extern unsigned mapkeycode(unsigned);
         switch(e->type) {
         case ClientMessage:
                 got(w, AW_EVENT_CLOSE, 0, 0);
@@ -405,14 +283,14 @@ static void handle(aw * w, XEvent * e) {
                 KeySym ks;
                 Status st;
                 int i;
-                int n = XwcLookupString(w->xic,
-                                        &e->xkey, 
-                                        buf, 
-                                        sizeof(buf) / sizeof(wchar_t),
-                                        &ks, 
-                                        &st);
-                if (st == XLookupKeySym || st == XLookupBoth) 
-                        got(w, AW_EVENT_DOWN, key2aw(ks), 0);
+                int n;
+                got(w, AW_EVENT_DOWN, mapkeycode(e->xkey.keycode), 0);
+                n = XwcLookupString(w->xic,
+                                    &e->xkey, 
+                                    buf, 
+                                    sizeof(buf) / sizeof(wchar_t),
+                                    &ks, 
+                                    &st);
                 if (st == XLookupChars || st == XLookupBoth) 
                         for (i = 0; i < n; i++)
                                 got(w, AW_EVENT_UNICODE, buf[i], 0);
@@ -420,7 +298,7 @@ static void handle(aw * w, XEvent * e) {
         break;
         case KeyRelease:
                 if (!isAutoRepeat(e, w->win))
-                        got(w, AW_EVENT_UP, mapKey(e->xkey.keycode), 0);
+                        got(w, AW_EVENT_UP, mapkeycode(e->xkey.keycode), 0);
                 break;
         default:
                 got(w, AW_EVENT_UNKNOWN, 0, 0);
@@ -441,7 +319,13 @@ void awosPollEvent(aw * w) {
 }
 
 int awosSetSwapInterval(aw * w, int interval) {
+#if 1
         return !g_SwapInterval || 0 == g_SwapInterval(interval);
+#else
+        if (g_SwapInterval)
+                g_SwapInterval(interval);
+        return 1;
+#endif
 }
 
 ac * acosNew(ac * share) {
