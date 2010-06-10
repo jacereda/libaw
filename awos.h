@@ -38,6 +38,11 @@ int acosDel(ac *);
 // Defined in the frontend
 void got(aw  * w, int, int, int);
 void report(const char * fmt, ...);
+#if defined NDEBUG
+static inline void debug(const char * fmt, ...) {}
+#else
+#define debug report
+#endif
 
 /* 
    Local variables: **

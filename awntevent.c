@@ -91,7 +91,6 @@ static void onMW(HWND win, int x, int y, int z, UINT keys) {
 LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
         LONG r;
         int handled = 1;
-	report("handle %d", w);
         switch (msg) {
         case WM_NCCREATE: 
                 SetWindowLongPtrW(

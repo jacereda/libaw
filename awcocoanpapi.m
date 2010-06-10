@@ -39,10 +39,10 @@ void awosDel(ins * o) {
 }
 
 static void update(ins * o) {
-	report("update %p", o);
+	debug("update %p", o);
 	[o->l performSelectorOnMainThread:@selector(setNeedsDisplay)
 	  withObject:nil waitUntilDone:NO];
-	report("/update %p", o);
+	debug("/update %p", o);
 }
 
 void awosSetWindow(ins * o, NPWindow * win) {
@@ -63,63 +63,63 @@ void awosUpdate(ins * o) {
 
 static void ev(ins * o, int ev, int x, int y) {
 	got(&o->h.w, ev, x, y);
-	report("event %d %d %d", ev, x, y);
+	debug("event %d %d %d", ev, x, y);
 }
 
 NPError awosEvent(ins * o, void * ve) {
 	extern unsigned mapkeycode(unsigned);
 	NPCocoaEvent * e = (NPCocoaEvent *)ve;
-	report("event");
+	debug("event");
 	switch (e->type) {
 	case NPCocoaEventDrawRect: 
-		report("NPCocoaEventDrawRect"); 
+		debug("NPCocoaEventDrawRect"); 
 		break;
 	case NPCocoaEventMouseDown: 
-		report("NPCocoaEventMouseDown"); 
+		debug("NPCocoaEventMouseDown"); 
 		ev(o, AW_EVENT_DOWN, AW_KEY_MOUSELEFT 
 		   + e->data.mouse.buttonNumber, 0);
 		break;
 	case NPCocoaEventMouseUp: 
-		report("NPCocoaEventMouseUp"); 
+		debug("NPCocoaEventMouseUp"); 
 		ev(o, AW_EVENT_UP, AW_KEY_MOUSELEFT 
 		   + e->data.mouse.buttonNumber, 0);
 		break;
 	case NPCocoaEventMouseMoved: 
-		report("NPCocoaEventMouseMoved"); 
+		debug("NPCocoaEventMouseMoved"); 
 		ev(o, AW_EVENT_MOTION, 
 		   e->data.mouse.pluginX, e->data.mouse.pluginY);
 		break;
 	case NPCocoaEventMouseEntered: 
-		report("NPCocoaEventMouseEntered"); 
+		debug("NPCocoaEventMouseEntered"); 
 		break;
 	case NPCocoaEventMouseExited: 
-		report("NPCocoaEventMouseExited"); 
+		debug("NPCocoaEventMouseExited"); 
 		break;
 	case NPCocoaEventMouseDragged: 
-		report("NPCocoaEventMouseDragged"); 
+		debug("NPCocoaEventMouseDragged"); 
 		break;
 	case NPCocoaEventKeyDown: 
-		report("NPCocoaEventKeyDown"); 
+		debug("NPCocoaEventKeyDown"); 
 		ev(o, AW_EVENT_DOWN, mapkeycode(e->data.key.keyCode), 0);
 		break;
 	case NPCocoaEventKeyUp: 
-		report("NPCocoaEventKeyUp"); 
+		debug("NPCocoaEventKeyUp"); 
 		ev(o, AW_EVENT_UP, mapkeycode(e->data.key.keyCode), 0);
 		break;
 	case NPCocoaEventFlagsChanged: 
-		report("NPCocoaEventFlagsChanged"); 
+		debug("NPCocoaEventFlagsChanged"); 
 		break;
 	case NPCocoaEventFocusChanged: 
-		report("NPCocoaEventFocusChanged"); 
+		debug("NPCocoaEventFocusChanged"); 
 		break;
 	case NPCocoaEventWindowFocusChanged: 
-		report("NPCocoaEventWindowFocusChanged"); 
+		debug("NPCocoaEventWindowFocusChanged"); 
 		break;
 	case NPCocoaEventScrollWheel: 
-		report("NPCocoaEventScrollWheel"); 
+		debug("NPCocoaEventScrollWheel"); 
 		break;
 	case NPCocoaEventTextInput: 
-		report("NPCocoaEventTextInput"); 
+		debug("NPCocoaEventTextInput"); 
 		break;
 	default: assert(0);
 	}
@@ -134,20 +134,20 @@ const char * awosResourcesPath(ins * o) {
 NPError awosGetValue(NPP i, NPPVariable var, void * v) {
 	ins * o = (ins*)i->pdata;
 	NPError ret = NPERR_NO_ERROR;
-	report("os getvalue"); 
+	debug("os getvalue"); 
 	switch(var) {
 	case NPNVpluginDrawingModel:
-		report("getval drawingmodel");
+		debug("getval drawingmodel");
 		*(int*)v = NPDrawingModelOpenGL;
 		break;
 	case NPPVpluginCoreAnimationLayer:
-		report("getval layer");
+		debug("getval layer");
 		o->l.backgroundColor = CGColorGetConstantColor(kCGColorBlack);
                 o->l.autoresizingMask = kCALayerWidthSizable | kCALayerHeightSizable;
 		*(CALayer**)v = o->l;
 		break;
 	default: 
-		report("os getval default"); 
+		debug("os getval default"); 
 		ret = NPERR_GENERIC_ERROR; 
 		break;
 	}
@@ -162,15 +162,15 @@ NPError awosGetValue(NPP i, NPPVariable var, void * v) {
 {
 	ins * o = (ins*)coData(coCurrent());
 	CGLSetCurrentContext(ct);
-	report("drawInCGLContext %p", ct);
-	report("aw>>main");
+	debug("drawInCGLContext %p", ct);
+	debug("aw>>main");
 	coSwitchTo(o->h.coaw);	
-	report("main>>aw");
+	debug("main>>aw");
 	CGLSetCurrentContext(ct);
-	report("drawInCGLContext /cocall");
+	debug("drawInCGLContext /cocall");
 	[super drawInCGLContext: ct pixelFormat: pf
 	       forLayerTime: lt displayTime: dt];
-	report("/drawInCGLContext");
+	debug("/drawInCGLContext");
 	update(o);
 }
 
@@ -179,7 +179,7 @@ NPError awosGetValue(NPP i, NPPVariable var, void * v) {
 	       forLayerTime:(CFTimeInterval)lt 
 		displayTime:(const CVTimeStamp *)ts
 {
-	report("candraw %f", (float)lt);
+	debug("candraw %f", (float)lt);
 	ins * o = (ins*)coData(coCurrent());
 	BOOL ret = lt - lastdraw > 1 / 60.;
 	if (ret)
