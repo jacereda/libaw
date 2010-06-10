@@ -109,7 +109,7 @@ void awosSetWindow(ins * o, NPWindow * win) {
                 o->dpy = info->display;
                 o->plug = plug;
                 o->w = gtk_plug_get_id(GTK_PLUG(o->plug));
-                g_timeout_add(500, update, o);
+                g_timeout_add(10, update, o);
                 vinfo = chooseVisual(o->dpy, 0);
                 o->ctx = glXCreateContext(o->dpy, vinfo, 0, True);
                 XFree(vinfo);
