@@ -42,6 +42,11 @@ def filtertemplate(target, source, env):
 	d.close()
 	s.close()
 	
+def outputfrom(cmd):
+	p = os.popen(cmd)
+	ret = p.read()
+	p.close
+	return ret
 
 
 class Env(Environment):
@@ -52,7 +57,8 @@ class Env(Environment):
 			self.Append(FRAMEWORKS=['OpenGL', 'AppKit'])
 		if self['BACKEND'] == 'x11':
 			self.Append(LIBPATH=['/usr/X11R6/lib'])
-			self.Append(CPPPATH=['/usr/X11R6/include'])
+			self.Append(CPPPATH=['/usr/X11R6/include',
+					     '/usr/include/gtk-2.0/'])
 			self.Append(LIBS=['GL', 'GLU', 'X11'])
 		if self['BACKEND'] == 'nt':
 			self.Append(LIBS=['opengl32', 'gdi32', 'glu32', 'user32'])
@@ -121,20 +127,25 @@ class Env(Environment):
 			self.Append(LINKFLAGS=' -m32 ')
 
 	def ForNPAPI(self):
-		if self['BACKEND'] not in ['cocoa', 'nt']:
+		if self['BACKEND'] not in ['cocoa', 'nt', 'x11']:
 			return None
 		ret = self.Clone()
 		ret.Append(CPPDEFINES=['AWPLUGIN'])
-		ret.Append(CPPPATH=[target])
+		ret.Append(CPPPATH=['npapi'])
 		ret.CompileAs32Bits()
 		if target == 'win32':
 			ret.Append(CPPDEFINES=['XULRUNNER_SDK', 'WIN32', '_WINDOWS', 'XP_WIN32', 'MOZILLA_STRICT_API', 'XPCOM_GLUE', 'XP_WIN', '_X86_', 'NPSIMPLE_EXPORTS',])
 			ret.Append(LIBS=['user32'])
-
+		if target == 'linux':
+			ret.Append(CFLAGS=outputfrom(
+					'pkg-config --cflags gtk+-2.0'))
+			ret.Append(LINK=outputfrom(
+					'pkg-config --libs gtk+-2.0'))
+			ret.Append(CPPDEFINES=['XULRUNNER_SDK', 'XP_UNIX', 'MOZ_X11'])
 		return ret
 		
 	def ForPlugin(self):
-		if self['BACKEND'] not in ['cocoa', 'nt']:
+		if self['BACKEND'] not in ['cocoa', 'nt', 'x11']:
 			return None
 		ret = self.Clone()
 		ret.UsesOpenGL()
@@ -169,6 +180,9 @@ class Env(Environment):
 		home = os.environ['HOME'] + '/'
 		if target == 'win32':
 			instarget = home + 'Mozilla/Plugins/'
+			self.Default(self.Install(instarget, plg))
+		if target == 'linux':
+			instarget = home + '.mozilla/plugins/'
 			self.Default(self.Install(instarget, plg))
 		if target in ['darwin']:
 			ress = self.Command(name + '.r', 'template.r',

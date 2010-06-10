@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <string.h>
 //#define report xxx
 #include "awnpapios.h"
 //#undef report
@@ -8,13 +9,14 @@ typedef void (*awmethod)(void);
 
 static NPNetscapeFuncs * s_browser = 0;
 static NPObject * s_so = 0;
+static char s_plgname[256];
 
 static awmethod resolve(NPIdentifier method) {
 	static void * me = 0;
 	char * mname = s_browser->utf8fromidentifier(method);
 	awmethod ret;
 	if (!me)
-		me = awosSelf();
+		me = awosSelf(s_plgname);
 	ret = awosResolve(me, mname);
 	report("resolve %s %p", mname, ret);
 	// leak mname?
@@ -95,6 +97,7 @@ static NPError nnew(NPMIMEType type, NPP i,
 	ins * o;
 	insHeader * h;
 	unsigned j;
+        snprintf(s_plgname, sizeof s_plgname - 1, argv[0]);
 	report("new");
 	for (j = 0; j < argc; j++) {
 		report("  %s", argv[j]);
@@ -117,8 +120,7 @@ static NPError setwindow(NPP i, NPWindow* w) {
 	report("setwindow %p", w->window);
 	report("%dx%d", w->width, w->height);
 	ev(o, AW_EVENT_RESIZE, w->width, w->height);
-	awosSetWindow(o, w->window);
-	awosUpdate(o);
+	awosSetWindow(o, w);
 	return NPERR_NO_ERROR;
 }
 
@@ -142,7 +144,7 @@ static NPError getvalue(NPP i, NPPVariable variable, void *v) {
 	ins * o;
 	NPError ret = NPERR_NO_ERROR;
 	report("getvalue");
-	o = (ins*)i->pdata;
+	o = i? (ins*)i->pdata : 0;
 	switch(variable) {
 	default: 
 		report("getval default"); 
@@ -189,13 +191,24 @@ EXPORTED NPError OSCALL NP_GetEntryPoints(NPPluginFuncs* f) {
 	return NPERR_NO_ERROR;
 }
 
-EXPORTED NPError OSCALL NP_Initialize(NPNetscapeFuncs* f) {
+EXPORTED NPError OSCALL NP_Initialize(NPNetscapeFuncs* f
+#if defined XP_UNIX && !defined XP_MACOSX
+                                      ,NPPluginFuncs * funcs
+#endif
+        ) {
 	report("initialize");
 	s_browser = f;
-	if(!f)
+	if(!f) {
+                report("invalid functable");
 		return NPERR_INVALID_FUNCTABLE_ERROR;
-	if(((f->version & 0xff00) >> 8) > NP_VERSION_MAJOR)
-		return NPERR_INCOMPATIBLE_VERSION_ERROR;
+        }
+	if(((f->version & 0xff00) >> 8) > NP_VERSION_MAJOR) {
+                report("incompatible");
+                return NPERR_INCOMPATIBLE_VERSION_ERROR;
+        }
+#if defined XP_UNIX && !defined XP_MACOSX
+        NP_GetEntryPoints(funcs);
+#endif
 	return NPERR_NO_ERROR;
 }
 
@@ -209,7 +222,14 @@ EXPORTED char * NP_GetMIMEDescription(void) {
 	return "application/awplugin:.foo:xx@foo.bar";
 }
 
-EXPORTED NPError OSCALL NP_GetValue(NPP npp, NPPVariable variable, void *val) {
+EXPORTED NPError OSCALL NP_GetValue(
+#if defined(XP_UNIX)
+        void *
+#else
+        NPP
+#endif
+        npp, 
+                                    NPPVariable variable, void *val) {
 	report("npgetvalue");
 	return getvalue(npp, variable, val);
 }
@@ -252,10 +272,10 @@ int awosClearCurrent(aw * w) {
 
 int awosSwapBuffers(aw * w) {
 	insHeader * hdr = getHeader();
-	awosUpdate((ins*)hdr);
 	report("aw>main %p", hdr->comain);
 	coSwitchTo(hdr->comain);
 	report("main>aw");
+	awosUpdate((ins*)hdr);
 	return 1;
 }
 
@@ -274,7 +294,7 @@ void awosPollEvent(aw * w) {
 }
 
 int awosSetSwapInterval(aw * w, int interval) {
-	report("awosSwapInterval");
+	report("awosSetSwapInterval");
 	return 1;
 }
 
@@ -303,3 +323,11 @@ const char * awResourcesPath() {
 	insHeader * hdr = getHeader();
 	return awosResourcesPath((ins*)hdr);
 }
+
+/* 
+   Local variables: **
+   c-file-style: "bsd" **
+   c-basic-offset: 8 **
+   indent-tabs-mode: nil **
+   End: **
+*/

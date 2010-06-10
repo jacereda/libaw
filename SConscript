@@ -5,7 +5,7 @@ aw.UsesOpenGL()
 backend = {
 'iphone' : 'awiphone.m co.c coroutine/source/Coro.c awreportfile.c',
 'cocoa': 'awmain.c awcocoa.m awmackeycodes.c awreportconsole.c',
-'x11': 'awmain.c awx.c awreportconsole.c',
+'x11': 'awmain.c awx.c awx11keycodes.c awreportconsole.c',
 'nt': 'awmain.c aww.c awntkeycodes.c awntevent.c awreportconsole.c',
 }[aw['BACKEND']]
 
@@ -23,8 +23,11 @@ if awnpapi:
     awnpapi.Append(CPPPATH=['include'])
     awnpapi.Append(CPPDEFINES=['AWPLUGIN'])
     awnpapi.Append(CPPPATH=['coroutine/source',])
+    awnpapi.UsesOpenGL()
     if awnpapi['BACKEND'] == 'nt':
         awnpapi.Append(CPPDEFINES=['USE_FIBERS',])
+    elif awnpapi['BACKEND'] == 'x11':
+        awnpapi.Append(CPPDEFINES=['USE_UCONTEXT',])        
     else:
         awnpapi.Append(CPPDEFINES=['USE_SETJMP',])        
     backend = {
@@ -33,6 +36,9 @@ if awnpapi:
         ''',
         'nt': '''
            awntresolve.c awntkeycodes.c awntevent.c awntnpapi.c awreportfile.c
+        ''',
+        'x11': '''
+           awposixresolve.c awx11keycodes.c awxembednpapi.c awreportconsole.c 
         ''',
         }[awnpapi['BACKEND']]
     plg = awnpapi.ShLinkLib('awnpapi', backend + '''

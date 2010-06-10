@@ -35,14 +35,14 @@ typedef struct _insHeader {
 ins * awosNew(NPNetscapeFuncs *, NPP);
 void awosDel(ins *);
 void awosUpdate(ins *);
-void awosSetWindow(ins *, void *);
+void awosSetWindow(ins *, NPWindow *);
 int awosMakeCurrentI(ins *);
 int awosClearCurrentI(ins *);
 NPError awosEvent(ins *, void *);
 NPError awosGetValue(NPP, NPPVariable, void *); 
 
 
-void * awosSelf();
+void * awosSelf(const char * plgname);
 void * awosResolve(void * in, const char * name);
 
 const char * awosResourcesPath(ins *);
