@@ -97,7 +97,7 @@ static NPError nnew(NPMIMEType type, NPP i,
 	ins * o;
 	insHeader * h;
 	unsigned j;
-        snprintf(s_plgname, sizeof s_plgname - 1, argv[0]);
+        snprintf(s_plgname, sizeof s_plgname - 1, "%s", argv[0]);
 	report("new");
 	for (j = 0; j < argc; j++) {
 		report("  %s", argv[j]);
