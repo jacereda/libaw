@@ -1,4 +1,5 @@
 #include <dlfcn.h>
+#include <stdio.h>
 
 void * awosSelf(const char * name) {
         char buf[256];

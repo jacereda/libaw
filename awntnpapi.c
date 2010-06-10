@@ -59,8 +59,8 @@ LONG WINAPI plghandle(HWND win, UINT msg, WPARAM w, LPARAM l) {
 	return r;
 }
 
-void awosSetWindow(ins * o, void * vwin) {
-	HANDLE win = (HANDLE)vwin;
+void awosSetWindow(ins * o, NPWindow * win) {
+	HANDLE win = win->window;
 	HDC dc;
 	if (!o->oldproc) {
 		o->h.w.handle = vwin;

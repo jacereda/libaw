@@ -45,7 +45,7 @@ static void update(ins * o) {
 	report("/update %p", o);
 }
 
-void awosSetWindow(ins * o, void * vwin) {
+void awosSetWindow(ins * o, NPWindow * win) {
 	update(o);
 }
 
