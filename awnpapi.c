@@ -217,9 +217,17 @@ EXPORTED NPError OSCALL NP_Shutdown() {
 
 EXPORTED char * NP_GetMIMEDescription(void) {
         static char buf[256];
-        debug("getmimedesc");
+        char tmp[256];
+        const char * modpath = awosModPath();
+        const char * last = strrchr(modpath, '/');
+        if (!last)
+                last = strrchr(modpath, '\\');
+        snprintf(tmp, sizeof tmp - 1, "%s", last+1);
+        *strrchr(tmp, '.') = 0;
         snprintf(buf, sizeof buf - 1, 
-                 "application/%s::xx@foo.bar", awosModName());
+                 "application/%s::xx@foo.bar", 
+                 0 == strncmp(buf, "lib", 3)? tmp+3 : tmp);
+        report("getmimedesc %s", buf);
         return buf;
 }
 

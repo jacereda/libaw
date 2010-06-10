@@ -39,7 +39,7 @@ int acosDel(ac *);
 void got(aw  * w, int, int, int);
 void report(const char * fmt, ...);
 #if defined NDEBUG
-static inline void debug(const char * fmt, ...) {}
+static __inline void debug(const char * fmt, ...) {}
 #else
 #define debug report
 #endif
