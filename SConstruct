@@ -26,7 +26,7 @@ else:
 backends = {
 	'iphone' : ['iphone'],
 	'iphonesim' : ['iphone'],
-	'darwin' : ['cocoa', 'x11'],
+	'darwin' : ['cocoa'],
 	'linux' : ['x11'],
 	'win32' : ['nt'],
 	}[target]
