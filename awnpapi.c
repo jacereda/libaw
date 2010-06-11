@@ -195,7 +195,6 @@ EXPORTED NPError OSCALL NP_Initialize(NPNetscapeFuncs* f
 #endif
         ) {
 	debug("initialize");
-        NP_GetMIMEDescription();
 	s_browser = f;
 	if(!f) {
                 debug("invalid functable");

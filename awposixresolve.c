@@ -13,13 +13,10 @@ void * awosResolve(void * in, const char * name) {
 	return dlsym(in, name);
 }
 
-const char * awosModName() {
-        Dl_info info;
-        static char buf[256];
-        dladdr(awosModName, &info);
-        snprintf(buf, sizeof buf - 1, "%s", strrchr(info.dli_fname, '/')+1);
-        *strrchr(buf, '.') = 0;
-        return buf+3;
+const char * awosModPath() {
+        static Dl_info info;
+        dladdr(awosModPath, &info);
+        return info.dli_fname;
 }
 
 
