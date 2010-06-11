@@ -195,6 +195,7 @@ EXPORTED NPError OSCALL NP_Initialize(NPNetscapeFuncs* f
 #endif
         ) {
 	debug("initialize");
+        NP_GetMIMEDescription();
 	s_browser = f;
 	if(!f) {
                 debug("invalid functable");
@@ -226,7 +227,9 @@ EXPORTED char * NP_GetMIMEDescription(void) {
         *strrchr(tmp, '.') = 0;
         snprintf(buf, sizeof buf - 1, 
                  "application/%s::xx@foo.bar", 
-                 0 == strncmp(buf, "lib", 3)? tmp+3 : tmp);
+                 0 == strncmp(buf, "lib", 3)? tmp+3 : 
+                 0 == strncmp(buf, "np", 2)? tmp+2 : 
+                 tmp);
         report("getmimedesc %s", buf);
         return buf;
 }
