@@ -48,7 +48,7 @@ static void drawSquares(GLenum mode)
 static void processHits (GLint hits, GLuint buffer[])
 {
 	unsigned int i, j;
-	GLuint ii, jj, names, *ptr;
+	GLuint ii=0, jj=0, names, *ptr;
 
 	Log("hits = %d", (int)hits);
 	ptr = (GLuint *) buffer;
@@ -147,6 +147,7 @@ static int processEvents(aw ** w, ac * c) {
 		if (awe->u.down.which == AW_KEY_MOUSELEFT)
 			pickSquares(s_x, s_y);
 		break;
+	default: break;
 	}
 	return keepgoing;
 }

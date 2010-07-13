@@ -57,6 +57,7 @@ static aw * processEvents(aw * w) {
 		Log("Exit requested");
 		g_exit = 1; 
 		break;
+	default: break;
 	}
 	if (awPressed(w, AW_KEY_A))
 		Log("a pressed");

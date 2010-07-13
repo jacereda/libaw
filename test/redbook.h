@@ -31,6 +31,7 @@ static int processEvents(aw ** w, ac * c) {
 	case AW_EVENT_CLOSE:
 		keepgoing = 0; 
 		break;
+	default: break;
 	}
 	return keepgoing;
 }
