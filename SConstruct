@@ -163,6 +163,7 @@ class Env(Environment):
 		return self.Library(name, self._SharedObjects(name, sources))
 
 	def Plg(self, name, sources):
+		return # XXX Broken when running as out-of-process
 		prefix = ''
 		platobjs = []
 		if target == 'win32':
