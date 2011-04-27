@@ -123,18 +123,22 @@ static NPError setwindow(NPP i, NPWindow* w) {
 
 static NPError destroy(NPP i, NPSavedData **save) {
 	ins * o = (ins*)i->pdata;
-	debug("destroy");
+        insHeader * h = (insHeader*)o;
+        if (!o) return;
+	debug("destroy %p", o);
 	ev(o, AW_EVENT_CLOSE, 0, 0);
 	debug("destroy>aw");
-	while (!getHeader()->awdone) 
-		coSwitchTo(getHeader()->coaw);
+	while (!h->awdone) 
+		coSwitchTo(h->coaw);
 	debug("aw>destroy");
-	coDel(getHeader()->coaw);
-	coDel(getHeader()->comain);
+	coDel(h->coaw); h->coaw = 0;
+	coDel(h->comain); h->comain = 0;
 	awosDel(o);
         i->pdata = 0;
+	debug("release");
 	if(s_so)
 		s_browser->releaseobject(s_so);
+	debug("release2");
 	return NPERR_NO_ERROR;
 }
 
@@ -229,7 +233,7 @@ EXPORTED char * NP_GetMIMEDescription(void) {
                  0 == strncmp(buf, "lib", 3)? tmp+3 : 
                  0 == strncmp(buf, "np", 2)? tmp+2 : 
                  tmp);
-        report("getmimedesc %s", buf);
+        debug("getmimedesc %s", buf);
         return buf;
 }
 
@@ -273,12 +277,12 @@ int awosClose(aw * w) {
 
 int awosMakeCurrent(aw * w, ac * c) {
 	debug("awosMakeCurrent");
-	return awosMakeCurrentI((ins*)w);
+        return 1;
 }
 
 int awosClearCurrent(aw * w) {
 	debug("awosClearCurrent");
-	return awosClearCurrentI((ins*)w);
+        return 1;
 }
 
 int awosSwapBuffers(aw * w) {

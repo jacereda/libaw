@@ -30,8 +30,8 @@ static EGLDisplay g_dpy;
 static struct android_app* g_app;
 
 
-static int kc2aw(int kc) {
-	int ret;
+static awkey mapkey(int kc) {
+	awkey ret;
 	switch (kc) {
 //	case AKEYCODE_SOFT_LEFT: ret = ; break;
 //	case AKEYCODE_SOFT_RIGHT: ret = ; break;
@@ -153,13 +153,13 @@ static int32_t input(struct android_app * app, AInputEvent * e) {
 	aw * w = (aw*)app->userData;
 	int handled = 1;
 	int kc;
-	int awkc;
+	awkey awkc;
 	int action;
 	if (w) switch (AInputEvent_getType(e)) {
 		case AINPUT_EVENT_TYPE_KEY:
 			kc = AKeyEvent_getKeyCode(e);
 			action = AKeyEvent_getAction(e);
-			awkc = kc2aw(kc);
+			awkc = mapkey(kc);
 			handled = kc != AW_KEY_NONE;
 			if (handled) {
 				if (action == AKEY_EVENT_ACTION_DOWN)
@@ -185,7 +185,7 @@ static void handle(struct android_app* app, int32_t cmd) {
 		g_haswin = app->window != 0;
 		break;
         case APP_CMD_TERM_WINDOW:
-		report("got term window");
+		debug("got term window");
 		got(w, AW_EVENT_CLOSE, 0, 0);
 		break;
 	}
@@ -198,16 +198,16 @@ void android_main(struct android_app* state) {
 	app_dummy();
 	g_app->onAppCmd = handle;
 	g_app->onInputEvent = input;
-	report("wait\n");
+	debug("wait\n");
 	while (!g_haswin)
 		awosPollEvent(0);
 	ASSERT(g_app->window);
-	report("fakemain\n");
+	debug("fakemain\n");
 	fakemain(1, argv);
-	report("waiting destroy");
+	debug("waiting destroy");
 	while (!g_app->destroyRequested)
 		awosPollEvent(0);
-	report("terminating");
+	debug("terminating");
 }
 
 int awosInit() {

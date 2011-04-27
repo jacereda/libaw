@@ -3,13 +3,17 @@ Import('env')
 aw = env.ForLib()
 aw.UsesOpenGL()
 backend = {
-'iphone' : 'awiphone.m co.c coroutine/source/Coro.c awreportfile.c',
+'android' : 'awandroid.c ',
+'iphone' : 'awiphone.m co.c coroutine/source/Coro.c awreportfile.c tlspthread.c',
 'cocoa': 'awmain.c awcocoa.m awmackeycodes.c awreportconsole.c',
 'x11': 'awmain.c awx.c awx11keycodes.c awreportconsole.c',
 'nt': 'awmain.c aww.c awntkeycodes.c awntevent.c awreportconsole.c',
 }[aw['BACKEND']]
 
-if aw['BACKEND'] == 'iphone':
+if aw['BACKEND'] == 'android':
+    backend += aw['ANDROIDNDK'] + '/sources/android/native_app_glue/android_native_app_glue.c'
+
+if backend.find('coroutine/') >= 0:
     aw.Append(CPPPATH=['coroutine/source',])
     aw.Append(CPPDEFINES=['USE_SETJMP',])
 
@@ -32,7 +36,7 @@ if awnpapi:
         awnpapi.Append(CPPDEFINES=['USE_SETJMP',])        
     backend = {
         'cocoa': '''
-           awposixresolve.c awmackeycodes.c awcocoanpapi.m awreportfile.c
+           awposixresolve.c awmackeycodes.c awcocoanpapi.m awreportfile.c tlspthread.c
         ''',
         'nt': '''
            awntresolve.c awntkeycodes.c awntevent.c awntnpapi.c awreportfile.c

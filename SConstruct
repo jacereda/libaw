@@ -1,6 +1,9 @@
 #-*-Python-*-
 import sys
 import os
+
+domain = ARGUMENTS.get('domain', 'com.example')
+
 backends = []
 
 tools = 0
@@ -12,6 +15,8 @@ elif target == 'iphone':
 	tools = 'iphone'
 elif target == 'iphonesim':
 	tools = 'iphonesim'
+elif target == 'android':
+	tools = 'android'
 else:
 	tools = 'crossmingw'
 
@@ -27,6 +32,7 @@ backends = {
 	'iphone' : ['iphone'],
 	'iphonesim' : ['iphone'],
 	'darwin' : ['cocoa'],
+	'android' : ['android'],
 	'linux' : ['x11'],
 	'win32' : ['nt'],
 	}[target]
@@ -37,6 +43,16 @@ def filtertemplate(target, source, env):
 	s = open(str(source[0]))
 	d = open(str(target[0]), 'w')
 	c = s.read().replace('NAME', name) 
+	d.write(c)
+	d.close()
+	s.close()
+
+def filtermanifest(target, source, env):
+	name = str(target[0])
+	name = name.split(os.path.sep)[-2]
+	s = open(str(source[0]))
+	d = open(str(target[0]), 'w')
+	c = s.read().replace('{NAME}', name).replace('{DOMAIN}', domain)
 	d.write(c)
 	d.close()
 	s.close()
@@ -52,6 +68,8 @@ class Env(Environment):
 	def UsesOpenGL(self):
 		if self['BACKEND'] == 'iphone':
 			self.Append(FRAMEWORKS=['OpenGLES', 'QuartzCore', 'UIKit', 'Foundation'])
+#		if self['BACKEND'] == 'android':
+#			self.Append(LIBS=['EGL', 'GLESv1_CM', 'GLESv2'])
 		if self['BACKEND'] == 'cocoa':
 			self.Append(FRAMEWORKS=['OpenGL', 'AppKit'])
 		if self['BACKEND'] == 'x11':
@@ -63,6 +81,9 @@ class Env(Environment):
 			self.Append(LIBS=['opengl32', 'gdi32', 'glu32', 'user32'])
 
 	def _Objects(self, bdir, sources):
+		if self['BACKEND'] in ['android']:
+			return self._SharedObjects(bdir, sources)
+
 		return [self.Object('obj' + bdir + '/' + s + '.o', s) 
 			for s in Split(sources)]
 		
@@ -84,7 +105,7 @@ class Env(Environment):
 		self.Append(LIBPATH='.') 
 
 	def ForGLPrg(self):
-		if self['BACKEND'] in ['iphone']:
+		if self['BACKEND'] in ['iphone', 'android']:
 			return None
 		ret = self.Clone()
 		ret.Append(LIBS=['aw'])
@@ -93,7 +114,7 @@ class Env(Environment):
 		return ret
 
 	def ForGLESPrg(self):
-		if not self['BACKEND'] in ['iphone']:
+		if not self['BACKEND'] in ['iphone', 'android']:
 			return None
 		ret = self.Clone()
 		ret.Append(LIBS=['aw'])
@@ -103,8 +124,6 @@ class Env(Environment):
 
 
 	def App(self, name, prg):
-		if target != 'iphonesim':
-			return
 		dst = '#/../Library/Application Support/' +\
 		'iPhone Simulator/User/Applications/%s/%s.app/' % (name, name)
 		plist = self.Command(name + '.plist', 'template.plist',
@@ -113,12 +132,38 @@ class Env(Environment):
 		self.Default(self.InstallAs(dst + 'Info.plist', plist))
 #		self.Default(self.Install(dst, name + '.png'))
 
+		
+	def Apk(self, name, prg):
+		manifest = self.Command('%s/AndroidManifest.xml' % name,
+					'AndroidManifest-template.xml',
+					filtermanifest)
+		buildxml = self.Command(
+			'%s/build.xml' % name, manifest,
+			'%s update project -p ${TARGET.dir} -t 1' 
+			% self['ANDROID'])
+		apk = self.Command(
+			'%s/bin/%s-debug.apk' % (name, name), 
+			[buildxml, prg],
+			'ant debug -f ${SOURCE} && ' +\
+			'mv ${TARGET.dir}/NativeActivity-debug.apk $TARGET')
+		self.Default(self.Command(
+				name + '-install', apk,
+				'%s uninstall %s && %s install $SOURCE'
+				%(env['ADB'], domain+'.'+name, env['ADB'])))
 
 	def Prg(self, name, sources):
-		prg = self.Program(name, 
-				   self._SharedObjects(name, sources))
+		if self['BACKEND'] in ['android']:
+			prg = self.SharedLibrary(
+				'%s/libs/armeabi/%s' % (name,name),
+				self._SharedObjects(name, sources))
+		else:
+			prg = self.Program(name,
+					   self._SharedObjects(name, sources))
 		self.Default(prg)
-		self.App(name, prg)
+		if target == 'iphonesim':
+			self.App(name, prg)
+		if target == 'android':
+			self.Apk(name, prg)
 
 	def CompileAs32Bits(self):
 		if comp == 'gcc':
@@ -220,8 +265,8 @@ ccflags = {
 
 linkflags = {
 	'gcc': {
-		'debug': '',
-		'release': '',
+		'debug': '-g',
+		'release': '-g',
 		},
 	'cl': {
 		'debug': ' /DEBUG ',
@@ -240,7 +285,7 @@ compcppdefines= {
 }
 
 for backend in backends:
-	for conf in ['debug', 'release']:
+	for conf in ARGUMENTS.get('conf', 'debug,release').split(','):
 		cnf = Env(CCFLAGS=ccflags[comp][conf],
 			  CPPDEFINES=confcppdefines[conf]+compcppdefines[comp],
 			  LINKFLAGS=linkflags[comp][conf],

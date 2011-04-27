@@ -2,7 +2,7 @@
 #include <aw/aw.h>
 #include "log.h"
 
-static GLuint loadShader(GLenum type, const GLchar * src)
+static GLuint loadShader(GLenum type, const char * src)
 {
 	GLuint sh = glCreateShader(type);
 	glShaderSource(sh, 1, &src, NULL);
@@ -13,7 +13,7 @@ static GLuint g_prg;
 static GLint g_time;
 static void init(void) 
 {
-	const GLchar vss[] =
+	const char vss[] =
 		"attribute vec4 pos;   \n"
 		"uniform float t;            \n"
 		"void main()                 \n"
@@ -21,7 +21,7 @@ static void init(void)
 		"   gl_Position = pos; \n"
 		"   gl_Position.y += sin(t) / 2.0; \n"
 		"}                           \n";
-	const GLchar fss[] =
+	const char fss[] =
 		"precision mediump float;                   \n"
 		"void main()                                \n"
 		"{                                          \n"

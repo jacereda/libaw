@@ -49,14 +49,6 @@ void awosSetWindow(ins * o, NPWindow * win) {
 	update(o);
 }
 
-int awosMakeCurrentI(ins * o) {
-	return 1;
-}
-
-int awosClearCurrentI(ins * o) {
-        return 1;
-}
-
 void awosUpdate(ins * o) {
 	update(o);
 }
@@ -67,7 +59,7 @@ static void ev(ins * o, int ev, int x, int y) {
 }
 
 NPError awosEvent(ins * o, void * ve) {
-	extern unsigned mapkeycode(unsigned);
+	extern awkey mapkey(unsigned);
 	NPCocoaEvent * e = (NPCocoaEvent *)ve;
 	debug("event");
 	switch (e->type) {
@@ -100,11 +92,11 @@ NPError awosEvent(ins * o, void * ve) {
 		break;
 	case NPCocoaEventKeyDown: 
 		debug("NPCocoaEventKeyDown"); 
-		ev(o, AW_EVENT_DOWN, mapkeycode(e->data.key.keyCode), 0);
+		ev(o, AW_EVENT_DOWN, mapkey(e->data.key.keyCode), 0);
 		break;
 	case NPCocoaEventKeyUp: 
 		debug("NPCocoaEventKeyUp"); 
-		ev(o, AW_EVENT_UP, mapkeycode(e->data.key.keyCode), 0);
+		ev(o, AW_EVENT_UP, mapkey(e->data.key.keyCode), 0);
 		break;
 	case NPCocoaEventFlagsChanged: 
 		debug("NPCocoaEventFlagsChanged"); 

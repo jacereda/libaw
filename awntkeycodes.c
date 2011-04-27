@@ -5,8 +5,8 @@
 #define MAPVK_VK_TO_CHAR 2
 #endif
 
-unsigned mapkeycode(unsigned vk) {
-        int ret;
+awkey mapkey(unsigned vk) {
+        awkey ret;
         switch (vk) {
 	case 'A': ret = AW_KEY_A; break;
 	case 'S': ret = AW_KEY_S; break;

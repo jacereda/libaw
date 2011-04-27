@@ -16,7 +16,7 @@ static void resize(aw * w, int ww, int wh) {
 	awSetTitle(w, buf);
 }
 
-static aw * processEvents(aw * w) {
+static aw * processEvents(aw * w, ac * c) {
 	const awEvent * awe;
 	while ((awe = awNextEvent(w))) switch (awe->type) {
 	case AW_EVENT_RESIZE:
@@ -30,18 +30,22 @@ static aw * processEvents(aw * w) {
 		if (awe->u.down.which == 'f') {
 			awClose(w);
 			w = awOpenFullscreen();
+			awMakeCurrent(w, c);
 		}
 		if (awe->u.down.which == 'b') {
 			awClose(w);
 			w = awOpenBorderless(100, 100, 300, 400);
+			awMakeCurrent(w, c);
 		}
 		if (awe->u.down.which == 'w') {
 			awClose(w);
 			w = awOpen(100, 100, 300, 400);
+			awMakeCurrent(w, c);
 		}
 		if (awe->u.down.which == 'm') {
 			awClose(w);
 			w = awOpenMaximized();
+			awMakeCurrent(w, c);
 		}
 		if (awe->u.down.which == 'q') 
 			g_exit = 1;
@@ -87,10 +91,11 @@ int main(int argc, char ** argv) {
 	awMakeCurrent(w, c);
 	g_exit = 0;
 	while (!g_exit) {
-		w = processEvents(w);
-		awMakeCurrent(w, c);
-		draw();
-		awSwapBuffers(w);
+		w = processEvents(w, c);
+		if (!g_exit) {
+			draw();
+			awSwapBuffers(w);
+		}
 	}
 	awMakeCurrent(w, 0);
 	acDel(c);

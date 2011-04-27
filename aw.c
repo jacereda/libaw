@@ -138,8 +138,9 @@ void awSwapBuffers(aw * w) {
 
 static void setInterval(aw * w, ac * c) {
         acHeader * hdr = (acHeader*)c;
-        if (hdr->interval && !awosSetSwapInterval(w, hdr->interval)) 
+        if (hdr->interval >= 0 && !awosSetSwapInterval(w, hdr->interval))
                 report("Unable to set swap interval");
+        hdr->interval = -1;
 }
 
 void awMakeCurrent(aw * w, ac * c) {
@@ -155,25 +156,25 @@ void awMakeCurrent(aw * w, ac * c) {
         }
 }
 
-static unsigned char * bitarrayFor(awHeader * hdr, unsigned * k) {
+static unsigned char * bitarrayFor(awHeader * hdr, awkey * k) {
         int good = *k >= AW_KEY_NONE && *k < AW_KEY_MAX;
         assert(good);
         *k -= AW_KEY_NONE;
         return good? hdr->pressed : 0;
 }
 
-static int pressed(awHeader * hdr, unsigned k) {
+static int pressed(awHeader * hdr, awkey k) {
         unsigned char * ba = bitarrayFor(hdr, &k);
         return ba && bittest(ba, k);
 }
 
-static void press(awHeader * hdr, unsigned k) {
+static void press(awHeader * hdr, awkey k) {
         unsigned char * ba = bitarrayFor(hdr, &k);
         if (ba)
                 bitset(ba, k);
 }
 
-static void release(awHeader * hdr, unsigned k) {
+static void release(awHeader * hdr, awkey k) {
         unsigned char * ba = bitarrayFor(hdr, &k);
         if (ba)
                 bitclear(ba, k);    
@@ -234,7 +235,7 @@ int awMouseY(aw * w) {
         return hdr->my;
 }
 
-int awPressed(aw * w, unsigned k) {
+int awPressed(aw * w, awkey k) {
         awHeader * hdr = (awHeader*)w;
         unsigned char * ba = bitarrayFor(hdr, &k);
         return ba && bittest(ba, k);
@@ -255,7 +256,7 @@ ac * acNew(ac * share) {
         if (!ret)
                 report("unable to create context sharing with %p", share);
         else
-                ((acHeader*)ret)->interval = 0;
+                ((acHeader*)ret)->interval = -1;
         return ret;
 }
 
@@ -269,7 +270,7 @@ void acSetInterval(ac * c, int interval) {
         hdr->interval = interval;
 }
 
-const char * awKeyName(unsigned k) {
+const char * awKeyName(awkey k) {
 	const char * ret = 0;
 	static char buf[16] = {0};
 	switch (k) {
@@ -392,15 +393,44 @@ const char * awKeyName(unsigned k) {
 	case AW_KEY_RIGHTARROW: ret = "AW_KEY_RIGHTARROW"; break;
 	case AW_KEY_DOWNARROW: ret = "AW_KEY_DOWNARROW"; break;
 	case AW_KEY_UPARROW: ret = "AW_KEY_UPARROW"; break;
+        case AW_KEY_CAMERA: ret = "AW_KEY_CAMERA"; break;
+        case AW_KEY_CENTER: ret = "AW_KEY_CENTER"; break;
+        case AW_KEY_AT: ret = "AW_KEY_AT"; break;
+        case AW_KEY_SYM: ret = "AW_KEY_SYM"; break;
 	default:
 		if (k >= 32 && k < 127)
-			snprintf(buf, sizeof(buf), "%c", k);
+			snprintf(buf, sizeof(buf), "%c", (unsigned)k);
 		else
-			snprintf(buf, sizeof(buf), "0x%x", k);
+			snprintf(buf, sizeof(buf), "0x%x", (unsigned)k);
 		ret = buf;
 	}
 	return ret;
 }
+
+int aeType(awEvent * e) {
+        return e->type;
+}
+
+int aeWidth(awEvent * e) {
+        return e->u.p[0];
+}
+
+int aeHeight(awEvent * e) {
+        return e->u.p[1];
+}
+
+int aeWhich(awEvent * e) {
+        return e->u.p[0];
+}
+
+int aeX(awEvent * e) {
+        return e->u.p[0];
+}
+
+int aeY(awEvent * e) {
+        return e->u.p[1];
+}
+
 
 /* 
    Local variables: **

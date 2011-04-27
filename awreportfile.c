@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 void report(const char *fmt, ...) {
-#if defined(_WIN32)
+#if defined _WIN32 || defined __ANDROID__
 	FILE *out = fopen("aw.log", "a");
 #else
 	FILE *out = fopen("/tmp/aw.log", "a");

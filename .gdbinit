@@ -5,9 +5,9 @@
 #set env MallocScribble 1
 #set env MallocBadFreeAbort 1
 
-cd debug/x11
-set env DISPLAY :0.0
-set env DYLD_LIBRARY_PATH .
-set env LD_LIBRARY_PATH .:/usr/X11R6/lib
+#cd debug/cocoa
+#set env DISPLAY :0.0
+#set env DYLD_LIBRARY_PATH .
+#set env LD_LIBRARY_PATH .:/usr/X11R6/lib
 #file awtest
 

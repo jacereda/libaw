@@ -38,7 +38,7 @@
 typedef intptr_t awcell;
 typedef uintptr_t awucell;
 
-enum {
+typedef enum {
 	AW_EVENT_UNKNOWN,
 	AW_EVENT_NONE,
 	AW_EVENT_RESIZE,
@@ -47,9 +47,10 @@ enum {
 	AW_EVENT_UNICODE,
 	AW_EVENT_MOTION,
 	AW_EVENT_CLOSE,
-};
+	AW_EVENT_DUMMY=((uintptr_t)~0)
+} aweventtype;
 
-enum {
+typedef enum {
 	AW_KEY_NONE = 0x40000000,
 	AW_KEY_MOUSEWHEELUP, 
 	AW_KEY_MOUSEWHEELDOWN,
@@ -168,16 +169,21 @@ enum {
 	AW_KEY_RIGHTARROW,
 	AW_KEY_DOWNARROW,
 	AW_KEY_UPARROW,
+	AW_KEY_CAMERA,
+	AW_KEY_CENTER,
+	AW_KEY_AT,
+	AW_KEY_SYM,
 	AW_KEY_MAX,
-};
+	AW_KEY_DUMMY=((uintptr_t)~0)
+} awkey;
 
 typedef struct _awEvent {
-	awcell type;
+	aweventtype type;
 	union {
 		awcell p[2];
 		struct _resize { awucell w, h; } resize;
-		struct _down { awucell which; } down;
-		struct _up { awucell which; } up;
+		struct _down { awkey which; } down;
+		struct _up { awkey which; } up;
 		struct _motion { awcell x, y; } motion;
 		struct _unicode { awucell which; } unicode;
 	} u;
@@ -191,6 +197,14 @@ typedef struct _awEvent {
 
 typedef struct _aw aw;
 typedef struct _ac ac;
+
+EXPORTED int aeType(awEvent *);
+EXPORTED int aeWidth(awEvent *);
+EXPORTED int aeHeight(awEvent *);
+EXPORTED int aeWhich(awEvent *);
+EXPORTED int aeX(awEvent *);
+EXPORTED int aeY(awEvent *);
+
 
 EXPORTED int awInit(void);
 EXPORTED void awEnd(void);
@@ -207,8 +221,8 @@ EXPORTED unsigned awWidth(aw *);
 EXPORTED unsigned awHeight(aw *);
 EXPORTED int awMouseX(aw *);
 EXPORTED int awMouseY(aw *);
-EXPORTED int awPressed(aw *, unsigned key);
-EXPORTED const char * awKeyName(unsigned key);
+EXPORTED int awPressed(aw *, awkey key);
+EXPORTED const char * awKeyName(awkey key);
 EXPORTED const char * awResourcesPath();
 
 EXPORTED ac * acNew(ac *);
