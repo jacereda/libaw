@@ -128,6 +128,7 @@ static int processEvents(aw ** w, ac * c) {
 	case AW_EVENT_UP:
 		keyboard(awe->u.up.which);
 		break;
+	default: break;
 	}
 	return keepgoing;
 }

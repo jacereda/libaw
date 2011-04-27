@@ -1,8 +1,8 @@
 #include <Carbon/Carbon.h> // For keycodes
 #include "aw.h"
 
-unsigned mapkeycode(unsigned k) {
-	unsigned ret;
+awkey mapkey(unsigned k) {
+	awkey ret;
 	switch (k) {
 	case kVK_ANSI_A: ret = AW_KEY_A; break;
 	case kVK_ANSI_S: ret = AW_KEY_S; break;

@@ -63,6 +63,7 @@ void awosSetWindow(ins * o, NPWindow * npwin) {
 	HANDLE win = npwin->window;
 	HDC dc;
 	if (!o->oldproc) {
+		BOOL (APIENTRY *wglSwapInterval) (int interval) = 0;
 		o->h.w.handle = win;
 		o->oldproc = SubclassWindow(win, plghandle);
 		SetWindowLongPtrW(win, GWL_USERDATA, (LONG_PTR)o);
@@ -70,6 +71,10 @@ void awosSetWindow(ins * o, NPWindow * npwin) {
 		setPF(dc);
 		o->h.c.handle = wglCreateContext(dc);
 		wglMakeCurrent(dc, o->h.c.handle);
+		wglSwapInterval = (void*)wglGetProcAddress(
+			"wglSwapIntervalEXT");
+		if (wglSwapInterval)
+			wglSwapInterval(1);
 		ReleaseDC(win, dc);
 		SetTimer(win, 1, 10, 0);
 	}
@@ -79,26 +84,6 @@ void awosDel(ins * o) {
 	if (o->oldproc)
 		SubclassWindow(o->h.w.handle, o->oldproc);
 	free(o);
-}
-
-
-static BOOL (APIENTRY *wglSwapInterval) (int interval) = 0;
-
-int awosMakeCurrentI(ins * o) {
-	HANDLE win = (HANDLE)o->h.w.handle;
-	HDC dc = GetDC(win);
-	int ret;
-	ret = wglMakeCurrent(dc, (HGLRC)o->h.c.handle);
-        if (!wglSwapInterval)
-                wglSwapInterval = (void*)wglGetProcAddress("wglSwapIntervalEXT");
-	if (wglSwapInterval)
-		wglSwapInterval(1);
-	ReleaseDC(win, dc);
-	return ret;
-}
-
-int awosClearCurrentI(ins * o) {
-        return wglMakeCurrent(0, 0);
 }
 
 void awosUpdate(ins * o) {

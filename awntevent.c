@@ -37,24 +37,24 @@ static unsigned uc2aw(unsigned uc) {
         return ret;
 }
 
-extern unsigned mapkeycode(unsigned);
+extern awkey mapkey(unsigned);
 
 static void onSysKeyDown(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
         if (vk == VK_MENU)
-                wgot(win, AW_EVENT_DOWN, mapkeycode(vk), 0);
+                wgot(win, AW_EVENT_DOWN, mapkey(vk), 0);
 }
 
 static void onSysKeyUp(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
         if (vk == VK_MENU)
-                wgot(win, AW_EVENT_UP, mapkeycode(vk), 0);
+                wgot(win, AW_EVENT_UP, mapkey(vk), 0);
 }
 
 static void onKeyDown(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-        wgot(win, AW_EVENT_DOWN, mapkeycode(vk), 0);
+        wgot(win, AW_EVENT_DOWN, mapkey(vk), 0);
 }
 
 static void onKeyUp(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-        wgot(win, AW_EVENT_UP, mapkeycode(vk), 0);
+        wgot(win, AW_EVENT_UP, mapkey(vk), 0);
 }
 
 static void onLD(HWND win, BOOL dbl, int x, int y, UINT flags) {

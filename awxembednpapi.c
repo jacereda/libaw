@@ -44,19 +44,19 @@ static unsigned mapbutton(unsigned b) {
 }
 
 static gboolean event(GtkWidget * wid, GdkEvent * ev, gpointer data) {
-        extern unsigned mapkeycode(unsigned);
+        extern awkey mapkey(unsigned);
         ins * o = (ins*)data;
         aw * w = &o->h.w;
         int ret = TRUE;
         switch (ev->type) {
         case GDK_KEY_PRESS: {
                 GdkEventKey * kev = (GdkEventKey*)ev;
-                got(w, AW_EVENT_DOWN, mapkeycode(kev->hardware_keycode), 0);
+                got(w, AW_EVENT_DOWN, mapkey(kev->hardware_keycode), 0);
                 break;
         }
         case GDK_KEY_RELEASE: {
                 GdkEventKey * kev = (GdkEventKey*)ev;
-                got(w, AW_EVENT_UP, mapkeycode(kev->hardware_keycode), 0);
+                got(w, AW_EVENT_UP, mapkey(kev->hardware_keycode), 0);
                 break;
         }
         case GDK_BUTTON_PRESS: {
@@ -124,14 +124,6 @@ void awosDel(ins * o) {
                 glXDestroyContext(o->dpy, 0);
         gtk_widget_destroy(o->plug);
 	free(o);
-}
-
-int awosMakeCurrentI(ins * o) {
-        return glXMakeCurrent(o->dpy, o->w, o->ctx);
-}
-
-int awosClearCurrentI(ins * o) {
-        return glXMakeCurrent(o->dpy, 0, 0);
 }
 
 void awosUpdate(ins * o) {

@@ -20,6 +20,7 @@ static void processEvents(aw * w, ac * c, int n) {
 	case AW_EVENT_CLOSE:
 		Log("Exit requested");
 		g_exit = 1; break;
+	default: break;
 	}
 }
 

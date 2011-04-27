@@ -100,10 +100,10 @@ static void resetPool() {
         return NO;
 }
 
-extern unsigned mapkeycode(unsigned);
+extern awkey mapkey(unsigned);
 
 - (void) handleKeyEvent: (NSEvent *)ev mode: (int) mode {
-        got(_w, mode, mapkeycode([ev keyCode]), 0);
+        got(_w, mode, mapkey([ev keyCode]), 0);
 }
 
 - (void) keyUp: (NSEvent *)ev {
@@ -126,8 +126,8 @@ extern unsigned mapkeycode(unsigned);
                 got(_w, AW_EVENT_UNICODE, [s characterAtIndex: i], 0);
 }
 
-- (unsigned) keyFor: (unsigned)mask {
-        unsigned ret = 0;
+- (awkey) keyFor: (unsigned)mask {
+        awkey ret = 0;
         switch (mask) {
         case NSShiftKeyMask: ret = AW_KEY_SHIFT; break;
         case NSControlKeyMask: ret = AW_KEY_CONTROL; break;
@@ -188,7 +188,7 @@ extern unsigned mapkeycode(unsigned);
 }
 
 - (void)scrollWheel:(NSEvent *)ev {
-        unsigned k = [ev deltaY] > 0? 
+        awkey k = [ev deltaY] > 0? 
                 AW_KEY_MOUSEWHEELUP : AW_KEY_MOUSEWHEELDOWN;
         got(_w, AW_EVENT_DOWN, k, 0);
         got(_w, AW_EVENT_UP, k, 0);

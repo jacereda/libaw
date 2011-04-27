@@ -259,7 +259,7 @@ static int isAutoRepeat(XEvent * e, Window win) {
 }
 
 static void handle(aw * w, XEvent * e) {
-        extern unsigned mapkeycode(unsigned);
+        extern awkey mapkey(unsigned);
         switch(e->type) {
         case ClientMessage:
                 got(w, AW_EVENT_CLOSE, 0, 0);
@@ -284,7 +284,7 @@ static void handle(aw * w, XEvent * e) {
                 Status st;
                 int i;
                 int n;
-                got(w, AW_EVENT_DOWN, mapkeycode(e->xkey.keycode), 0);
+                got(w, AW_EVENT_DOWN, mapkey(e->xkey.keycode), 0);
                 n = XwcLookupString(w->xic,
                                     &e->xkey, 
                                     buf, 
@@ -298,7 +298,7 @@ static void handle(aw * w, XEvent * e) {
         break;
         case KeyRelease:
                 if (!isAutoRepeat(e, w->win))
-                        got(w, AW_EVENT_UP, mapkeycode(e->xkey.keycode), 0);
+                        got(w, AW_EVENT_UP, mapkey(e->xkey.keycode), 0);
                 break;
         default:
                 got(w, AW_EVENT_UNKNOWN, 0, 0);
@@ -330,7 +330,7 @@ int awosSetSwapInterval(aw * w, int interval) {
 
 ac * acosNew(ac * share) {
         XVisualInfo * vinfo = chooseVisual(g_dpy, g_screen);
-        GLXContext ctx;
+        GLXContext ctx = 0;
         ac * c = 0;
         if (vinfo) {
                 ctx = glXCreateContext(g_dpy, vinfo, 

@@ -73,14 +73,14 @@ static void dgot(int e, int x, int y) {
         got(&getDelegate()->w, e, x, y);
 }
 
-static void fakekeyuni(unsigned key, unsigned unicode) {
+static void fakekeyuni(awkey key, unsigned unicode) {
 	dgot(AW_EVENT_DOWN, key, 0);
 	dgot(AW_EVENT_UNICODE, unicode, 0);
 	dgot(AW_EVENT_UP, key, 0);
 }
 
-static unsigned mapkey(unsigned k) {
-	unsigned ret;
+static awkey mapkey(unsigned k) {
+	awkey ret;
 	switch (k) {
 	case 'A': ret = AW_KEY_A; break;
 	case 'B': ret = AW_KEY_B; break;
