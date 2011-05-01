@@ -10,6 +10,7 @@ typedef struct awHeader {
 	int mx, my;
 	int fullscreen;
 	unsigned char pressed[MAX_PRESSED/8];
+	unsigned char ppressed[MAX_PRESSED/8];
 	awEvent ev[MAX_EVENTS];
 } awHeader;
 
