@@ -133,6 +133,7 @@ void awSwapBuffers(aw * w) {
                         report("awSwapBuffers called without context");
                 else if (!awosSwapBuffers(w))
                         report("awSwapBuffers failed");
+                memcpy(hdr->ppressed, hdr->pressed, sizeof(hdr->ppressed));
         }
 }
 
@@ -156,28 +157,28 @@ void awMakeCurrent(aw * w, ac * c) {
         }
 }
 
-static unsigned char * bitarrayFor(awHeader * hdr, awkey * k) {
+static unsigned char * bitarrayFor(unsigned char * p, awkey * k) {
         int good = *k >= AW_KEY_NONE && *k < AW_KEY_MAX;
         assert(good);
         *k -= AW_KEY_NONE;
-        return good? hdr->pressed : 0;
+        return good? p : 0;
 }
 
-static int pressed(awHeader * hdr, awkey k) {
-        unsigned char * ba = bitarrayFor(hdr, &k);
+static int pressed(unsigned char * p, awkey k) {
+        unsigned char * ba = bitarrayFor(p, &k);
         return ba && bittest(ba, k);
 }
 
-static void press(awHeader * hdr, awkey k) {
-        unsigned char * ba = bitarrayFor(hdr, &k);
+static void press(unsigned char * p, awkey k) {
+        unsigned char * ba = bitarrayFor(p, &k);
         if (ba)
                 bitset(ba, k);
 }
 
-static void release(awHeader * hdr, awkey k) {
-        unsigned char * ba = bitarrayFor(hdr, &k);
+static void release(unsigned char * p, awkey k) {
+        unsigned char * ba = bitarrayFor(p, &k);
         if (ba)
-                bitclear(ba, k);    
+                bitclear(ba, k);
 }
 
 const awEvent * awNextEvent(aw * w) {
@@ -202,13 +203,13 @@ const awEvent * awNextEvent(aw * w) {
                         hdr->my = awe->u.motion.y;
                         break;
                 case AW_EVENT_DOWN:
-                        if (pressed(hdr, awe->u.down.which))
+                        if (pressed(hdr->pressed, awe->u.down.which))
                                 awe = &none;
                         else
-                                press(hdr, awe->u.down.which);
+                                press(hdr->pressed, awe->u.down.which);
                         break;
                 case AW_EVENT_UP:
-                        release(hdr, awe->u.up.which);
+                        release(hdr->pressed, awe->u.up.which);
                         break;
                 default: break;
                 }
@@ -237,8 +238,16 @@ int awMouseY(aw * w) {
 
 int awPressed(aw * w, awkey k) {
         awHeader * hdr = (awHeader*)w;
-        unsigned char * ba = bitarrayFor(hdr, &k);
+        unsigned char * ba = bitarrayFor(hdr->pressed, &k);
         return ba && bittest(ba, k);
+}
+
+int awReleased(aw * w, awkey k) {
+        awHeader * hdr = (awHeader*)w;
+        awkey pk = k;
+        unsigned char * ba = bitarrayFor(hdr->pressed, &k);
+        unsigned char * pba = bitarrayFor(hdr->ppressed, &pk);
+        return ba && !bittest(ba, k) && bittest(pba, k);
 }
 
 void got(aw * w, int type, int p1, int p2) {

@@ -222,6 +222,7 @@ EXPORTED unsigned awHeight(aw *);
 EXPORTED int awMouseX(aw *);
 EXPORTED int awMouseY(aw *);
 EXPORTED int awPressed(aw *, awkey key);
+EXPORTED int awReleased(aw *, awkey key);
 EXPORTED const char * awKeyName(awkey key);
 EXPORTED const char * awResourcesPath();
 
