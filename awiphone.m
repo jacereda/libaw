@@ -73,14 +73,14 @@ static void dgot(int e, int x, int y) {
         got(&getDelegate()->w, e, x, y);
 }
 
-static void fakekeyuni(awkey key, unsigned unicode) {
+static void fakekeyuni(unsigned key, unsigned unicode) {
 	dgot(AW_EVENT_DOWN, key, 0);
 	dgot(AW_EVENT_UNICODE, unicode, 0);
 	dgot(AW_EVENT_UP, key, 0);
 }
 
-static awkey mapkey(unsigned k) {
-	awkey ret;
+static unsigned mapkey(unsigned k) {
+	unsigned ret;
 	switch (k) {
 	case 'A': ret = AW_KEY_A; break;
 	case 'B': ret = AW_KEY_B; break;
@@ -256,11 +256,11 @@ int main(int argc, char *argv[]) {
         return ret;
 }
 
-int awosInit() {
-        return 1;
+ag * agosNew(const char * name) {
+        return (ag*)1;
 }
 
-int awosEnd() {
+int agosDel(ag * g) {
         return 1;
 }
 
@@ -268,7 +268,7 @@ int awosSetTitle(aw * w, const char * t) {
         return 1;
 }
 
-aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
+aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
         return &getDelegate()->w;
 }
 
@@ -304,7 +304,7 @@ int awosMakeCurrent(aw * w, ac * c) {
         return 1;
 }
 
-ac * acosNew(ac * share) {
+ac * acosNew(ag * g, ac * share) {
         return &getDelegate()->c;
 }
 
@@ -312,3 +312,22 @@ int acosDel(ac * cc) {
         return 1;
 }
 
+ap * aposNew(const void * rgba, unsigned hotx, unsigned hoty) {
+	return 0;
+}
+
+int aposDel(ap * g) {
+	return 1;
+}
+
+int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+	return 1;
+}
+
+void awosPointer(aw * w) {
+
+}
+
+unsigned awosOrder(aw ** w) {
+	return 0;
+}

@@ -115,10 +115,10 @@ static void resize(int w, int h)
 
 static int processEvents(aw * w, ac * c) {
 	int keepgoing = 1;
-	const awEvent * awe;
-	while ((awe = awNextEvent(w))) switch (awe->type) {
+	const awEvent * e;
+	while ((e = awNextEvent(w))) switch (aeType(e)) {
 	case AW_EVENT_RESIZE:
-		resize(awe->u.resize.w, awe->u.resize.h);
+		resize(aeWidth(e), aeHeight(e));
 		break;
 	case AW_EVENT_CLOSE:
 		keepgoing = 0; 
