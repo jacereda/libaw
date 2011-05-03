@@ -1,4 +1,5 @@
 #include <windows.h>
+#include <wctype.h>
 #include "aw.h"
 
 #if !defined MAPVK_VK_TO_CHAR
@@ -31,10 +32,14 @@ awkey mapkey(unsigned vk) {
 	case '4': ret = AW_KEY_4; break;
 	case '6': ret = AW_KEY_6; break;
 	case '5': ret = AW_KEY_5; break;
+#if defined VK_OEM_PLUS
 	case VK_OEM_PLUS: ret = AW_KEY_EQUAL; break;
+#endif
 	case '9': ret = AW_KEY_9; break;
 	case '7': ret = AW_KEY_7; break;
+#if defined VK_OEM_MINUS
 	case VK_OEM_MINUS: ret = AW_KEY_MINUS; break;
+#endif
 	case '8': ret = AW_KEY_8; break;
 	case '0': ret = AW_KEY_0; break;
 	case VK_OEM_6: ret = AW_KEY_RIGHTBRACKET; break;
@@ -49,11 +54,15 @@ awkey mapkey(unsigned vk) {
 	case 'K': ret = AW_KEY_K; break;
 	case VK_OEM_1: ret = AW_KEY_SEMICOLON; break;
 	case VK_OEM_5: ret = AW_KEY_BACKSLASH; break;
+#if defined VK_OEM_COMMA
 	case VK_OEM_COMMA: ret = AW_KEY_COMMA; break;
+#endif
 	case VK_OEM_2: ret = AW_KEY_SLASH; break;
 	case 'N': ret = AW_KEY_N; break;
 	case 'M': ret = AW_KEY_M; break;
+#if defined VK_OEM_PERIOD
 	case VK_OEM_PERIOD: ret = AW_KEY_PERIOD; break;
+#endif
 	case VK_OEM_3: ret = AW_KEY_GRAVE; break;
 	case VK_DECIMAL: ret = AW_KEY_KEYPADDECIMAL; break;
 	case VK_MULTIPLY: ret = AW_KEY_KEYPADMULTIPLY; break;
@@ -89,9 +98,11 @@ awkey mapkey(unsigned vk) {
 	case VK_RMENU: ret = AW_KEY_RIGHTOPTION; break;
 	case VK_RCONTROL: ret = AW_KEY_RIGHTCONTROL; break;
 	case VK_F17: ret = AW_KEY_F17; break;
+#if defined VK_VOLUME_UP
 	case VK_VOLUME_UP: ret = AW_KEY_VOLUMEUP; break;
 	case VK_VOLUME_DOWN: ret = AW_KEY_VOLUMEDOWN; break;
 	case VK_VOLUME_MUTE: ret = AW_KEY_MUTE; break;
+#endif
 	case VK_F18: ret = AW_KEY_F18; break;
 	case VK_F19: ret = AW_KEY_F19; break;
 	case VK_F20: ret = AW_KEY_F20; break;

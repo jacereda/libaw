@@ -3,6 +3,7 @@
 #include <wingdi.h>
 #include <windowsx.h>
 #include "aw.h"
+#include "awos.h"
 
 static aw * awFor(HWND win) {
         return (aw*)GetWindowLongPtrW(win, GWL_USERDATA);
@@ -112,7 +113,9 @@ LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
         case WM_LBUTTONUP: r = HANDLE_WM_LBUTTONUP(win, w, l, onLU); break;
         case WM_RBUTTONUP: r = HANDLE_WM_RBUTTONUP(win, w, l, onRU); break;
         case WM_MBUTTONUP: r = HANDLE_WM_MBUTTONUP(win, w, l, onMU); break;
+#if defined HANDLE_WM_MOUSEWHEEL
         case WM_MOUSEWHEEL: r = HANDLE_WM_MOUSEWHEEL(win, w, l, onMW); break;
+#endif
         case WM_INPUTLANGCHANGEREQUEST: return DefWindowProcW(win, msg, w, l); break;
         case WM_INPUTLANGCHANGE: return DefWindowProcW(win, msg, w, l); break;
         default: handled = 0;

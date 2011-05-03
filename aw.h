@@ -189,7 +189,7 @@ typedef struct _awEvent {
 	} u;
 } awEvent;
 
-#if defined(__GNUC__) && !defined(_WIN32_)
+#if defined(__GNUC__)
 #define EXPORTED extern __attribute__((visibility("default")))
 #else
 #define EXPORTED extern __declspec(dllexport)
@@ -231,5 +231,6 @@ EXPORTED void acDel(ac *);
 EXPORTED void acSetInterval(ac *, int);
 
 #if !defined BUILDING_AW
+EXPORTED int fakemain(int, char **);
 #define main fakemain
 #endif

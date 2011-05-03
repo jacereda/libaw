@@ -35,6 +35,7 @@ backends = {
 	'android' : ['android'],
 	'linux' : ['x11'],
 	'win32' : ['nt'],
+	'mingw' : ['nt'],
 	}[target]
 
 def filtertemplate(target, source, env):
@@ -254,8 +255,8 @@ class Env(Environment):
 
 ccflags = {
 	'gcc': {
-		'debug': '-g -Wall -fvisibility=hidden',
-		'release': '-g -O2 -Wall -fvisibility=hidden',
+		'debug': '-g -Wall ',
+		'release': '-g -O2 -Wall ',
 		},
 	'cl': {
 		'debug': ' /EHs-c- /MTd /DEBUG /Z7 /Od ',
@@ -286,14 +287,20 @@ compcppdefines= {
 
 for backend in backends:
 	for conf in ARGUMENTS.get('conf', 'debug,release').split(','):
-		cnf = Env(CCFLAGS=ccflags[comp][conf],
+		cf = ccflags[comp][conf]
+		lf = linkflags[comp][conf]
+		if not 'nt' in backends:
+			cf += ' -fvisibility=hidden '
+			lf += ' -fvisibility=hidden '
+		cnf = Env(CCFLAGS=cf,
 			  CPPDEFINES=confcppdefines[conf]+compcppdefines[comp],
-			  LINKFLAGS=linkflags[comp][conf],
+			  LINKFLAGS=lf,
 			  )
 		if tools:
 			cnf.Tool(tools, '.')
 		dir = conf + '/' + backend
 		cnf.BuildDir(dir, '.', duplicate=0)
+		cnf.SConsignFile(dir)
 		cnf['CONF'] = conf
 		env = cnf.Clone()
 		env['BACKEND'] = backend
