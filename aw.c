@@ -33,102 +33,118 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <stdlib.h>
+#include "sysgl.h"
 #include "aw.h"
 #include "awos.h"
+#include "bit.h"
 
 #if defined(_MSC_VER)
 #define snprintf _snprintf
 #endif
 
-static void bitset(unsigned char * b, unsigned bit) {
-        b[bit>>3] |= 1 << (bit & 7);
+static int gcheck(const ag * g) {
+        if (!g)
+                report("Null group handle");
+        return g != 0;
 }
 
-static void bitclear(unsigned char * b, unsigned bit) {
-        b[bit>>3] &= ~(1 << (bit & 7));
-}
-
-static int bittest(unsigned char * b, unsigned bit) {
-        return b[bit>>3] & (1 << (bit & 7));
-}
-
-static int check(const aw * w) {
+static int wcheck(const aw * w) {
         if (!w)
-                report("Null handle");
+                report("Null window handle");
         return w != 0;
 }
 
-int awInit() {
-        int ret = awosInit();
+ag * agNew(const char * appname) {
+        ag * ret = agosNew(appname);
         if (!ret)
-                report("initializing aw");
+                report("creating group %s", appname);
         return ret;
 }
 
-void awEnd() {
-        if (!awosEnd())
-                report("terminating aw");
+void agDel(ag * g) {
+        if (gcheck(g) && !agosDel(g))
+                report("deleting group");
 }
 
-static void show(aw * w) {
-        if (check(w) && !awosShow(w))
+void awShow(aw * w) {
+        if (wcheck(w) && !awosShow(w))
                 report("Unable to show window");
 }
 
-
-static void hide(aw * w) {
-        if (check(w) && !awosHide(w))
+void awHide(aw * w) {
+        if (wcheck(w) && !awosHide(w))
                 report("Unable to hide window");
 }
 
 void awSetTitle(aw * w, const char * t) {
         awHeader * hdr = (awHeader*)w;
-        if (check(w) && !hdr->fullscreen && !awosSetTitle(w, t))
+        if (wcheck(w) && !hdr->fullscreen && !awosSetTitle(w, t))
                 report("Unable to set window title");
 }
 
-static aw * open(int x, int y, int width, int height, int fs, int bl) {
-        aw * w = awosOpen(x, y, width, height, fs, bl);
+static aw * open(ag * g, int fs, int bl) {
+        aw * w = 0;
+        if (gcheck(g))
+                w = awosOpen(g, 100, 100, 10, 10, fs, bl);
         if (!w)
                 report("Unable to open window");
-        if (w)
-                ((awHeader*)w)->fullscreen = fs;
-        if (w)
-                show(w);
+        if (w) {
+                awHeader * hdr = (awHeader*)w;
+                hdr->fullscreen = fs;
+                hdr->last = hdr->ev;
+                hdr->last->type = AW_EVENT_NONE;
+                hdr->g = g;
+        }
         return w;
 }
 
-aw * awOpen(int x, int y, unsigned w, unsigned h) { 
-        return open(x, y, w, h, 0, 0);
+aw * awOpen(ag * g) { 
+        return open(g, 0, 0);
 }
 
-aw * awOpenBorderless(int x, int y, unsigned w, unsigned h) { 
-        return open(x, y, w, h, 0, 1);
+aw * awOpenBorderless(ag * g) { 
+        return open(g, 0, 1);
 }
 
-aw * awOpenFullscreen() {
-        return open(0, 0, 0, 0, 1, 1);
+aw * awOpenFullscreen(ag * g) {
+        return open(g, 1, 1);
 }
 
-aw * awOpenMaximized() {
-        return open(0, 0, 0, 0, 1, 0);
+aw * awOpenMaximized(ag * g) {
+        return open(g, 1, 0);
 }
 
 void awClose(aw * w) {  
-        if (check(w)) {
-                if (((awHeader*)w)->ctx) {
+        if (wcheck(w)) {
+                awHeader * wh = (awHeader*)w;
+                if (wh->pointer) {
+                        report("Closing window with cursor established");
+                        awPointer(w, 0);
+                }
+                if (wh->ctx) {
                         report("Closing window with active context");
                         awMakeCurrent(w, 0);
                 }
-                hide(w);
+                awHide(w);
+                while (awNextEvent(w))
+                        ;
                 if (!awosClose(w))
                         report("Unable to close window");
         }
 }
 
+static void setInterval(aw * w) {
+        awHeader * hdr = (awHeader*)w;
+        if (hdr->interval && !awosSetSwapInterval(w, hdr->interval)) 
+                report("Unable to set swap interval");
+}
+
 void awSwapBuffers(aw * w) {
-        if (check(w)) {
+        if (wcheck(w)) {
                 awHeader * hdr = (awHeader*)w;
+                setInterval(w);
+                glFlush();
                 if (!hdr->ctx)
                         report("awSwapBuffers called without context");
                 else if (!awosSwapBuffers(w))
@@ -137,23 +153,16 @@ void awSwapBuffers(aw * w) {
         }
 }
 
-static void setInterval(aw * w, ac * c) {
-        acHeader * hdr = (acHeader*)c;
-        if (hdr->interval >= 0 && !awosSetSwapInterval(w, hdr->interval))
-                report("Unable to set swap interval");
-        hdr->interval = -1;
-}
-
 void awMakeCurrent(aw * w, ac * c) {
         awHeader * hdr = (awHeader*)w;
-        if (check(w)) {
-                if (hdr->ctx && hdr->ctx != c)
+        if (wcheck(w)) {
+                if (hdr->ctx)
+                        glFlush();
+                if (hdr->ctx && hdr->ctx != c) 
                         awosClearCurrent(w);
                 if (c && !awosMakeCurrent(w, c))
                         report("Unable to establish context");
                 hdr->ctx = c;
-                if (c)
-                        setInterval(w, c);
         }
 }
 
@@ -164,56 +173,62 @@ static unsigned char * bitarrayFor(unsigned char * p, awkey * k) {
         return good? p : 0;
 }
 
-static int pressed(unsigned char * p, awkey k) {
-        unsigned char * ba = bitarrayFor(p, &k);
+static int pressed(awHeader * hdr, awkey k) {
+        unsigned char * ba = bitarrayFor(hdr->pressed, &k);
         return ba && bittest(ba, k);
 }
 
-static void press(unsigned char * p, awkey k) {
-        unsigned char * ba = bitarrayFor(p, &k);
+static void press(awHeader * hdr, awkey k) {
+        unsigned char * ba = bitarrayFor(hdr->pressed, &k);
         if (ba)
                 bitset(ba, k);
 }
 
-static void release(unsigned char * p, awkey k) {
-        unsigned char * ba = bitarrayFor(p, &k);
+static void release(awHeader * hdr, awkey k) {
+        unsigned char * ba = bitarrayFor(hdr->pressed, &k);
         if (ba)
                 bitclear(ba, k);
 }
 
-const awEvent * awNextEvent(aw * w) {
-        const awEvent * awe = 0;
-        static const awEvent none = {AW_EVENT_NONE};
+const ae * awNextEvent(aw * w) {
+        const ae * e = 0;
         awHeader * hdr = (awHeader*)w;
-        if (!check(w))
+        if (!wcheck(w))
                 return 0;
+        assert(hdr->last);
+        if (hdr->last->type == AW_EVENT_DROP) {
+                ae * last = hdr->last;
+                assert(last->p[0]);
+                free((void*)last->p[0]);
+                last->p[0] = 0;
+                last->type = AW_EVENT_NONE;
+        }
         awosPollEvent(w);
         if (hdr->head != hdr->tail) {
-                awe = hdr->ev + hdr->tail;
+                e = hdr->ev + hdr->tail;
                 hdr->tail++;
                 hdr->tail %= MAX_EVENTS;
         }
-        if (awe) switch (awe->type) {   
+        if (e) switch (aeType(e)) {   
                 case AW_EVENT_RESIZE:
-                        hdr->width = awe->u.resize.w;
-                        hdr->height = awe->u.resize.h;
+                        hdr->width = aeWidth(e);
+                        hdr->height = aeHeight(e);
                         break;
                 case AW_EVENT_MOTION:
-                        hdr->mx = awe->u.motion.x;
-                        hdr->my = awe->u.motion.y;
+                        hdr->mx = aeX(e);
+                        hdr->my = aeY(e);
                         break;
                 case AW_EVENT_DOWN:
-                        if (pressed(hdr->pressed, awe->u.down.which))
-                                awe = &none;
-                        else
-                                press(hdr->pressed, awe->u.down.which);
+                        press(hdr, aeWhich(e));
                         break;
                 case AW_EVENT_UP:
-                        release(hdr->pressed, awe->u.up.which);
+                        release(hdr, aeWhich(e));
                         break;
                 default: break;
                 }
-        return awe;
+        if (e)
+                hdr->last = (ae*)e;
+        return e;
 }
 
 unsigned awWidth(aw * w) {
@@ -237,9 +252,7 @@ int awMouseY(aw * w) {
 }
 
 int awPressed(aw * w, awkey k) {
-        awHeader * hdr = (awHeader*)w;
-        unsigned char * ba = bitarrayFor(hdr->pressed, &k);
-        return ba && bittest(ba, k);
+        return pressed((awHeader*)w, k);
 }
 
 int awReleased(aw * w, awkey k) {
@@ -250,23 +263,27 @@ int awReleased(aw * w, awkey k) {
         return ba && !bittest(ba, k) && bittest(pba, k);
 }
 
-void got(aw * w, int type, int p1, int p2) {
+void got(aw * w, int type, intptr_t p1, intptr_t p2) {
         awHeader * hdr = (awHeader*)w;
-        awEvent * e = hdr->ev + hdr->head;
+        ae * e = hdr->ev + hdr->head;
         hdr->head++;
         hdr->head %= MAX_EVENTS;
         e->type = type;
-        e->u.p[0] = p1;
-        e->u.p[1] = p2;
+        e->p[0] = p1;
+        e->p[1] = p2;
 }
 
-ac * acNew(ac * share) {
-        ac * ret = acosNew(share);
+ac * acNew(ag * g, ac * share) {
+        ac * ret = acosNew(g, share);
         if (!ret)
                 report("unable to create context sharing with %p", share);
         else
-                ((acHeader*)ret)->interval = -1;
+                ((acHeader*)ret)->g = g;
         return ret;
+}
+
+ac * acNewStereo(ag * g, ac * share) {
+        return 0; // XXX
 }
 
 void acDel(ac * c) {
@@ -274,14 +291,24 @@ void acDel(ac * c) {
                 report("unable to delete context %p", c);
 }
 
-void acSetInterval(ac * c, int interval) {
-        acHeader * hdr = (acHeader*)c;
+void awSetInterval(aw * w, int interval) {
+        awHeader * hdr = (awHeader*)w;
         hdr->interval = interval;
 }
 
-const char * awKeyName(awkey k) {
+void awSetUserData(aw * w, void * user) {
+        awHeader * hdr = (awHeader*)w;
+        hdr->user = user;
+}
+
+void * awUserData(aw * w) {
+        awHeader * hdr = (awHeader*)w;
+        return hdr->user;
+}
+
+const char * awKeyName(unsigned k) {
 	const char * ret = 0;
-	static char buf[16] = {0};
+	static char buf[32] = {0};
 	switch (k) {
 	case AW_KEY_NONE: ret = "NONE"; break;
 	case AW_KEY_MOUSEWHEELUP: ret = "MOUSEWHEELUP"; break;
@@ -402,44 +429,101 @@ const char * awKeyName(awkey k) {
 	case AW_KEY_RIGHTARROW: ret = "AW_KEY_RIGHTARROW"; break;
 	case AW_KEY_DOWNARROW: ret = "AW_KEY_DOWNARROW"; break;
 	case AW_KEY_UPARROW: ret = "AW_KEY_UPARROW"; break;
+        case AW_KEY_SCROLL: ret = "AW_KEY_SCROLL"; break;
+        case AW_KEY_NUMLOCK: ret = "AW_KEY_NUMLOCK"; break;
+        case AW_KEY_CLEAR: ret = "AW_KEY_CLEAR"; break;
+        case AW_KEY_SYSREQ: ret = "AW_KEY_SYSREQ"; break;
+        case AW_KEY_PAUSE: ret = "AW_KEY_PAUSE"; break;
         case AW_KEY_CAMERA: ret = "AW_KEY_CAMERA"; break;
         case AW_KEY_CENTER: ret = "AW_KEY_CENTER"; break;
         case AW_KEY_AT: ret = "AW_KEY_AT"; break;
         case AW_KEY_SYM: ret = "AW_KEY_SYM"; break;
 	default:
 		if (k >= 32 && k < 127)
-			snprintf(buf, sizeof(buf), "%c", (unsigned)k);
+			snprintf(buf, sizeof(buf), "%c", k);
 		else
-			snprintf(buf, sizeof(buf), "0x%x", (unsigned)k);
+			snprintf(buf, sizeof(buf), "0x%x", k);
 		ret = buf;
 	}
 	return ret;
 }
 
-int aeType(awEvent * e) {
+void awGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+        if (wcheck(w) && !awosGeometry(w, x, y, width, height))
+                report("unable to establish geometry");
+}
+
+void awPointer(aw * w, ap * p) {
+        awHeader * wh = (awHeader*)w;
+        if (wh->pointer)
+                ((apHeader*)wh->pointer)->refs--;
+        wh->pointer = p;
+        if (wh->pointer)
+                ((apHeader*)wh->pointer)->refs++;
+        awosPointer(w);
+}
+
+ap * apNew(const void * rgba, unsigned hotx, unsigned hoty) {
+        ap * ret = aposNew(rgba, hotx, hoty);
+        if (!ret)
+                report("unable to create pointer");
+        return ret;
+}
+
+void apDel(ap * p) {
+        apHeader * ph = (apHeader*)p;
+        if (ph->refs)
+                report("destroying referenced pointer");
+        else if (!aposDel(p))
+                report("unable to destroy pointer");
+}
+
+void awThreadEvents() {
+//        awosThreadEvents();
+}
+
+unsigned awOrder(aw * w) {
+        aw * zorder[MAX_WINDOWS];
+        unsigned n = awosOrder(zorder);
+        unsigned i = 0;
+        assert(n < MAX_WINDOWS);
+#if !defined NDEBUG
+        for (i = 0; i < n; i++)
+                assert(zorder[i]);
+#endif
+        for (i = 0; i < n; i++)
+                if (w == zorder[i])
+                        break;
+        return i;
+}
+
+int aeType(const ae * e) {
         return e->type;
 }
 
-int aeWidth(awEvent * e) {
-        return e->u.p[0];
+int aeWidth(const ae * e) {
+        return e->p[0];
 }
 
-int aeHeight(awEvent * e) {
-        return e->u.p[1];
+int aeHeight(const ae * e) {
+        return e->p[1];
 }
 
-int aeWhich(awEvent * e) {
-        return e->u.p[0];
+int aeWhich(const ae * e) {
+        return e->p[0];
 }
 
-int aeX(awEvent * e) {
-        return e->u.p[0];
+int aeX(const ae * e) {
+        return e->p[0];
 }
 
-int aeY(awEvent * e) {
-        return e->u.p[1];
+int aeY(const ae * e) {
+        return e->p[1];
 }
 
+const char * aePath(const ae * e) {
+        return (const char *)e->p[0];
+}
 
 /* 
    Local variables: **

@@ -29,7 +29,7 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#define _WIN32_WINNT 0x0500
+
 #include <stdlib.h>
 #include <ctype.h>
 #include <assert.h>
@@ -38,15 +38,24 @@
 #include <windowsx.h>
 #include "aw.h"
 #include "awos.h"
+#include "bit.h" 
 
 #if !defined HANDLE_WM_MOUSEWHEEL // XXX mingw doesn't seem to define this one
 #define HANDLE_WM_MOUSEWHEEL(hwnd,wParam,lParam,fn) ((fn)((hwnd),(int)(short)LOWORD(lParam),(int)(short)HIWORD(lParam),(int)(short)HIWORD(wParam),(UINT)(short)LOWORD(wParam)),0L)
 #endif
 
+struct _ag {
+        agHeader hdr;
+        HANDLE ready;
+        HANDLE thread;
+        HWND win;
+        WCHAR appname[256];
+};
+
 struct _aw {
         awHeader hdr;
         HWND win;
-        int lastmx, lastmy;
+        DWORD style;
 };
 
 struct _ac {
@@ -54,22 +63,12 @@ struct _ac {
         HGLRC ctx;
 };
 
+struct _ap {
+        apHeader hdr;
+        HCURSOR icon;
+};
+
 static BOOL (APIENTRY *wglSwapInterval) (int interval) = 0;
-
-int awosInit() {
-        extern LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l); 
-        WNDCLASSW  wc;
-        memset(&wc, 0, sizeof(WNDCLASS));
-        wc.style            = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
-        wc.lpfnWndProc      = handle;
-        wc.hInstance        = GetModuleHandleW(NULL);
-        wc.lpszClassName    = L"AW";
-        return 0 != RegisterClassW(&wc);
-}
-
-int awosEnd() {
-        return 1;
-}
 
 static void setPF(HDC dc) {
         PIXELFORMATDESCRIPTOR pfd = { 
@@ -95,30 +94,36 @@ static void setPF(HDC dc) {
         SetPixelFormat(dc, ChoosePixelFormat(dc, &pfd), &pfd); 
 }
 
+static void wide(WCHAR * d, size_t dsz, const char * t) {
+        MultiByteToWideChar(CP_UTF8, 0, t, -1, d, (int)dsz);
+}
+
 int awosSetTitle(aw * w, const char * t) {
         WCHAR wt[1024];
-        MultiByteToWideChar(CP_UTF8, 0, t, strlen(t)+1, wt, sizeof(wt));
+        wide(wt, sizeof(wt), t);
         return SetWindowTextW(w->win, wt);
-        return 1;
 }
 
 static aw * openwin(int x, int y, int width, int height, 
-                    DWORD style, DWORD exstyle) {
+                    DWORD style, DWORD exstyle, ag * g) {
         aw * w = calloc(1, sizeof(*w));
         RECT r;
         HWND win;
+        w->style = style;
         r.left = x; r.top = y;
         r.right = x + width; r.bottom = y + height;
         AdjustWindowRect(&r, style, FALSE);
         win = CreateWindowExW(exstyle, 
-                              L"AW", L"AW", style,
+                              g->appname, g->appname, style,
                               r.left, r.top, 
                               r.right - r.left, r.bottom - r.top,
-                              NULL, NULL, GetModuleHandle(NULL), w);
+                              g->win,
+                              NULL, GetModuleHandleW(NULL), w);
         if (win) {
                 HDC dc = GetDC(win);
                 setPF(dc);
                 ReleaseDC(win, dc);
+                DragAcceptFiles(win, TRUE);
         }
         if (w)
                 w->win = win;
@@ -127,17 +132,70 @@ static aw * openwin(int x, int y, int width, int height,
         return w;
 }
 
-aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
+static void dispatch(HWND win, unsigned type) {
+        MSG msg;
+        if (PeekMessageW(&msg, win, 0, 0, PM_REMOVE+type)) {
+                TranslateMessage(&msg);
+                DispatchMessageW(&msg);
+        }
+}
+
+#define EXITMSG (WM_USER+0x1024)
+
+static DWORD __stdcall groupThread(LPVOID param) {
+        ag * g = (ag *)param;;
+        g->win = CreateWindowExW(0, g->appname, g->appname, 
+                                 WS_POPUP, 0, 0, 0, 0, 0, 0, 
+                                 GetModuleHandleW(NULL), 0);
+//        ShowWindow(g->win, SW_SHOWNORMAL);
+        SetEvent(g->ready);
+        while (1) {
+                MSG msg;
+                if (GetMessageW(&msg, 0, 0, 0)) {
+                        TranslateMessage(&msg);
+                        DispatchMessageW(&msg);
+                }
+                if (msg.message == EXITMSG)
+                        break;
+        }
+        DestroyWindow(g->win);
+        return 0; 
+}
+
+
+ag * agosNew(const char * appname) {
+        extern LRESULT CALLBACK handle(HWND win, UINT msg, WPARAM w, LPARAM l); 
+        WNDCLASSW  wc;
+        int ok;
+        ag * g = calloc(1, sizeof(*g));
+        wide(g->appname, sizeof(g->appname), appname);
+        ZeroMemory(&wc, sizeof(wc));
+//        wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+        wc.style += CS_OWNDC;
+//        wc.style += CS_GLOBALCLASS;
+        wc.lpfnWndProc = handle;
+        wc.hInstance = GetModuleHandleW(NULL);
+        wc.lpszClassName = g->appname;
+        ok = 0 != RegisterClassW(&wc);
+        g->ready = CreateEvent(0,0,0,0);
+        g->thread = CreateThread(NULL, 4096, groupThread, g, 0, NULL);
+        WaitForSingleObject(g->ready, INFINITE);
+        CloseHandle(g->ready); g->ready = 0;
+        return g;
+}
+
+int agosDel(ag * g) {
+        DWORD ret = 0;
+        PostMessage(g->win, EXITMSG, 0, 0);
+        ret = WaitForSingleObject(g->thread, INFINITE);
+        assert(ret == WAIT_OBJECT_0);
+        ret = 0 != CloseHandle(g->thread);
+        return ret;
+}
+
+aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
         aw * w;
         DWORD style, exstyle;
-#if 0
-        if (fs) {
-                RECT rect;
-                GetWindowRect(GetDesktopWindow(), &rect);
-                width = rect.right;
-                height = rect.bottom;
-        }
-#endif
         if (bl) {
                 style = WS_POPUP;
                 exstyle = WS_EX_TOPMOST; 
@@ -150,12 +208,10 @@ aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
                         | WS_SIZEBOX
                         | WS_MINIMIZEBOX
                         | WS_MAXIMIZEBOX
-                        ;
-                exstyle = 0;
+                        | 0;
+                exstyle = WS_EX_APPWINDOW;
         }
-//  if (fs)
-//      style += WS_MAXIMIZE;
-        w = openwin(x, y, width, height, style, exstyle);
+        w = openwin(x, y, width, height, style, exstyle, g);
         return w;
 }
 
@@ -198,31 +254,35 @@ int awosHide(aw * w) {
         return 1;
 }
 
-static void dispatch(HWND win) {
-        MSG msg;
-        if (PeekMessageW(&msg, win, 0, 0, PM_REMOVE)) {
-                TranslateMessage(&msg);
-                DispatchMessageW(&msg);
-        }
+void awosPollEvent(aw * w) {
+        dispatch(w->win, 0);
+/*
+  dispatch(w->win, PM_QS_POSTMESSAGE+PM_QS_SENDMESSAGE+PM_QS_PAINT);
+  dispatch((HWND)-1, PM_QS_POSTMESSAGE+PM_QS_SENDMESSAGE+PM_QS_PAINT);
+  dispatch((HWND)-1, 0);
+  dispatch((HWND)0, PM_QS_POSTMESSAGE+PM_QS_SENDMESSAGE+PM_QS_PAINT);
+*/
 }
 
-void awosPollEvent(aw * w) {
-        dispatch(w->win);
+void awosThreadEvents() {
+        dispatch((HWND)0, 0);
+//        report("qs %x", GetQueueStatus(QS_ALLEVENTS));
 }
 
 int awosSetSwapInterval(aw * w, int si) {
         return wglSwapInterval? wglSwapInterval(si) : 1;
 }
 
-ac * acosNew(ac * share) {
+ac * acosNew(ag * g, ac * share) {
         ac * c = 0;
         HGLRC ctx;
-        aw * dummy = awosOpen(0, 0, 0, 0, 0, 0);
-        HDC dc = GetDC(dummy->win);
+        HWND dummy = CreateWindowExW(0, g->appname, g->appname, 0, 0, 0, 0, 0, 0, 0, 
+                                     GetModuleHandleW(NULL), 0);
+        HDC dc = GetDC(dummy);
         setPF(dc);
         ctx = wglCreateContext(dc);
-        ReleaseDC(dummy->win, dc);
-        awosClose(dummy);
+        ReleaseDC(dummy, dc);
+        DestroyWindow(dummy);
         if (ctx && share) 
                 wglShareLists(share->ctx, ctx);
         if (ctx)
@@ -238,6 +298,88 @@ int acosDel(ac * c) {
         return ret;
 }
 
+int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+        RECT r;
+        r.left = x; r.top = y;
+        r.right = x + width; r.bottom = y + height;
+        AdjustWindowRect(&r, w->style, FALSE);
+        return MoveWindow(w->win, r.left, r.top, 
+                   r.right - r.left, r.bottom - r.top, 
+                   1);
+}
+
+void awosSetPointer(aw * w) {
+        if (w->hdr.pointer)
+                SetCursor(w->hdr.pointer->icon);
+        else
+                SetCursor(0);
+}
+
+void awosPointer(aw * w) {
+        POINT p;
+        GetCursorPos(&p);
+        SetCursorPos(p.x, p.y);
+}
+
+ap * aposNew(const void * vrgba, unsigned hotx, unsigned hoty) {
+        HDC dc;
+        HBITMAP bm;
+        unsigned char * bits;
+        int x, y;
+
+        BITMAPV5HEADER bh;
+        ICONINFO ii = {0};
+        HCURSOR cur = {0};
+        ap * ret = calloc(1, sizeof(*ret));
+        int w = 32;
+        int h = 32;
+        
+        ZeroMemory(&bh, sizeof(BITMAPV5HEADER));
+        bh.bV5Size = sizeof(bh);
+        bh.bV5Width = w;
+        bh.bV5Height = -h;
+        bh.bV5Planes = 1;
+        bh.bV5BitCount = 32;
+        bh.bV5Compression = BI_RGB;
+        bh.bV5AlphaMask = 0xff000000;
+        bh.bV5BlueMask = 0x00ff0000;
+        bh.bV5GreenMask = 0x0000ff00;
+        bh.bV5RedMask = 0x000000ff;
+        
+        dc = GetDC(0);
+        bm = CreateDIBSection(dc, (BITMAPINFO*)&bh, DIB_RGB_COLORS, (void **)&bits, 0, 0);
+        ReleaseDC(0, dc);
+        
+        memcpy(bits, vrgba, w * h * 4);
+
+        // Change red <-> blue
+        for (y = 0; y < h; y++)
+                for (x = 0; x < w; x++) {
+                        unsigned c = (y*w + x) * 4;
+                        unsigned aux = bits[c + 0];
+                        bits[c + 0] = bits[c + 2];
+                        bits[c + 2] = aux;
+                }
+
+        ii.fIcon = FALSE;
+        ii.xHotspot = hotx;
+        ii.yHotspot = hoty;
+        ii.hbmColor = bm;
+        ii.hbmMask = CreateBitmap(w, h, 1, 1, NULL);
+        ret->icon = CreateIconIndirect(&ii);
+        DeleteObject(ii.hbmMask);
+        DeleteObject(ii.hbmColor);
+        return ret;
+}
+
+int aposDel(ap * p) {
+        int ret;
+        SetCursor(0);
+        ret = DestroyIcon(p->icon);
+        free(p);
+        return ret;
+}
+
 /* 
    Local variables: **
    c-file-style: "bsd" **
@@ -245,3 +387,4 @@ int acosDel(ac * c) {
    indent-tabs-mode: nil **
    End: **
 */
+

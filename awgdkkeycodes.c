@@ -1,5 +1,5 @@
-static awkey mapkey(unsigned k) {
-        awkey ret;
+static unsigned mapkey(unsigned k) {
+        unsigned ret;
         switch (k) {
         default: ret = AW_KEY_NONE; break;
 	case GDK_a: ret = AW_KEY_A; break;

@@ -1,7 +1,7 @@
 #include "aw.h"
 
-awkey mapkey(unsigned k) {
-        awkey ret;
+unsigned mapkeycode(unsigned k) {
+        unsigned ret;
         switch (k) {
 	case 9: ret = AW_KEY_ESCAPE; break;
 	case 10: ret = AW_KEY_1; break;

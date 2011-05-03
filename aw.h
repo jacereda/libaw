@@ -29,12 +29,13 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
 #if defined(_MSC_VER)
 #include <assert.h>
 #else
 #include <inttypes.h>
 #endif
+
+#include "awtypes.h"
 typedef intptr_t awcell;
 typedef uintptr_t awucell;
 
@@ -42,10 +43,15 @@ typedef enum {
 	AW_EVENT_UNKNOWN,
 	AW_EVENT_NONE,
 	AW_EVENT_RESIZE,
+	AW_EVENT_POSITION,
 	AW_EVENT_DOWN,
 	AW_EVENT_UP,
 	AW_EVENT_UNICODE,
 	AW_EVENT_MOTION,
+	AW_EVENT_EXPOSED,
+	AW_EVENT_SETFOCUS,
+	AW_EVENT_KILLFOCUS,
+	AW_EVENT_DROP,
 	AW_EVENT_CLOSE,
 	AW_EVENT_DUMMY=((uintptr_t)~0)
 } aweventtype;
@@ -169,6 +175,11 @@ typedef enum {
 	AW_KEY_RIGHTARROW,
 	AW_KEY_DOWNARROW,
 	AW_KEY_UPARROW,
+	AW_KEY_SCROLL,
+	AW_KEY_NUMLOCK,
+	AW_KEY_CLEAR,
+	AW_KEY_SYSREQ,
+	AW_KEY_PAUSE,
 	AW_KEY_CAMERA,
 	AW_KEY_CENTER,
 	AW_KEY_AT,
@@ -177,60 +188,63 @@ typedef enum {
 	AW_KEY_DUMMY=((uintptr_t)~0)
 } awkey;
 
-typedef struct _awEvent {
-	aweventtype type;
-	union {
-		awcell p[2];
-		struct _resize { awucell w, h; } resize;
-		struct _down { awkey which; } down;
-		struct _up { awkey which; } up;
-		struct _motion { awcell x, y; } motion;
-		struct _unicode { awucell which; } unicode;
-	} u;
-} awEvent;
 
-#if defined(__GNUC__)
-#define EXPORTED extern __attribute__((visibility("default")))
+#if defined(__GNUC__) && !defined(_WIN32_)
+#define EXPORTED \
+	extern __attribute__((visibility("default"))) __attribute__((used))
 #else
 #define EXPORTED extern __declspec(dllexport)
 #endif
 
-typedef struct _aw aw;
-typedef struct _ac ac;
+EXPORTED ag * agNew(const char * name);
+EXPORTED void agDel(ag *);
 
-EXPORTED int aeType(awEvent *);
-EXPORTED int aeWidth(awEvent *);
-EXPORTED int aeHeight(awEvent *);
-EXPORTED int aeWhich(awEvent *);
-EXPORTED int aeX(awEvent *);
-EXPORTED int aeY(awEvent *);
-
-
-EXPORTED int awInit(void);
 EXPORTED void awEnd(void);
-EXPORTED aw * awOpen(int x, int y, unsigned w, unsigned h);
-EXPORTED aw * awOpenBorderless(int x, int y, unsigned w, unsigned h);
-EXPORTED aw * awOpenFullscreen(void);
-EXPORTED aw * awOpenMaximized(void);
+EXPORTED aw * awOpen(ag *);
+EXPORTED aw * awOpenBorderless(ag *);
+EXPORTED aw * awOpenFullscreen(ag *);
+EXPORTED aw * awOpenMaximized(ag *);
+EXPORTED void awGeometry(aw *, int x, int y, unsigned w, unsigned h);
+EXPORTED void awShow(aw *);
+EXPORTED void awHide(aw *);
 EXPORTED void awSetTitle(aw *, const char *);
 EXPORTED void awClose(aw *);
 EXPORTED void awSwapBuffers(aw *);
 EXPORTED void awMakeCurrent(aw *, ac *);
-EXPORTED const awEvent * awNextEvent(aw *);
+EXPORTED const ae * awNextEvent(aw *);
+EXPORTED void awThreadEvents();
+EXPORTED unsigned awOrder(aw *);
 EXPORTED unsigned awWidth(aw *);
 EXPORTED unsigned awHeight(aw *);
 EXPORTED int awMouseX(aw *);
 EXPORTED int awMouseY(aw *);
 EXPORTED int awPressed(aw *, awkey key);
 EXPORTED int awReleased(aw *, awkey key);
-EXPORTED const char * awKeyName(awkey key);
-EXPORTED const char * awResourcesPath();
+EXPORTED void awSetUserData(aw * w, void * user);
+EXPORTED void * awUserData(aw * w);
+EXPORTED void awSetInterval(aw *, int);
+EXPORTED void awPointer(aw *, ap *);
 
-EXPORTED ac * acNew(ac *);
+EXPORTED const char * awKeyName(unsigned key);
+EXPORTED const char * awResourcesPath(void);
+
+EXPORTED ac * acNew(ag * g, ac *);
+EXPORTED ac * acNewStereo(ag * g, ac *);
 EXPORTED void acDel(ac *);
-EXPORTED void acSetInterval(ac *, int);
 
-#if !defined BUILDING_AW
-EXPORTED int fakemain(int, char **);
-#define main fakemain
+EXPORTED ap * apNew(const void * rgba, unsigned hotx, unsigned hoty);
+EXPORTED void apDel(ap *);
+
+
+EXPORTED int aeType(const ae *);
+EXPORTED int aeWidth(const ae *);
+EXPORTED int aeHeight(const ae *);
+EXPORTED int aeWhich(const ae *);
+EXPORTED int aeX(const ae *);
+EXPORTED int aeY(const ae *);
+EXPORTED const char * aePath(const ae *);
+
+
+#if !defined BUILDING_AW && !defined _WIN32
+#define main EXPORTED fakemain
 #endif

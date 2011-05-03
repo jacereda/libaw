@@ -4,7 +4,10 @@
 #include <android/log.h>
 #include <android_native_app_glue.h>
 
-static int g_haswin;
+struct _ag {
+	EGLDisplay dpy;
+	struct android_app* app;
+};
 
 #define ASSERT(e) ((e) ? (void)0 : report("%s:%d: ASSERTION FAILED: %s", __FILE__, __LINE__, #e))
 
@@ -26,9 +29,7 @@ struct _aw {
 	EGLSurface surf;
 };
 
-static EGLDisplay g_dpy;
 static struct android_app* g_app;
-
 
 static awkey mapkey(int kc) {
 	awkey ret;
@@ -182,7 +183,7 @@ static void handle(struct android_app* app, int32_t cmd) {
 	aw * w = (aw*)app->userData;
 	switch (cmd) {
         case APP_CMD_INIT_WINDOW:
-		g_haswin = app->window != 0;
+		app->userData = app->window;
 		break;
         case APP_CMD_TERM_WINDOW:
 		debug("got term window");
@@ -191,40 +192,57 @@ static void handle(struct android_app* app, int32_t cmd) {
 	}
 }
 
-void android_main(struct android_app* state) {
+static void pollEvent(struct android_app * app) {
+	int ident;
+	int events;
+        struct android_poll_source* source;
+        ident=ALooper_pollAll(0, 0, &events, (void**)&source);
+	if (ident >= 0 && source)
+		source->process(app, source);
+}
+
+void android_main(struct android_app* app) {
 	char * argv[] = {"awandroid"};
-	g_app = state;
-	g_haswin = 0;
+	app->userData = 0;
 	app_dummy();
-	g_app->onAppCmd = handle;
-	g_app->onInputEvent = input;
+	app->onAppCmd = handle;
+	app->onInputEvent = input;
 	debug("wait\n");
-	while (!g_haswin)
-		awosPollEvent(0);
-	ASSERT(g_app->window);
+	while (!app->userData)
+		pollEvent(app);
+	ASSERT(app->window);
 	debug("fakemain\n");
+	g_app = app;
 	fakemain(1, argv);
 	debug("waiting destroy");
-	while (!g_app->destroyRequested)
+	while (!app->destroyRequested)
 		awosPollEvent(0);
 	debug("terminating");
 }
 
-int awosInit() {
-	g_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-	ASSERT(g_dpy);
-	return eglInitialize(g_dpy, 0, 0) == EGL_TRUE;
+ag * agosNew(const char * name) {
+	ag * g = malloc(sizeof(*g));
+	g->dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+	ASSERT(g->dpy);
+	g->app = g_app;
+	if (!eglInitialize(g->dpy, 0, 0)) {
+		free(g);
+		g = 0;
+	}
+	return g;
 }
 
-int awosEnd() {
-        return eglTerminate(g_dpy) == EGL_TRUE;
+int agosDel(ag * g) {
+	int ret = eglTerminate(g->dpy) == EGL_TRUE;
+	free(g);
+	return ret;
 }
 
 int awosSetTitle(aw * w, const char * t) {
         return 1;
 }
 
-static void getcfg(EGLConfig * cfg) {
+static void getcfg(ag * g, EGLConfig * cfg) {
 	EGLint ncfg;
 	const EGLint attr[] = {
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -233,49 +251,48 @@ static void getcfg(EGLConfig * cfg) {
 		EGL_RED_SIZE, 8,
 		EGL_NONE
 	};
-	eglChooseConfig(g_dpy, attr, cfg, 1, &ncfg);
+	eglChooseConfig(g->dpy, attr, cfg, 1, &ncfg);
 	ASSERT(ncfg > 0);
 }
 
-aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
+aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
 	aw * w = calloc(1, sizeof(*w));
 	EGLint ww=0, wh=0;
 	EGLConfig cfg;
 	EGLint fmt;
 	EGLContext fakectx;
-	g_app->userData = w;
-	getcfg(&cfg);
-	ASSERT(g_app->window);
-	ASSERT(g_dpy);
-	eglGetConfigAttrib(g_dpy, cfg, EGL_NATIVE_VISUAL_ID, &fmt);
-	ANativeWindow_setBuffersGeometry(g_app->window, 0, 0, fmt);
-	w->surf = eglCreateWindowSurface(g_dpy, cfg, g_app->window, 0);
+	g->app->userData = w;
+	getcfg(g, &cfg);
+	ASSERT(g->app->window);
+	eglGetConfigAttrib(g->dpy, cfg, EGL_NATIVE_VISUAL_ID, &fmt);
+	ANativeWindow_setBuffersGeometry(g->app->window, 0, 0, fmt);
+	w->surf = eglCreateWindowSurface(g->dpy, cfg, g->app->window, 0);
 	ASSERT(w->surf);
-	fakectx = eglCreateContext(g_dpy, cfg, 0, 0);
-	eglMakeCurrent(g_dpy, w->surf, w->surf, fakectx);
-	eglQuerySurface(g_dpy, w->surf, EGL_WIDTH, &ww);
-	eglQuerySurface(g_dpy, w->surf, EGL_HEIGHT, &wh);
-	eglMakeCurrent(g_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
+	fakectx = eglCreateContext(g->dpy, cfg, 0, 0);
+	eglMakeCurrent(g->dpy, w->surf, w->surf, fakectx);
+	eglQuerySurface(g->dpy, w->surf, EGL_WIDTH, &ww);
+	eglQuerySurface(g->dpy, w->surf, EGL_HEIGHT, &wh);
+	eglMakeCurrent(g->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
 		       EGL_NO_CONTEXT);
-	eglDestroyContext(g_dpy, fakectx);
+	eglDestroyContext(g->dpy, fakectx);
 	got(w, AW_EVENT_RESIZE, ww, wh);
         return w;
 }
 
 int awosClose(aw * w) {
-	return eglDestroySurface(g_dpy, w->surf) == EGL_TRUE;
+	return eglDestroySurface(wgroup(w)->dpy, w->surf) == EGL_TRUE;
 }
 
 int awosSwapBuffers(aw * w) {
-	return eglSwapBuffers(g_dpy, w->surf) == EGL_TRUE;
+	return eglSwapBuffers(wgroup(w)->dpy, w->surf) == EGL_TRUE;
 }
 
 int awosMakeCurrent(aw * w, ac * c) {
-	return eglMakeCurrent(g_dpy, w->surf, w->surf, c->ctx) == EGL_TRUE;
+	return eglMakeCurrent(wgroup(w)->dpy, w->surf, w->surf, c->ctx) == EGL_TRUE;
 }
 
 int awosClearCurrent(aw * w) {
-        return eglMakeCurrent(g_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
+        return eglMakeCurrent(wgroup(w)->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
 			      EGL_NO_CONTEXT) == EGL_TRUE;
 }
 
@@ -288,31 +305,45 @@ int awosHide(aw * w) {
 }
 
 void awosPollEvent(aw * w) {
-	int ident;
-	int events;
-        struct android_poll_source* source;
-        ident=ALooper_pollAll(0, NULL, &events, (void**)&source);
-	if (ident >= 0 && source)
-		source->process(g_app, source);
+	return pollEvent(wgroup(w)->app);
 }
 
 int awosSetSwapInterval(aw * w, int si) {
-	//return eglSwapInterval(g_dpy, si) == EGL_TRUE;
+	//return eglSwapInterval(wgroup(w)->dpy, si) == EGL_TRUE;
 	return 1;
 }
 
-ac * acosNew(ac * share) {
+ac * acosNew(ag * g, ac * share) {
 	ac * c = calloc(1, sizeof(*c));
 	EGLConfig cfg;
-	getcfg(&cfg);
-	c->ctx = eglCreateContext(g_dpy, cfg, NULL, NULL);
+	getcfg(g, &cfg);
+	c->ctx = eglCreateContext(g->dpy, cfg, 0, 0);
         return c;
 }
 
 int acosDel(ac * c) {
-	return eglDestroyContext(g_dpy, c->ctx) == EGL_TRUE;
+	return eglDestroyContext(cgroup(c)->dpy, c->ctx) == EGL_TRUE;
 }
 
+ap * aposNew(const void * rgba, unsigned hotx, unsigned hoty) {
+	return 0;
+}
+
+int aposDel(ap * g) {
+	return 1;
+}
+
+int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+	return 1;
+}
+
+void awosPointer(aw * w) {
+
+}
+
+unsigned awosOrder(aw ** w) {
+	return 0;
+}
 
 /* 
    Local variables: **
