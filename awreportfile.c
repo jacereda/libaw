@@ -1,5 +1,7 @@
 #include <stdarg.h>
 #include <stdio.h>
+#include "aw.h"
+#include "awos.h"
 
 void report(const char *fmt, ...) {
 #if defined _WIN32 || defined __ANDROID__
