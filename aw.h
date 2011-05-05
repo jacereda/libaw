@@ -198,35 +198,32 @@ typedef enum {
 
 EXPORTED ag * agNew(const char * name);
 EXPORTED void agDel(ag *);
+EXPORTED const char * agResourcesPath(ag *);
 
-EXPORTED void awEnd(void);
-EXPORTED aw * awOpen(ag *);
-EXPORTED aw * awOpenBorderless(ag *);
-EXPORTED aw * awOpenFullscreen(ag *);
-EXPORTED aw * awOpenMaximized(ag *);
+EXPORTED aw * awNew(ag *);
+EXPORTED void awDel(aw *);
+EXPORTED void awPlain(aw *);
+EXPORTED void awBorderless(aw *);
+EXPORTED void awFullscreen(aw *);
+EXPORTED void awMaximize(aw *);
 EXPORTED void awGeometry(aw *, int x, int y, unsigned w, unsigned h);
 EXPORTED void awShow(aw *);
 EXPORTED void awHide(aw *);
 EXPORTED void awSetTitle(aw *, const char *);
-EXPORTED void awClose(aw *);
 EXPORTED void awSwapBuffers(aw *);
 EXPORTED void awMakeCurrent(aw *, ac *);
 EXPORTED const ae * awNextEvent(aw *);
-EXPORTED void awThreadEvents();
-EXPORTED unsigned awOrder(aw *);
-EXPORTED unsigned awWidth(aw *);
-EXPORTED unsigned awHeight(aw *);
-EXPORTED int awMouseX(aw *);
-EXPORTED int awMouseY(aw *);
-EXPORTED int awPressed(aw *, awkey key);
-EXPORTED int awReleased(aw *, awkey key);
+EXPORTED unsigned awOrder(const aw *);
+EXPORTED unsigned awWidth(const aw *);
+EXPORTED unsigned awHeight(const aw *);
+EXPORTED int awMouseX(const aw *);
+EXPORTED int awMouseY(const aw *);
+EXPORTED int awPressed(const aw *, awkey key);
+EXPORTED int awReleased(const aw *, awkey key);
 EXPORTED void awSetUserData(aw * w, void * user);
-EXPORTED void * awUserData(aw * w);
+EXPORTED void * awUserData(const aw * w);
 EXPORTED void awSetInterval(aw *, int);
 EXPORTED void awPointer(aw *, ap *);
-
-EXPORTED const char * awKeyName(unsigned key);
-EXPORTED const char * awResourcesPath(void);
 
 EXPORTED ac * acNew(ag * g, ac *);
 EXPORTED ac * acNewStereo(ag * g, ac *);
@@ -239,9 +236,10 @@ EXPORTED void apDel(ap *);
 EXPORTED int aeType(const ae *);
 EXPORTED int aeWidth(const ae *);
 EXPORTED int aeHeight(const ae *);
-EXPORTED int aeWhich(const ae *);
+EXPORTED awkey aeWhich(const ae *);
 EXPORTED int aeX(const ae *);
 EXPORTED int aeY(const ae *);
+EXPORTED const char * aeKeyName(const ae *);
 EXPORTED const char * aePath(const ae *);
 
 

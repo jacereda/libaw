@@ -1,13 +1,6 @@
 #include "aw.h"
 #include "awos.h"
-#include <EGL/egl.h>
 #include <android/log.h>
-#include <android_native_app_glue.h>
-
-struct _ag {
-	EGLDisplay dpy;
-	struct android_app* app;
-};
 
 #define ASSERT(e) ((e) ? (void)0 : report("%s:%d: ASSERTION FAILED: %s", __FILE__, __LINE__, #e))
 
@@ -17,17 +10,6 @@ void report(const char * fmt, ...) {
 	__android_log_vprint(ANDROID_LOG_ERROR, "aw", fmt, ap);
 	va_end(ap);
 }
-
-struct _ac {
-	acHeader hdr;
-	EGLContext ctx;
-	EGLint fmt;
-};
-
-struct _aw {
-	awHeader hdr;
-	EGLSurface surf;
-};
 
 static struct android_app* g_app;
 
@@ -151,7 +133,7 @@ static awkey mapkey(int kc) {
 }
 
 static int32_t input(struct android_app * app, AInputEvent * e) {
-	aw * w = (aw*)app->userData;
+	osw * w = (osw*)app->userData;
 	int handled = 1;
 	int kc;
 	awkey awkc;
@@ -180,7 +162,7 @@ static int32_t input(struct android_app * app, AInputEvent * e) {
 }
 
 static void handle(struct android_app* app, int32_t cmd) {
-	aw * w = (aw*)app->userData;
+	osw * w = (osw*)app->userData;
 	switch (cmd) {
         case APP_CMD_INIT_WINDOW:
 		app->userData = app->window;
@@ -216,33 +198,26 @@ void android_main(struct android_app* app) {
 	fakemain(1, argv);
 	debug("waiting destroy");
 	while (!app->destroyRequested)
-		awosPollEvent(0);
+		oswPollEvent(0);
 	debug("terminating");
 }
 
-ag * agosNew(const char * name) {
-	ag * g = malloc(sizeof(*g));
+int osgInit(osg * g, const char * name) {
 	g->dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 	ASSERT(g->dpy);
 	g->app = g_app;
-	if (!eglInitialize(g->dpy, 0, 0)) {
-		free(g);
-		g = 0;
-	}
-	return g;
+	return eglInitialize(g->dpy, 0, 0) == EGL_TRUE;
 }
 
-int agosDel(ag * g) {
-	int ret = eglTerminate(g->dpy) == EGL_TRUE;
-	free(g);
-	return ret;
+int osgTerm(osg * g) {
+	return eglTerminate(g->dpy) == EGL_TRUE;
 }
 
-int awosSetTitle(aw * w, const char * t) {
+int oswSetTitle(osw * w, const char * t) {
         return 1;
 }
 
-static void getcfg(ag * g, EGLConfig * cfg) {
+static void getcfg(osg * g, EGLConfig * cfg) {
 	EGLint ncfg;
 	const EGLint attr[] = {
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -255,8 +230,8 @@ static void getcfg(ag * g, EGLConfig * cfg) {
 	ASSERT(ncfg > 0);
 }
 
-aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
-	aw * w = calloc(1, sizeof(*w));
+int oswInit(osw * w, osg * g, int x, int y, 
+	      int width, int height, int fs, int bl) {
 	EGLint ww=0, wh=0;
 	EGLConfig cfg;
 	EGLint fmt;
@@ -276,72 +251,71 @@ aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
 		       EGL_NO_CONTEXT);
 	eglDestroyContext(g->dpy, fakectx);
 	got(w, AW_EVENT_RESIZE, ww, wh);
-        return w;
+        return w->surf != 0;
 }
 
-int awosClose(aw * w) {
+int oswTerm(osw * w) {
 	return eglDestroySurface(wgroup(w)->dpy, w->surf) == EGL_TRUE;
 }
 
-int awosSwapBuffers(aw * w) {
+int oswSwapBuffers(osw * w) {
 	return eglSwapBuffers(wgroup(w)->dpy, w->surf) == EGL_TRUE;
 }
 
-int awosMakeCurrent(aw * w, ac * c) {
+int oswMakeCurrent(osw * w, osc * c) {
 	return eglMakeCurrent(wgroup(w)->dpy, w->surf, w->surf, c->ctx) == EGL_TRUE;
 }
 
-int awosClearCurrent(aw * w) {
+int oswClearCurrent(osw * w) {
         return eglMakeCurrent(wgroup(w)->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
 			      EGL_NO_CONTEXT) == EGL_TRUE;
 }
 
-int awosShow(aw * w) {
+int oswShow(osw * w) {
         return 1;
 }
 
-int awosHide(aw * w) {
+int oswHide(osw * w) {
         return 1;
 }
 
-void awosPollEvent(aw * w) {
+void oswPollEvent(osw * w) {
 	return pollEvent(wgroup(w)->app);
 }
 
-int awosSetSwapInterval(aw * w, int si) {
+int oswSetSwapInterval(osw * w, int si) {
 	//return eglSwapInterval(wgroup(w)->dpy, si) == EGL_TRUE;
 	return 1;
 }
 
-ac * acosNew(ag * g, ac * share) {
-	ac * c = calloc(1, sizeof(*c));
+int oscInit(osc * c, osg * g, osc * share) {
 	EGLConfig cfg;
 	getcfg(g, &cfg);
 	c->ctx = eglCreateContext(g->dpy, cfg, 0, 0);
-        return c;
+        return c->ctx != 0;
 }
 
-int acosDel(ac * c) {
+int oscTerm(osc * c) {
 	return eglDestroyContext(cgroup(c)->dpy, c->ctx) == EGL_TRUE;
 }
 
-ap * aposNew(const void * rgba, unsigned hotx, unsigned hoty) {
-	return 0;
-}
-
-int aposDel(ap * g) {
+int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
 	return 1;
 }
 
-int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+int ospTerm(osp * p) {
 	return 1;
 }
 
-void awosPointer(aw * w) {
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
+	return 1;
+}
+
+void oswPointer(osw * w) {
 
 }
 
-unsigned awosOrder(aw ** w) {
+unsigned oswOrder(osw ** w) {
 	return 0;
 }
 

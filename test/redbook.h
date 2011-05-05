@@ -11,17 +11,10 @@ static int processEvents(ag * g, aw ** w, ac * c) {
 	const ae * e;
 	while ((e = awNextEvent(*w))) switch (aeType(e)) {
 		case AW_EVENT_DOWN:
-			if (aeWhich(e) == 'f') {
-				awMakeCurrent(*w, 0);
-				awClose(*w);
-				*w = awOpenFullscreen(g);
-			}
-			if (aeWhich(e) == 'w') {
-				awMakeCurrent(*w, 0);
-				awClose(*w);
-				*w = awOpen(g);
-				awGeometry(*w, 100, 100, 300, 400);
-			}
+			if (aeWhich(e) == 'f') 
+				awFullscreen(*w);
+			if (aeWhich(e) == 'w') 
+				awPlain(*w);
 			if (aeWhich(e) == 'q')
 				keepgoing = 0;
 			break;
@@ -52,7 +45,7 @@ static void go(ag * g, aw * w, ac * c) {
 	init();
 	loop(g, &w, c);
 	awMakeCurrent(w, 0);
-	awClose(w);
+	awDel(w);
 	acDel(c);
 	agDel(g);
 }
@@ -63,7 +56,7 @@ int main(int argc, char ** argv) {
 	ac * c = 0;
 	g = agNew("redbook");
 	if (g)
-		w = awOpen(g);
+		w = awNew(g);
 	else
 		Log("unable to initialize AW");
 	if (!w)

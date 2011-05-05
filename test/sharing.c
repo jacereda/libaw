@@ -49,7 +49,7 @@ int main(int argc, char ** argv) {
 	ic = acNew(g, 0);
 	for (i = 0; i < NWIN; i++) {
 		c[i] = acNew(g, ic);
-		w[i] = awOpen(g);
+		w[i] = awNew(g);
 		awGeometry(w[i], 100 + 16*i, 100+16*i, 300, 400);
 	}
 	for (i = 0; i < NWIN; i++)
@@ -60,7 +60,7 @@ int main(int argc, char ** argv) {
 		for (i = 0; i < NWIN; i++) 
 			handle(w[i], c[i], i);
 	for (i = 0; i < NWIN; i++) 
-		awClose(w[i]);
+		awDel(w[i]);
 	agDel(g);
 	return 0;
 }

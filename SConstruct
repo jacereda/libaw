@@ -304,6 +304,5 @@ for backend in backends:
 		cnf['CONF'] = conf
 		env = cnf.Clone()
 		env['BACKEND'] = backend
-		env.Append(CPPDEFINES=[['AWBACKEND', backend]])
 		Export("env")
 		env.SConscript(dir  + '/SConscript')

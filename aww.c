@@ -33,9 +33,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <assert.h>
-#include <windows.h>
-#include <wingdi.h>
-#include <windowsx.h>
 #include "aw.h"
 #include "awos.h"
 #include "bit.h" 
@@ -43,30 +40,6 @@
 #if !defined HANDLE_WM_MOUSEWHEEL // XXX mingw doesn't seem to define this one
 #define HANDLE_WM_MOUSEWHEEL(hwnd,wParam,lParam,fn) ((fn)((hwnd),(int)(short)LOWORD(lParam),(int)(short)HIWORD(lParam),(int)(short)HIWORD(wParam),(UINT)(short)LOWORD(wParam)),0L)
 #endif
-
-struct _ag {
-        agHeader hdr;
-        HANDLE ready;
-        HANDLE thread;
-        HWND win;
-        WCHAR appname[256];
-};
-
-struct _aw {
-        awHeader hdr;
-        HWND win;
-        DWORD style;
-};
-
-struct _ac {
-        acHeader hdr;
-        HGLRC ctx;
-};
-
-struct _ap {
-        apHeader hdr;
-        HCURSOR icon;
-};
 
 static BOOL (APIENTRY *wglSwapInterval) (int interval) = 0;
 
@@ -98,15 +71,14 @@ static void wide(WCHAR * d, size_t dsz, const char * t) {
         MultiByteToWideChar(CP_UTF8, 0, t, -1, d, (int)dsz);
 }
 
-int awosSetTitle(aw * w, const char * t) {
+int oswSetTitle(osw * w, const char * t) {
         WCHAR wt[1024];
         wide(wt, sizeof(wt), t);
         return SetWindowTextW(w->win, wt);
 }
 
-static aw * openwin(int x, int y, int width, int height, 
-                    DWORD style, DWORD exstyle, ag * g) {
-        aw * w = calloc(1, sizeof(*w));
+static int openwin(osw * w, int x, int y, int width, int height, 
+                    DWORD style, DWORD exstyle, osg * g) {
         RECT r;
         HWND win;
         w->style = style;
@@ -125,11 +97,8 @@ static aw * openwin(int x, int y, int width, int height,
                 ReleaseDC(win, dc);
                 DragAcceptFiles(win, TRUE);
         }
-        if (w)
-                w->win = win;
-        else
-                free(w);
-        return w;
+        w->win = win;
+        return win != 0;
 }
 
 static void dispatch(HWND win, unsigned type) {
@@ -143,7 +112,7 @@ static void dispatch(HWND win, unsigned type) {
 #define EXITMSG (WM_USER+0x1024)
 
 static DWORD __stdcall groupThread(LPVOID param) {
-        ag * g = (ag *)param;;
+        osg * g = (osg *)param;;
         g->win = CreateWindowExW(0, g->appname, g->appname, 
                                  WS_POPUP, 0, 0, 0, 0, 0, 0, 
                                  GetModuleHandleW(NULL), 0);
@@ -163,11 +132,10 @@ static DWORD __stdcall groupThread(LPVOID param) {
 }
 
 
-ag * agosNew(const char * appname) {
+int osgInit(osg * g, const char * appname) {
         extern LRESULT CALLBACK handle(HWND win, UINT msg, WPARAM w, LPARAM l); 
         WNDCLASSW  wc;
         int ok;
-        ag * g = calloc(1, sizeof(*g));
         wide(g->appname, sizeof(g->appname), appname);
         ZeroMemory(&wc, sizeof(wc));
 //        wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
@@ -181,10 +149,10 @@ ag * agosNew(const char * appname) {
         g->thread = CreateThread(NULL, 4096, groupThread, g, 0, NULL);
         WaitForSingleObject(g->ready, INFINITE);
         CloseHandle(g->ready); g->ready = 0;
-        return g;
+        return ok;
 }
 
-int agosDel(ag * g) {
+int osgTerm(osg * g) {
         DWORD ret = 0;
         PostMessage(g->win, EXITMSG, 0, 0);
         ret = WaitForSingleObject(g->thread, INFINITE);
@@ -193,8 +161,8 @@ int agosDel(ag * g) {
         return ret;
 }
 
-aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
-        aw * w;
+int oswInit(osw * w, osg * g, int x, int y, 
+            int width, int height, int fs, int bl) {
         DWORD style, exstyle;
         if (bl) {
                 style = WS_POPUP;
@@ -211,18 +179,16 @@ aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
                         | 0;
                 exstyle = WS_EX_APPWINDOW;
         }
-        w = openwin(x, y, width, height, style, exstyle, g);
-        return w;
+        return openwin(w, x, y, width, height, style, exstyle, g);
 }
 
-int awosClose(aw * w) {
+int oswTerm(osw * w) {
         int ret = 1;
         if (w->win) ret &= 0 != DestroyWindow(w->win);
-        free(w);
         return ret;
 }
 
-int awosSwapBuffers(aw * w) {
+int oswSwapBuffers(osw * w) {
         int ret;
         HDC dc = GetDC(w->win);
         ret = SwapBuffers(dc);
@@ -230,7 +196,7 @@ int awosSwapBuffers(aw * w) {
         return ret;
 }
 
-int awosMakeCurrent(aw * w, ac * c) {
+int oswMakeCurrent(osw * w, osc * c) {
         int ret;
         HDC dc = GetDC(w->win);
         ret = wglMakeCurrent(dc, c->ctx);
@@ -240,21 +206,21 @@ int awosMakeCurrent(aw * w, ac * c) {
         return ret;
 }
 
-int awosClearCurrent(aw * w) {
+int oswClearCurrent(osw * w) {
         return wglMakeCurrent(0, 0);
 }
 
-int awosShow(aw * w) {
-        ShowWindow(w->win, w->hdr.fullscreen? SW_MAXIMIZE : SW_SHOWNORMAL);
+int oswShow(osw * w) {
+        ShowWindow(w->win, wfullscreen(w)? SW_MAXIMIZE : SW_SHOWNORMAL);
         return 1;
 }
 
-int awosHide(aw * w) {
+int oswHide(osw * w) {
         ShowWindow(w->win, SW_HIDE);
         return 1;
 }
 
-void awosPollEvent(aw * w) {
+void oswPollEvent(osw * w) {
         dispatch(w->win, 0);
 /*
   dispatch(w->win, PM_QS_POSTMESSAGE+PM_QS_SENDMESSAGE+PM_QS_PAINT);
@@ -264,17 +230,11 @@ void awosPollEvent(aw * w) {
 */
 }
 
-void awosThreadEvents() {
-        dispatch((HWND)0, 0);
-//        report("qs %x", GetQueueStatus(QS_ALLEVENTS));
-}
-
-int awosSetSwapInterval(aw * w, int si) {
+int oswSetSwapInterval(osw * w, int si) {
         return wglSwapInterval? wglSwapInterval(si) : 1;
 }
 
-ac * acosNew(ag * g, ac * share) {
-        ac * c = 0;
+int oscInit(osc * c, osg * g, osc * share) {
         HGLRC ctx;
         HWND dummy = CreateWindowExW(0, g->appname, g->appname, 0, 0, 0, 0, 0, 0, 0, 
                                      GetModuleHandleW(NULL), 0);
@@ -285,20 +245,16 @@ ac * acosNew(ag * g, ac * share) {
         DestroyWindow(dummy);
         if (ctx && share) 
                 wglShareLists(share->ctx, ctx);
-        if (ctx)
-                c = calloc(1, sizeof(*c));
-        if (c)
-                c->ctx = ctx;
-        return c;
+        c->ctx = ctx;
+        return ctx != 0;
 }
 
-int acosDel(ac * c) {
+int oscTerm(osc * c) {
         int ret = 0 != wglDeleteContext(c->ctx);
-        free(c);
         return ret;
 }
 
-int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
         RECT r;
         r.left = x; r.top = y;
         r.right = x + width; r.bottom = y + height;
@@ -308,20 +264,20 @@ int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
                    1);
 }
 
-void awosSetPointer(aw * w) {
-        if (w->hdr.pointer)
-                SetCursor(w->hdr.pointer->icon);
+void oswSetPointer(osw * w) {
+        if (wpointer(w))
+                SetCursor(wpointer(w)->icon);
         else
                 SetCursor(0);
 }
 
-void awosPointer(aw * w) {
+void oswPointer(osw * w) {
         POINT p;
         GetCursorPos(&p);
         SetCursorPos(p.x, p.y);
 }
 
-ap * aposNew(const void * vrgba, unsigned hotx, unsigned hoty) {
+int ospInit(osp * p, const void * vrgba, unsigned hotx, unsigned hoty) {
         HDC dc;
         HBITMAP bm;
         unsigned char * bits;
@@ -329,8 +285,6 @@ ap * aposNew(const void * vrgba, unsigned hotx, unsigned hoty) {
 
         BITMAPV5HEADER bh;
         ICONINFO ii = {0};
-        HCURSOR cur = {0};
-        ap * ret = calloc(1, sizeof(*ret));
         int w = 32;
         int h = 32;
         
@@ -366,13 +320,13 @@ ap * aposNew(const void * vrgba, unsigned hotx, unsigned hoty) {
         ii.yHotspot = hoty;
         ii.hbmColor = bm;
         ii.hbmMask = CreateBitmap(w, h, 1, 1, NULL);
-        ret->icon = CreateIconIndirect(&ii);
+        p->icon = CreateIconIndirect(&ii);
         DeleteObject(ii.hbmMask);
         DeleteObject(ii.hbmColor);
-        return ret;
+        return p->icon != 0;
 }
 
-int aposDel(ap * p) {
+int ospTerm(osp * p) {
         int ret;
         SetCursor(0);
         ret = DestroyIcon(p->icon);

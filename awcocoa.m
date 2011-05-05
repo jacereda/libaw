@@ -29,9 +29,6 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "aw.h"
-#undef main
-#include "awos.h"
 #include <assert.h>
 #include <Foundation/NSAutoreleasePool.h>
 #include <Foundation/NSString.h>
@@ -54,14 +51,18 @@
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 
+@class View;
+@class Window;
+#include "aw.h"
+#include "awos.h"
+
 @interface AppDelegate : NSObject {
 }
 @end
 
 @interface Window : NSWindow {
 @public
-        aw * _w;
-        ac * _c;
+        osw * _w;
 }
 @end
 
@@ -74,30 +75,12 @@
         BOOL _dragging;
         NSTrackingArea * _currta;
 @public
-        aw * _w;
+        osw * _w;
 }
 - (NSPoint)toAbs: (NSPoint)p;
 - (void) handleMove;
 @end
 
-struct _aw {
-        awHeader hdr;
-        View * view;
-        Window * win;
-        NSCursor * defcur;
-        int _freed;
-};
-
-struct _ac {
-        acHeader hdr;
-        NSOpenGLContext * ctx;
-};
-
-struct _ap {
-        apHeader hdr;
-        NSCursor * cur;
-        uint8_t rgba[CURSOR_BYTES];
-};
 
 #define PROLOGUE                                                        \
         NSAutoreleasePool * __arp = [[NSAutoreleasePool alloc] init]
@@ -122,8 +105,8 @@ static NSRect toQuartz(NSRect r) {
         return fromQuartz(r);
 }
 
-static NSCursor * currentCursor(aw * w) {
-        ap * p = w->hdr.pointer;
+static NSCursor * currentCursor(osw * w) {
+        osp * p = wpointer(w);
         return p? p->cur : w->defcur;
 }
 
@@ -174,7 +157,8 @@ static NSCursor * currentCursor(aw * w) {
 - (void) windowDidResize:(NSNotification *)n {
         NSRect fr = [_w->view frame];
         NSSize sz = fr.size;
-        if (_w->hdr.ctx) [_w->hdr.ctx->ctx update];
+        osc * c = wcontext(_w);
+        if (c) [c->ctx update];
         got(_w, AW_EVENT_RESIZE, sz.width, sz.height);
         [self handleMove];
 }
@@ -386,7 +370,7 @@ extern unsigned mapkeycode(unsigned);
 @end
 
 
-int awosSetTitle(aw * w, const char * t) {
+int oswSetTitle(osw * w, const char * t) {
         PROLOGUE;
         NSString * s = [[NSString alloc] initWithUTF8String: t];
         [w->win setTitle: s];
@@ -395,11 +379,11 @@ int awosSetTitle(aw * w, const char * t) {
         return 1;
 }
 
-static aw * openwin(int x, int y, int width, int height, unsigned style) {
+static void openwin(osw * w, int x, int y, 
+                    int width, int height, unsigned style) {
         Window * win;
         NSRect frm;
         View * view;
-        aw * w = 0;
         NSRect rect = toQuartz(NSMakeRect(x, y, width, height));
         win = [[Window alloc] initWithContentRect: rect 
                               styleMask: style
@@ -419,19 +403,17 @@ static aw * openwin(int x, int y, int width, int height, unsigned style) {
         [view release];
         [view updateTrackingAreas];
 
-        w = calloc(1, sizeof(*w));
         w->view = view;
         w->win = win;
         w->view->_w = w;
         w->win->_w = w;
         w->defcur = [[NSCursor arrowCursor] retain];
-        return w;
 }
 
-aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
+int oswInit(osw * w, osg * g, int x, int y, 
+            int width, int height, int fs, int bl) {
         PROLOGUE;
         unsigned style = 0;
-        aw * w;
         if (fs) {
                 NSSize scr = [[NSScreen mainScreen] frame].size;
                 width = scr.width;
@@ -445,11 +427,11 @@ aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
                         | NSResizableWindowMask
                         ;
         }
-        w = openwin(x, y, width, height, style);
+        openwin(w, x, y, width, height, style);
         if (bl) 
                 [w->win setLevel: NSPopUpMenuWindowLevel];
         EPILOGUE;
-        return w;
+        return 1;
 }
 
 static NSEvent * nextEventUntil(id win, NSDate * until) {
@@ -466,7 +448,7 @@ static NSEvent * pumpEvent(id win, NSDate * until) {
         return ev;
 }
 
-int awosClose(aw * w) {
+int oswTerm(osw * w) {
         PROLOGUE;
         [w->win close];
         while(pumpEvent(NSApp, [NSDate distantPast]))
@@ -477,57 +459,56 @@ int awosClose(aw * w) {
         [w->defcur release];
         EPILOGUE;
 //        assert(w->_freed);
-        free(w);
         return 1;
 }
 
-int awosSwapBuffers(aw * w) {
+int oswSwapBuffers(osw * w) {
         PROLOGUE;
         glFlush();
-        [w->hdr.ctx->ctx flushBuffer];
+        [wcontext(w)->ctx flushBuffer];
         EPILOGUE;
         return 1;
 }
 
-int awosShow(aw * w) {
+int oswShow(osw * w) {
         PROLOGUE;
         [w->win makeKeyAndOrderFront: w->view];
         EPILOGUE;
         return 1;
 }
 
-int awosHide(aw * w) {
+int oswHide(osw * w) {
         PROLOGUE;
         [w->win orderOut: nil];
         EPILOGUE;
         return 1;
 }
 
-void awosPollEvent(aw * w) {
+void oswPollEvent(osw * w) {
         PROLOGUE;
         pumpEvent(w->win, [NSDate distantPast]);
         //pumpEvent(NSApp, [NSDate distantPast]);
         EPILOGUE;
 }
 
-int awosSetSwapInterval(aw * w, int i) {
+int oswSetSwapInterval(osw * w, int i) {
         PROLOGUE;
         GLint param = i;
-        [w->hdr.ctx->ctx setValues:&param forParameter:NSOpenGLCPSwapInterval];
+        [wcontext(w)->ctx setValues:&param forParameter:NSOpenGLCPSwapInterval];
         EPILOGUE;
         return 1;
 }
 
-int awosClearCurrent(aw * w) {
+int oswClearCurrent(osw * w) {
         PROLOGUE;
         glFlush();
-        [w->hdr.ctx->ctx clearDrawable];
+        [wcontext(w)->ctx clearDrawable];
         [NSOpenGLContext clearCurrentContext];
         EPILOGUE;
         return 1;
 }
 
-int awosMakeCurrent(aw * w, ac * c) {
+int oswMakeCurrent(osw * w, osc * c) {
         PROLOGUE;
         [c->ctx setView: [w->win contentView]];
         [c->ctx makeCurrentContext];
@@ -535,28 +516,22 @@ int awosMakeCurrent(aw * w, ac * c) {
         return 1;
 }
 
-int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
         PROLOGUE;
-        [w->win setFrame: 
-                  [w->win frameRectForContentRect: 
-                            NSMakeRect(x, reversed(y + height - 1), 
-                                       width, height)]
-                 display: YES];
+        NSRect r = NSMakeRect(x, reversed(y + height - 1), width, height);
+        NSRect fr = [w->win frameRectForContentRect: r];
+        [w->win setFrame: fr display: YES];
         EPILOGUE;
         return 1;
 }
 
-void awosPointer(aw * w) {
+void oswPointer(osw * w) {
         PROLOGUE;
         [w->view establishCursor];
         EPILOGUE;
 }
 
-//void awosThreadEvents() {
-//        pumpEvent(NSApp, [NSDate distantPast]);
-//}
-
-unsigned awosOrder(aw ** order) {
+unsigned oswOrder(osw ** order) {
         PROLOGUE;
         NSArray * wins;
         wins = [NSApp orderedWindows];
@@ -568,10 +543,9 @@ unsigned awosOrder(aw ** order) {
         return n;
 }
 
-ac * acosNew(ag * g, ac * share) {
+int oscInit(osc * c, osg * g, osc * share) {
         PROLOGUE;
         int st = 0; // XXX
-        ac * c = 0;
         NSOpenGLContext *ctx = 0;
         CGDirectDisplayID dpy = kCGDirectMainDisplay;
         NSOpenGLPixelFormatAttribute attr[] = {
@@ -598,32 +572,27 @@ ac * acosNew(ag * g, ac * share) {
                               initWithFormat:fmt  
                               shareContext: share? share->ctx : 0];
         [fmt release];
-        if (ctx)
-                c = calloc(1, sizeof(*c));
-        if (c)
-                c->ctx = ctx;
+        c->ctx = ctx;
         EPILOGUE;
-        return c;
+        return ctx != 0;
 }
 
-void * acosContextFor(ac * c) {
+void * oscContextFor(osc * c) {
         return c->ctx;
 }
 
-void * acosCurrentContext() {
+void * oscCurrentContext() {
         return [NSOpenGLContext currentContext];
 }
 
-int acosDel(ac * c) {
+int oscTerm(osc * c) {
         PROLOGUE;
         [c->ctx release];
         EPILOGUE;
-        free(c);
         return 1;
 }
 
-ap * aposNew(const void * rgba, unsigned hotx, unsigned hoty) {
-        ap * p = calloc(1, sizeof(*p));
+int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
         NSBitmapImageRep * b;
         NSImage * img;
         uint8_t * planes[1];
@@ -649,24 +618,23 @@ ap * aposNew(const void * rgba, unsigned hotx, unsigned hoty) {
                                          hotSpot: NSMakePoint(hotx, hoty)];
         [img release];
         EPILOGUE;
-        return p;
+        return p->cur != 0;
 }
 
-int aposDel(ap * p) {
+int ospTerm(osp * p) {
         PROLOGUE;
         [p->cur release];
-        free(p);
         EPILOGUE;
         return 1;
 }
 
-ag * agosNew(const char * name) {
+int osgInit(osg * g, const char * name) {
         PROLOGUE;
         EPILOGUE;
-        return (ag*)-1;
+        return 1;
 }
 
-int agosDel(ag * g) {
+int osgTerm(osg * g) {
         PROLOGUE;
         EPILOGUE;
         return 1;

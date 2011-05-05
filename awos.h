@@ -5,19 +5,30 @@
 #define MAX_EVENTS 1024
 #define MAX_PRESSED 256
 
+#if defined _WIN32
+#include "aww.h"
+#elif defined __ANDROID__
+#include "awandroid.h"
+#elif defined __IPHONE_OS_VERSION_MIN_REQUIRED
+#include "awios.h"
+#elif defined __APPLE__
+#include "awcocoa.h"
+#else
+#include "awx.h"
+#endif
+
 struct _ae {
 	awcell type;
         awcell p[2];
 };
 
-typedef struct agHeader {
-        int dummy;
-} agHeader;
+typedef struct _osw osw;
 
-typedef struct awHeader {
+struct _aw {
+        osw osw; // must be first
+        ag * g;
         ac * ctx;
         ap * pointer;
-        ag * g;
         void * user;
         ae * last;
         ae ev[MAX_EVENTS];
@@ -28,43 +39,56 @@ typedef struct awHeader {
         unsigned width, height;
         int mx, my;
         int fullscreen;
-} awHeader;
+        int shown;
+};
 
-typedef struct acHeader {
+typedef struct _osg osg;
+
+struct _ag {
+        osg osg; // must be first
+};
+
+typedef struct _osc osc;
+
+struct _ac {
+        osc osc; // must be first
         ag * g;
-} acHeader;
+        int ok;
+};
 
-typedef struct apHeader {
+typedef struct _osp osp;
+
+struct _ap {
+        osp osp; // must be first
         int refs;
-} apHeader;
+        int ok;
+};
 
-ag * agosNew(const char *);
-int agosDel(ag *);
-aw * awosOpen(ag *, int, int, int, int, int, int);
-int awosSetTitle(aw *, const char *);
-int awosClose(aw *);
-int awosMakeCurrent(aw *, ac *);
-int awosClearCurrent(aw *);
-int awosSwapBuffers(aw *);
-int awosShow(aw *);
-int awosHide(aw *);
-void awosPollEvent(aw *);
-void awosThreadEvents();
-int awosSetSwapInterval(aw *, int);
-int awosGeometry(aw *, int, int, unsigned, unsigned);
-void awosPointer(aw *);
-unsigned awosOrder(aw **);
+int osgInit(osg *, const char *);
+int osgTerm(osg *);
+int oswInit(osw *, osg *, int, int, int, int, int, int);
+int oswTerm(osw *);
+int oswSetTitle(osw *, const char *);
+int oswMakeCurrent(osw *, osc *);
+int oswClearCurrent(osw *);
+int oswSwapBuffers(osw *);
+int oswShow(osw *);
+int oswHide(osw *);
+void oswPollEvent(osw *);
+void oswThreadEvents();
+int oswSetSwapInterval(osw *, int);
+int oswGeometry(osw *, int, int, unsigned, unsigned);
+void oswPointer(osw *);
+unsigned oswOrder(osw **);
 
-int acosInit();
-int acosEnd();
-ac * acosNew(ag *, ac *);
-int acosDel(ac *);
+int oscInit(osc *, osg *, osc *);
+int oscTerm(osc *);
 
-ap * aposNew(const void * rgba, unsigned hotx, unsigned hoty);
-int aposDel(ap *);
+int ospInit(osp *, const void * rgba, unsigned hotx, unsigned hoty);
+int ospTerm(osp *);
 
 // Defined in the frontend
-void got(aw  * w, int, intptr_t, intptr_t);
+void got(osw * w, int, intptr_t, intptr_t);
 void report(const char * fmt, ...);
 #if defined NDEBUG
 static __inline void debug(const char * fmt, ...) {}
@@ -73,8 +97,15 @@ static __inline void debug(const char * fmt, ...) {}
 #endif
 
 
-#define wgroup(w) (w->hdr.g)
-#define cgroup(c) (c->hdr.g)
+#define wfullscreen(w) (((aw*)w)->fullscreen)
+#define wgroup(w) (&(((aw*)w)->g->osg))
+#define cgroup(c) (&(((ac*)c)->g->osg))
+#define wpointer(w) (&(((aw*)w)->pointer->osp))
+#define wcontext(w) (&(((aw*)w)->ctx->osc))
+#define wmousex(w) ((((aw*)w)->mx))
+#define wmousey(w) ((((aw*)w)->my))
+#define prgba(p) (((ap*)p)->rgba)
+
 /* 
    Local variables: **
    c-file-style: "bsd" **
