@@ -193,16 +193,6 @@ static void setCursor2(aw * w) {
         awPointer(w, g_p);
 }
 
-static aw * openwith(aw * (*proc)(ag*), ag * g, aw * w, ac * c) {
-        awMakeCurrent(w, 0);
-        awClose(w);
-        w = proc(g);
-        awGeometry(w, 100, 100, 300, 400);
-        awMakeCurrent(w, c);
-        awShow(w);
-        return w;
-}
-
 static aw * processEvents(ag * g, aw * w, ac * c) {
         const ae * e;
         while ((e = awNextEvent(w))) switch (aeType(e)) {
@@ -214,34 +204,30 @@ static aw * processEvents(ag * g, aw * w, ac * c) {
                         Log("Moved to %d %d", aeX(e), aeY(e));
                         break;
                 case AW_EVENT_UNICODE:
-                        Log("Unicode: %s", awKeyName(aeWhich(e)));
+                        Log("Unicode: %s", aeKeyName(e));
                         break;
                 case AW_EVENT_DOWN:
-                        Log("Down: %s", awKeyName(aeWhich(e)));
+                        Log("Down: %s", aeKeyName(e));
                         break;
                 case AW_EVENT_UP:
-                        Log("Up: %s", awKeyName(aeWhich(e)));
-        
-                        if (aeWhich(e) == AW_KEY_1)
-                                setCursor1(w);
-                        if (aeWhich(e) == AW_KEY_2)
-                                setCursor2(w);
-                        if (aeWhich(e) == AW_KEY_F) 
-                                w = openwith(awOpenFullscreen, g, w, c);
-                        if (aeWhich(e) == AW_KEY_B)
-                                w = openwith(awOpenBorderless, g, w, c);
-                        if (aeWhich(e) == AW_KEY_W)
-                                w = openwith(awOpen, g, w, c);
-                        if (aeWhich(e) == AW_KEY_M) 
-                                w = openwith(awOpenMaximized, g, w, c);
-                        if (aeWhich(e) == AW_KEY_S || aeWhich(e) == AW_KEY_V) {
+                        Log("Up: %s", aeKeyName(e));
+                        switch (aeWhich(e)) {
+                        case AW_KEY_1: setCursor1(w); break;
+                        case AW_KEY_2: setCursor2(w); break;
+                        case AW_KEY_F: awFullscreen(w); break;
+                        case AW_KEY_B: awBorderless(w); break;
+                        case AW_KEY_W: awPlain(w); break;
+                        case AW_KEY_M: awMaximize(w); break;
+                        case AW_KEY_V: {
                                 static int v = 0;
                                 v = 1 - v;
                                 awGeometry(w, 100-v*20, 200-v*20, 
                                            300+v*40, 400+v*40);
+                        } break;
+                        case  AW_KEY_Q: 
+                                g_exit = 1; break;
+                        default: break;
                         }
-                        if (aeWhich(e) == AW_KEY_Q) 
-                                g_exit = 1;
                         break;
                 case AW_EVENT_MOTION:
                         Log("Motion: %d,%d", aeX(e), aeY(e));
@@ -284,10 +270,9 @@ int main(int argc, char ** argv) {
         g_progname = argv[0];
         g = agNew("awtest");
         if (g)
-                w = awOpen(g);
+                w = awNew(g);
         if (g)
                 c = acNew(g, 0);
-
         awSetInterval(w, 1);
         awMakeCurrent(w, c);
         awGeometry(w, 100, 200, 300, 400);
@@ -295,7 +280,6 @@ int main(int argc, char ** argv) {
         g_exit = 0;
         while (!g_exit) {
 //  Log("Z order: %d", awOrder(w));
-                awThreadEvents();
                 w = processEvents(g, w, c);
                 if (!g_exit) {
                         draw();
@@ -305,7 +289,7 @@ int main(int argc, char ** argv) {
         awMakeCurrent(w, 0);
         deletePointer(w);
         acDel(c);
-        awClose(w);
+        awDel(w);
         agDel(g);
         return 0;
 }

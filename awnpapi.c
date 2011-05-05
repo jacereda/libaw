@@ -330,7 +330,7 @@ int acosDel(ac * c) {
 	return 1;
 }
 
-const char * awResourcesPath() {
+const char * agResourcesPath(ag * g) {
 	insHeader * hdr = getHeader();
 	return awosResourcesPath((ins*)hdr);
 }

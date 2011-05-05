@@ -13,7 +13,7 @@ static __inline void bitassign(unsigned char * b, unsigned bit, int val) {
 		bitclear(b, bit);
 }
 
-static __inline int bittest(unsigned char * b, unsigned bit) {
+static __inline int bittest(const unsigned char * b, unsigned bit) {
         return b[bit>>3] & (1 << (bit & 7));
 }
 

@@ -47,7 +47,7 @@ int main(int argc, char ** argv) {
 		g = agNew("multi");
 		c = acNew(g, 0);
 		for (i = 0; i < NWIN; i++)
-				w[i] = awOpen(g);
+				w[i] = awNew(g);
 		for (i = 0; i < NWIN; i++)
 				awSetInterval(w[i], 1);
 		for (i = 0; i < NWIN; i++)
@@ -62,7 +62,7 @@ int main(int argc, char ** argv) {
 						handle(w[i], c, i);
 				}
 		for (i = 0; i < NWIN; i++) 
-				awClose(w[i]);
+				awDel(w[i]);
 		agDel(g);
 		return 0;
 }

@@ -40,14 +40,6 @@
 #include <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
 
-struct _aw {
-        awHeader hdr;
-};
-
-struct _ac {
-        acHeader hdr;
-};
-
 @interface glview : UIView {}
 @end
 @interface awdelegate : NSObject <UIApplicationDelegate, UITextFieldDelegate> {
@@ -60,8 +52,8 @@ struct _ac {
 	co * comain;
 	co * coaw;
 	int awdone;
-        aw w;
-        ac c;
+        osw * w;
+        osc * c;
 }
 @end
 
@@ -70,7 +62,7 @@ awdelegate * getDelegate() {
 }
 
 static void dgot(int e, int x, int y) {
-        got(&getDelegate()->w, e, x, y);
+        got(getDelegate()->w, e, x, y);
 }
 
 static void fakekeyuni(unsigned key, unsigned unicode) {
@@ -256,78 +248,80 @@ int main(int argc, char *argv[]) {
         return ret;
 }
 
-ag * agosNew(const char * name) {
-        return (ag*)1;
-}
-
-int agosDel(ag * g) {
+int osgInit(osg * g, const char * name) {
         return 1;
 }
 
-int awosSetTitle(aw * w, const char * t) {
+int osgTerm(osg * g) {
         return 1;
 }
 
-aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
-        return &getDelegate()->w;
-}
-
-int awosClose(aw * w) {
+int oswSetTitle(osw * w, const char * t) {
         return 1;
 }
 
-int awosSwapBuffers(aw * w) {
+int oswInit(osw * w, osg * g, int x, int y, 
+	      int width, int height, int fs, int bl) {
+        getDelegate()->w = w;
+	return 1;
+}
+
+int oswTerm(osw * w) {
+        return 1;
+}
+
+int oswSwapBuffers(osw * w) {
         coSwitchTo(getDelegate()->comain);
         return 1;
 }
 
-int awosShow(aw * w) {
+int oswShow(osw * w) {
         return 1;
 }
 
-int awosHide(aw * w) {
+int oswHide(osw * w) {
         return 1;
 }
 
-void awosPollEvent(aw * w) {
+void oswPollEvent(osw * w) {
 }
 
-int awosSetSwapInterval(aw * w, int i) {
+int oswSetSwapInterval(osw * w, int i) {
         return 1;
 }
 
-int awosClearCurrent(aw * w) {
+int oswClearCurrent(osw * w) {
         return 1;
 }
 
-int awosMakeCurrent(aw * w, ac * c) {
+int oswMakeCurrent(osw * w, osc * c) {
         return 1;
 }
 
-ac * acosNew(ag * g, ac * share) {
-        return &getDelegate()->c;
-}
-
-int acosDel(ac * cc) {
+int oscInit(osc * c, osg * g, osc * share) {
         return 1;
 }
 
-ap * aposNew(const void * rgba, unsigned hotx, unsigned hoty) {
-	return 0;
+int oscTerm(osc * cc) {
+        return 1;
 }
 
-int aposDel(ap * g) {
+int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
 	return 1;
 }
 
-int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+int ospTerm(osp * p) {
 	return 1;
 }
 
-void awosPointer(aw * w) {
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
+	return 1;
+}
+
+void oswPointer(osw * w) {
 
 }
 
-unsigned awosOrder(aw ** w) {
+unsigned oswOrder(osw ** w) {
 	return 0;
 }

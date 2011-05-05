@@ -43,35 +43,7 @@
         ButtonPressMask | ButtonReleaseMask |   \
         PointerMotionMask | StructureNotifyMask
 
-struct _ag {
-        Display * dpy;
-        int screen;
-        XIM xim;
-        Atom del;
-        int(*swapInterval)(int);
-        int bw, bh;
-};
-
-struct _aw {
-        awHeader hdr;
-        Window win;
-        int lastw, lasth;
-        int lastx, lasty;
-        XIC xic;
-};
-
-struct _ac {
-        acHeader hdr;
-        GLXContext ctx;
-};
-
 #define sync() XSync(wgroup(w)->dpy, False)
-
-static void * memdup(const void * p, size_t sz) {
-        void * ret = malloc(sz);
-        memcpy(ret, p, sz);
-        return ret;
-}
 
 static XVisualInfo * chooseVisual(Display * dpy, int screen) {
         int att[64];
@@ -91,7 +63,7 @@ static void fillWA(unsigned long * swam, XSetWindowAttributes * swa) {
         swa->event_mask = EVMASK; *swam |= CWEventMask;
 }
 
-static Window createWin(ag * g, int x, int y, int width, int height) {
+static Window createWin(osg * g, int x, int y, int width, int height) {
         XSetWindowAttributes swa; 
         unsigned long swamask;
         XSizeHints hints;
@@ -112,7 +84,7 @@ static Window createWin(ag * g, int x, int y, int width, int height) {
         return w;
 }
 
-static void findBorderSize(ag * g) {
+static void findBorderSize(osg * g) {
         XEvent e;
         Window w = createWin(g, -100, -100, 1, 1);
         XMapWindow(g->dpy, w);
@@ -128,40 +100,36 @@ static void findBorderSize(ag * g) {
         XDestroyWindow(g->dpy, w);
 }
 
-ag * agosNew(const char * name) {
-        ag g;
+int osgInit(osg * g, const char * name) {
         int hasExtensions = 0;
-        memset(&g, 0, sizeof(g));
-        g.dpy = XOpenDisplay(0);
-        if (g.dpy) {
-                g.screen = XDefaultScreen(g.dpy);
-                g.del = XInternAtom(g.dpy, "WM_DELETE_WINDOW", False);
-                findBorderSize(&g);
-                hasExtensions = 0 != glXQueryExtension(g.dpy, 0, 0);
+        g->dpy = XOpenDisplay(0);
+        if (g->dpy) {
+                g->screen = XDefaultScreen(g->dpy);
+                g->del = XInternAtom(g->dpy, "WM_DELETE_WINDOW", False);
+                findBorderSize(g);
+                hasExtensions = 0 != glXQueryExtension(g->dpy, 0, 0);
         }
         if (hasExtensions)
-                g.swapInterval = (int(*)(int))glXGetProcAddress(
+                g->swapInterval = (int(*)(int))glXGetProcAddress(
                         (GLubyte*)"glXSwapIntervalSGI");
-        if (!g.swapInterval)
+        if (!g->swapInterval)
                 debug("no glXSwapIntervalSGI()");
-        if (g.dpy)
-                g.xim = XOpenIM (g.dpy, 0, 0, 0);
-        return hasExtensions && g.xim? memdup(&g, sizeof(g)) : 0;
+        if (g->dpy)
+                g->xim = XOpenIM (g->dpy, 0, 0, 0);
+        return hasExtensions && g->xim;
 }
 
-int agosDel(ag * g) {
+int osgTerm(osg * g) {
         int ret = 0 == XCloseDisplay(g->dpy);
-        free(g);
         return ret;
 }
 
-int awosSetTitle(aw * w, const char * t) {
+int oswSetTitle(osw * w, const char * t) {
         return XSetStandardProperties(wgroup(w)->dpy, w->win, t, t, None,
                                       (char**)0, 0, 0);
 }
 
-static aw * openwin(ag * g, int x, int y, int width, int height) {
-        aw * w = 0;
+static int openwin(osw * w, osg * g, int x, int y, int width, int height) {
         Window win = createWin(g, x, y, width, height);
         XIC xic = 0;
         if (win)
@@ -171,17 +139,14 @@ static aw * openwin(ag * g, int x, int y, int width, int height) {
                         XNClientWindow, win,
                         XNFocusWindow, win,
                         NULL);
-        if (xic)
-                w = calloc(1, sizeof(*w));
-        if (w) {
-                w->win = win;
-                w->xic = xic;
-        }
-        return w;
+        w->win = win;
+        w->xic = xic;
+        return w->win && w->xic;
 }
 
-aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
-        aw * w;
+int oswInit(osw * w, osg * g, int x, int y, 
+            int width, int height, int fs, int bl) {
+        int ok;
         if (fs) {
                 width = DisplayWidth(g->dpy, g->screen);
                 height = DisplayHeight(g->dpy, g->screen);
@@ -190,8 +155,8 @@ aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
                 x -= g->bw;
                 y -= g->bh;
         }
-        w = openwin(g, x, y, width, height);
-        if (bl) {
+        ok = openwin(w, g, x, y, width, height);
+        if (ok && bl) {
                 long flags[5] = {0};
                 Atom hatom = XInternAtom(g->dpy, "_MOTIF_WM_HINTS", 1);
                 flags[0] = 2; //mwm.flags = MWM_HINTS_DECORATIONS;
@@ -202,37 +167,36 @@ aw * awosOpen(ag * g, int x, int y, int width, int height, int fs, int bl) {
         }
         if (g->dpy)
                 XSync(g->dpy, False);
-        return w;
+        return ok;
 }
 
-int awosClose(aw * w) {
+int oswTerm(osw * w) {
         XDestroyIC(w->xic);
         XDestroyWindow(wgroup(w)->dpy, w->win);
-        free(w);
         return 1;
 }
 
-int awosSwapBuffers(aw * w) {
+int oswSwapBuffers(osw * w) {
         glXSwapBuffers(wgroup(w)->dpy, w->win);
         return 1;
 }
 
-int awosMakeCurrent(aw * w, ac * c) {
+int oswMakeCurrent(osw * w, osc * c) {
         return glXMakeCurrent(wgroup(w)->dpy, w->win, c->ctx);
 }
 
-int awosClearCurrent(aw * w) {
+int oswClearCurrent(osw * w) {
         return glXMakeCurrent(wgroup(w)->dpy, 0, 0);
 }
 
-int awosShow(aw * w) {
+int oswShow(osw * w) {
         int ret = 0; 
         ret |= XMapWindow(wgroup(w)->dpy, w->win);
         ret |= sync();
         return ret;
 }
 
-int awosHide(aw * w) {
+int oswHide(osw * w) {
         int ret = 0;
         ret |= XUnmapWindow(wgroup(w)->dpy, w->win);
         ret |= sync();
@@ -253,7 +217,7 @@ static int mapButton(int button) {
         return which;
 }
 
-static void configure(aw * w, int x, int y, int width, int height) {
+static void configure(osw * w, int x, int y, int width, int height) {
         if (width != w->lastw || height != w->lasth)
                 got(w, AW_EVENT_RESIZE, width, height);
         w->lastw = width; w->lasth = height;
@@ -262,7 +226,7 @@ static void configure(aw * w, int x, int y, int width, int height) {
         w->lastx = x; w->lasty = y;
 }
 
-static int isAutoRepeat(aw * w, XEvent * e) {
+static int isAutoRepeat(osw * w, XEvent * e) {
         XEvent next;
         XCheckTypedWindowEvent(wgroup(w)->dpy, w->win, KeyPress, &next);
         XPutBackEvent(wgroup(w)->dpy, &next);
@@ -270,7 +234,7 @@ static int isAutoRepeat(aw * w, XEvent * e) {
                 && next.xkey.time - e->xkey.time < 2;
 }
 
-static void handle(aw * w, XEvent * e) {
+static void handle(osw * w, XEvent * e) {
         extern unsigned mapkeycode(unsigned);
         switch(e->type) {
         case ClientMessage:
@@ -324,19 +288,19 @@ static void handle(aw * w, XEvent * e) {
         }
 }
 
-static int pollEvent(aw * w, XEvent * e) {
+static int pollEvent(osw * w, XEvent * e) {
         return XCheckWindowEvent(wgroup(w)->dpy, w->win, EVMASK, e)
                 || XCheckTypedWindowEvent(wgroup(w)->dpy, w->win, ClientMessage, e);
 }
 
-void awosPollEvent(aw * w) {
+void oswPollEvent(osw * w) {
         XEvent e;
         sync();
         if (pollEvent(w, &e))
                 handle(w, &e);
 }
 
-int awosSetSwapInterval(aw * w, int interval) {
+int oswSetSwapInterval(osw * w, int interval) {
 #if 1
         return !wgroup(w)->swapInterval 
                 || 0 == wgroup(w)->swapInterval(interval);
@@ -347,7 +311,7 @@ int awosSetSwapInterval(aw * w, int interval) {
 #endif
 }
 
-int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
         int ret = 0;
         ret |= XMoveResizeWindow(wgroup(w)->dpy, w->win, x - wgroup(w)->bw, y - wgroup(w)->bh, 
                                  width, height);
@@ -355,41 +319,36 @@ int awosGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
         return ret;
 }
 
-ac * acosNew(ag * g, ac * share) {
+int oscInit(osc * c, osg * g, osc * share) {
         XVisualInfo * vinfo = chooseVisual(g->dpy, g->screen);
         GLXContext ctx = 0;
-        ac * c = 0;
         if (vinfo) {
                 ctx = glXCreateContext(g->dpy, vinfo, 
                                        share? share->ctx : 0, True);
                 XFree(vinfo);
         }
-        if (ctx)
-                c = calloc(1, sizeof(*c));
-        if (c)
-                c->ctx = ctx;
-        return c;
+        c->ctx = ctx;
+        return c->ctx != 0;
 }
 
-int acosDel(ac * c) {
+int oscTerm(osc * c) {
         glXDestroyContext(cgroup(c)->dpy, c->ctx);
-        free(c);
         return 1;
 }
 
-ap * aposNew(const void * rgba, unsigned hotx, unsigned hoty) {
-        return 0;
-}
-
-int aposDel(ap * p) {
+int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
         return 1;
 }
 
-unsigned awosOrder(aw ** w) {
+int ospTerm(osp * p) {
+        return 1;
+}
+
+unsigned oswOrder(osw ** w) {
         return 0;
 }
 
-void awosPointer(aw * w) {
+void oswPointer(osw * w) {
 
 }
 
