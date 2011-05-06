@@ -1,10 +1,6 @@
 #include "aw.h"
 #include "awos.h"
-#include <EGL/egl.h>
 #include <android/log.h>
-#include <android_native_app_glue.h>
-
-static int g_haswin;
 
 #define ASSERT(e) ((e) ? (void)0 : report("%s:%d: ASSERTION FAILED: %s", __FILE__, __LINE__, #e))
 
@@ -15,20 +11,7 @@ void report(const char * fmt, ...) {
 	va_end(ap);
 }
 
-struct _ac {
-	acHeader hdr;
-	EGLContext ctx;
-	EGLint fmt;
-};
-
-struct _aw {
-	awHeader hdr;
-	EGLSurface surf;
-};
-
-static EGLDisplay g_dpy;
 static struct android_app* g_app;
-
 
 static awkey mapkey(int kc) {
 	awkey ret;
@@ -150,7 +133,7 @@ static awkey mapkey(int kc) {
 }
 
 static int32_t input(struct android_app * app, AInputEvent * e) {
-	aw * w = (aw*)app->userData;
+	osw * w = (osw*)app->userData;
 	int handled = 1;
 	int kc;
 	awkey awkc;
@@ -179,10 +162,10 @@ static int32_t input(struct android_app * app, AInputEvent * e) {
 }
 
 static void handle(struct android_app* app, int32_t cmd) {
-	aw * w = (aw*)app->userData;
+	osw * w = (osw*)app->userData;
 	switch (cmd) {
         case APP_CMD_INIT_WINDOW:
-		g_haswin = app->window != 0;
+		app->userData = app->window;
 		break;
         case APP_CMD_TERM_WINDOW:
 		debug("got term window");
@@ -191,40 +174,35 @@ static void handle(struct android_app* app, int32_t cmd) {
 	}
 }
 
-void android_main(struct android_app* state) {
+static void pollEvent(struct android_app * app) {
+	int ident;
+	int events;
+        struct android_poll_source* source;
+        ident=ALooper_pollAll(0, 0, &events, (void**)&source);
+	if (ident >= 0 && source)
+		source->process(app, source);
+}
+
+void android_main(struct android_app* app) {
 	char * argv[] = {"awandroid"};
-	g_app = state;
-	g_haswin = 0;
+	app->userData = 0;
 	app_dummy();
-	g_app->onAppCmd = handle;
-	g_app->onInputEvent = input;
+	app->onAppCmd = handle;
+	app->onInputEvent = input;
 	debug("wait\n");
-	while (!g_haswin)
-		awosPollEvent(0);
-	ASSERT(g_app->window);
+	while (!app->userData)
+		pollEvent(app);
+	ASSERT(app->window);
 	debug("fakemain\n");
+	g_app = app;
 	fakemain(1, argv);
 	debug("waiting destroy");
-	while (!g_app->destroyRequested)
-		awosPollEvent(0);
+	while (!app->destroyRequested)
+		oswPollEvent(0);
 	debug("terminating");
 }
 
-int awosInit() {
-	g_dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-	ASSERT(g_dpy);
-	return eglInitialize(g_dpy, 0, 0) == EGL_TRUE;
-}
-
-int awosEnd() {
-        return eglTerminate(g_dpy) == EGL_TRUE;
-}
-
-int awosSetTitle(aw * w, const char * t) {
-        return 1;
-}
-
-static void getcfg(EGLConfig * cfg) {
+static void getcfg(osg * g, EGLConfig * cfg) {
 	EGLint ncfg;
 	const EGLint attr[] = {
 		EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
@@ -233,86 +211,142 @@ static void getcfg(EGLConfig * cfg) {
 		EGL_RED_SIZE, 8,
 		EGL_NONE
 	};
-	eglChooseConfig(g_dpy, attr, cfg, 1, &ncfg);
+	eglChooseConfig(g->dpy, attr, cfg, 1, &ncfg);
 	ASSERT(ncfg > 0);
 }
 
-aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
-	aw * w = calloc(1, sizeof(*w));
-	EGLint ww=0, wh=0;
+static EGLSurface surfnew(osg * g) {
+	EGLConfig cfg;
+	getcfg(g, &cfg);
+	return eglCreateWindowSurface(g->dpy, cfg, g->app->window, 0);	
+}
+
+static int surfdel(osg * g, EGLSurface s) {
+	return EGL_TRUE == eglDestroySurface(g->dpy, s) ;
+}
+
+static EGLContext ctxnew(osg * g) {
+	EGLConfig cfg;
+	getcfg(g, &cfg);
+	return eglCreateContext(g->dpy, cfg, 0, 0);
+}
+
+static int ctxdel(osg * g, EGLContext c) {
+	return EGL_TRUE == eglDestroyContext(g->dpy, c);
+}
+
+int osgInit(osg * g, const char * name) {
+	int ok;
 	EGLConfig cfg;
 	EGLint fmt;
+	g->dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+	ASSERT(g->dpy);
+	g->app = g_app;
+	ASSERT(g->app->window);
+	ok = eglInitialize(g->dpy, 0, 0) == EGL_TRUE;
+	getcfg(g, &cfg);
+	eglGetConfigAttrib(g->dpy, cfg, EGL_NATIVE_VISUAL_ID, &fmt);
+	ANativeWindow_setBuffersGeometry(g->app->window, 0, 0, fmt);
+	if (ok) {
+		EGLSurface fakesurf = surfnew(g);
+		EGLContext fakectx = ctxnew(g);
+		eglMakeCurrent(g->dpy, fakesurf, fakesurf, fakectx);
+		eglQuerySurface(g->dpy, fakesurf, EGL_WIDTH, &g->w);
+		eglQuerySurface(g->dpy, fakesurf, EGL_HEIGHT, &g->h);
+		eglMakeCurrent(g->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
+			       EGL_NO_CONTEXT);
+		ctxdel(g, fakectx);
+		surfdel(g, fakesurf);
+	}
+	return ok;
+}
+
+int osgTerm(osg * g) {
+	return eglTerminate(g->dpy) == EGL_TRUE;
+}
+
+int oswSetTitle(osw * w, const char * t) {
+        return 1;
+}
+
+int oswInit(osw * w, osg * g, int x, int y, 
+	      int width, int height, int bl) {
 	EGLContext fakectx;
-	g_app->userData = w;
-	getcfg(&cfg);
-	ASSERT(g_app->window);
-	ASSERT(g_dpy);
-	eglGetConfigAttrib(g_dpy, cfg, EGL_NATIVE_VISUAL_ID, &fmt);
-	ANativeWindow_setBuffersGeometry(g_app->window, 0, 0, fmt);
-	w->surf = eglCreateWindowSurface(g_dpy, cfg, g_app->window, 0);
+	g->app->userData = w;
+	w->surf = surfnew(g);
 	ASSERT(w->surf);
-	fakectx = eglCreateContext(g_dpy, cfg, 0, 0);
-	eglMakeCurrent(g_dpy, w->surf, w->surf, fakectx);
-	eglQuerySurface(g_dpy, w->surf, EGL_WIDTH, &ww);
-	eglQuerySurface(g_dpy, w->surf, EGL_HEIGHT, &wh);
-	eglMakeCurrent(g_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
-		       EGL_NO_CONTEXT);
-	eglDestroyContext(g_dpy, fakectx);
-	got(w, AW_EVENT_RESIZE, ww, wh);
-        return w;
+        return w->surf != 0;
 }
 
-int awosClose(aw * w) {
-	return eglDestroySurface(g_dpy, w->surf) == EGL_TRUE;
+int oswTerm(osw * w) {
+	return surfdel(wgroup(w), w->surf);
 }
 
-int awosSwapBuffers(aw * w) {
-	return eglSwapBuffers(g_dpy, w->surf) == EGL_TRUE;
+int oswSwapBuffers(osw * w) {
+	return eglSwapBuffers(wgroup(w)->dpy, w->surf) == EGL_TRUE;
 }
 
-int awosMakeCurrent(aw * w, ac * c) {
-	return eglMakeCurrent(g_dpy, w->surf, w->surf, c->ctx) == EGL_TRUE;
+int oswMakeCurrent(osw * w, osc * c) {
+	return eglMakeCurrent(wgroup(w)->dpy, w->surf, w->surf, c->ctx) == EGL_TRUE;
 }
 
-int awosClearCurrent(aw * w) {
-        return eglMakeCurrent(g_dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
+int oswClearCurrent(osw * w) {
+        return eglMakeCurrent(wgroup(w)->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
 			      EGL_NO_CONTEXT) == EGL_TRUE;
 }
 
-int awosShow(aw * w) {
+int oswShow(osw * w) {
         return 1;
 }
 
-int awosHide(aw * w) {
+int oswHide(osw * w) {
         return 1;
 }
 
-void awosPollEvent(aw * w) {
-	int ident;
-	int events;
-        struct android_poll_source* source;
-        ident=ALooper_pollAll(0, NULL, &events, (void**)&source);
-	if (ident >= 0 && source)
-		source->process(g_app, source);
+void oswPollEvent(osw * w) {
+	return pollEvent(wgroup(w)->app);
 }
 
-int awosSetSwapInterval(aw * w, int si) {
-	//return eglSwapInterval(g_dpy, si) == EGL_TRUE;
+int oswSetSwapInterval(osw * w, int si) {
+	//return eglSwapInterval(wgroup(w)->dpy, si) == EGL_TRUE;
 	return 1;
 }
 
-ac * acosNew(ac * share) {
-	ac * c = calloc(1, sizeof(*c));
+int oscInit(osc * c, osg * g, osc * share) {
 	EGLConfig cfg;
-	getcfg(&cfg);
-	c->ctx = eglCreateContext(g_dpy, cfg, NULL, NULL);
-        return c;
+	getcfg(g, &cfg);
+	c->ctx = ctxnew(g);
+        return c->ctx != 0;
 }
 
-int acosDel(ac * c) {
-	return eglDestroyContext(g_dpy, c->ctx) == EGL_TRUE;
+int oscTerm(osc * c) {
+	return ctxdel(cgroup(c), c->ctx);
 }
 
+int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
+	return 1;
+}
+
+int ospTerm(osp * p) {
+	return 1;
+}
+
+int oswMaximize(osw * w) {
+	got(w, AW_EVENT_RESIZE, wgroup(w)->w, wgroup(w)->h);
+	return 1;
+}
+
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
+	return oswMaximize(w);
+}
+
+void oswPointer(osw * w) {
+
+}
+
+unsigned oswOrder(osw ** w) {
+	return 0;
+}
 
 /* 
    Local variables: **

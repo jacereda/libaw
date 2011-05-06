@@ -36,6 +36,8 @@ ins * awosNew(NPNetscapeFuncs *, NPP);
 void awosDel(ins *);
 void awosUpdate(ins *);
 void awosSetWindow(ins *, NPWindow *);
+int awosMakeCurrentI(ins *);
+int awosClearCurrentI(ins *);
 NPError awosEvent(ins *, void *);
 NPError awosGetValue(NPP, NPPVariable, void *); 
 

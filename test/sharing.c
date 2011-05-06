@@ -5,22 +5,21 @@
 static int g_exit = 0;
 
 static void processEvents(aw * w, ac * c, int n) {
-	const awEvent * awe;
-	while ((awe = awNextEvent(w))) switch (awe->type) {
+	const ae * e;
+	while ((e = awNextEvent(w))) switch (aeType(e)) {
 	case AW_EVENT_RESIZE:
 		Log("Resized %d: %d %d", 
-		    n, awe->u.resize.w, awe->u.resize.h); break;
+		    n, aeWidth(e), aeHeight(e)); break;
 	case AW_EVENT_DOWN:
-		Log("Down %d: %d", n, awe->u.down.which); break;
+		Log("Down %d: %d", n, aeWhich(e)); break;
 	case AW_EVENT_UP:
-		Log("Up %d: %d", n, awe->u.up.which); break;
+		Log("Up %d: %d", n, aeWhich(e)); break;
 	case AW_EVENT_MOTION:
 		Log("Motion %d: %d,%d", 
-		    n, awe->u.motion.x, awe->u.motion.y); break;
+		    n, aeX(e), aeY(e)); break;
 	case AW_EVENT_CLOSE:
 		Log("Exit requested");
 		g_exit = 1; break;
-	default: break;
 	}
 }
 
@@ -42,23 +41,27 @@ static void handle(aw * w, ac * c, int n) {
 
 int main(int argc, char ** argv) {
 	int i;
+	ag * g;
 	aw * w[NWIN];
 	ac * c[NWIN];
 	ac * ic;
-	awInit();
-	ic = acNew(0);
+	g = agNew("sharing");
+	ic = acNew(g, 0);
 	for (i = 0; i < NWIN; i++) {
-		c[i] = acNew(ic);
-		w[i] = awOpen(100 + 16*i, 100+16*i, 300, 400);
+		c[i] = acNew(g, ic);
+		w[i] = awNew(g);
+		awGeometry(w[i], 100 + 16*i, 100+16*i, 300, 400);
 	}
 	for (i = 0; i < NWIN; i++)
 		awSetTitle(w[i], argv[0]);
+	for (i = 0; i < NWIN; i++)
+		awShow(w[i]);
 	while (!g_exit) 
 		for (i = 0; i < NWIN; i++) 
 			handle(w[i], c[i], i);
 	for (i = 0; i < NWIN; i++) 
-		awClose(w[i]);
-	awEnd();
+		awDel(w[i]);
+	agDel(g);
 	return 0;
 }
 

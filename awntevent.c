@@ -1,33 +1,53 @@
-#define _WIN32_WINNT 0x0500
 #include <windows.h>
 #include <wingdi.h>
 #include <windowsx.h>
 #include "aw.h"
 #include "awos.h"
 
-static aw * awFor(HWND win) {
-        return (aw*)GetWindowLongPtrW(win, GWL_USERDATA);
+#if !defined HANDLE_WM_MOUSEWHEEL
+#define HANDLE_WM_MOUSEWHEEL(hwnd,wParam,lParam,fn) ((fn)((hwnd),(int)(short)LOWORD(lParam),(int)(short)HIWORD(lParam),(int)(short)HIWORD(wParam),(UINT)(short)LOWORD(wParam)),0L)
+#endif
+
+osw * oswFor(HWND win) {
+        return (osw*)GetWindowLongPtrW(win, GWLP_USERDATA);
 }
 
-static void wgot(HWND win, int type, int p1, int p2) {
-        aw * w = awFor(win);
+unsigned oswOrder(osw ** wins) {
+        HWND win = GetTopWindow(0);
+        unsigned n = 0;
+        int curr = GetCurrentProcessId();
+        while (win) {
+                osw * w = oswFor(win);
+                DWORD pid;
+                GetWindowThreadProcessId(win, &pid);
+                if (curr == pid && w)
+                        wins[n++] = w;
+                win = GetNextWindow(win, GW_HWNDNEXT);
+        };
+        return n;
+}
+
+static int wgot(HWND win, int type, intptr_t p1, intptr_t p2) {
+        osw * w = oswFor(win);
         if (w)
                 got(w, type, p1, p2);
+        return w != 0;
 }
 
-static void onMMove(HWND win, int x, int y, UINT flags ) {
-        aw * w = awFor(win);
-//        if (x != w->lastmx || y != w->lastmy)
-                got(w, AW_EVENT_MOTION, x, y);
-//        w->lastmx = x; w->lastmy = y;
+static int onMOUSEMOVE(HWND win, int x, int y, UINT flags ) {
+        return wgot(win, AW_EVENT_MOTION, x, y);
 }
 
-static void onSize(HWND win, UINT state, int w, int h) {
-        wgot(win, AW_EVENT_RESIZE, w, h);
+static int onMOVE(HWND win, int x, int y) {
+        return wgot(win, AW_EVENT_POSITION, x, y);
 }
 
-static void onClose(HWND win){
-        wgot(win, AW_EVENT_CLOSE, 0, 0);
+static int onSIZE(HWND win, UINT state, int w, int h) {
+        return wgot(win, AW_EVENT_RESIZE, w, h);
+}
+
+static int onCLOSE(HWND win){
+        return wgot(win, AW_EVENT_CLOSE, 0, 0);
 }
 
 static unsigned uc2aw(unsigned uc) {
@@ -38,92 +58,200 @@ static unsigned uc2aw(unsigned uc) {
         return ret;
 }
 
-extern awkey mapkey(unsigned);
+extern unsigned mapkeycode(unsigned);
 
-static void onSysKeyDown(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-        if (vk == VK_MENU)
-                wgot(win, AW_EVENT_DOWN, mapkey(vk), 0);
+static int onSYSKEYDOWN(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
+        return wgot(win, AW_EVENT_DOWN, mapkeycode(vk), 0);
 }
 
-static void onSysKeyUp(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-        if (vk == VK_MENU)
-                wgot(win, AW_EVENT_UP, mapkey(vk), 0);
+static int onSYSKEYUP(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
+        return wgot(win, AW_EVENT_UP, mapkeycode(vk), 0);
 }
 
-static void onKeyDown(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-        wgot(win, AW_EVENT_DOWN, mapkey(vk), 0);
+static int onKEYDOWN(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
+        return wgot(win, AW_EVENT_DOWN, mapkeycode(vk), 0);
 }
 
-static void onKeyUp(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
-        wgot(win, AW_EVENT_UP, mapkey(vk), 0);
+static int onKEYUP(HWND win, UINT vk, BOOL down, int repeats, UINT flags) {
+        return wgot(win, AW_EVENT_UP, mapkeycode(vk), 0);
 }
 
-static void onLD(HWND win, BOOL dbl, int x, int y, UINT flags) {
-        wgot(win, AW_EVENT_DOWN, AW_KEY_MOUSELEFT, 0);
+static int mouseDown(HWND win, int which) {
+        SetCapture(win);
+        return wgot(win, AW_EVENT_DOWN, which, 0);        
 }
 
-static void onMD(HWND win, BOOL dbl, int x, int y, UINT flags) {
-        wgot(win, AW_EVENT_DOWN, AW_KEY_MOUSEMIDDLE, 0);
+static int mouseUp(HWND win, int which) {
+        int ret = wgot(win, AW_EVENT_UP, which, 0);        
+        ReleaseCapture();
+        return ret;
 }
 
-static void onRD(HWND win, BOOL dbl, int x, int y, UINT flags) {
-        wgot(win, AW_EVENT_DOWN, AW_KEY_MOUSERIGHT, 0);
+static int onLBUTTONDOWN(HWND win, BOOL dbl, int x, int y, UINT flags) {
+        return mouseDown(win, AW_KEY_MOUSELEFT);
 }
 
-static void onLU(HWND win, int x, int y, UINT flags) {
-        wgot(win, AW_EVENT_UP, AW_KEY_MOUSELEFT, 0);
+static int onMBUTTONDOWN(HWND win, BOOL dbl, int x, int y, UINT flags) {
+        return mouseDown(win, AW_KEY_MOUSEMIDDLE);
 }
 
-static void onMU(HWND win, int x, int y, UINT flags) {
-        wgot(win, AW_EVENT_UP, AW_KEY_MOUSEMIDDLE, 0);
+static int onRBUTTONDOWN(HWND win, BOOL dbl, int x, int y, UINT flags) {
+        return mouseDown(win, AW_KEY_MOUSERIGHT);
 }
 
-static void onRU(HWND win, int x, int y, UINT flags) {
-        wgot(win, AW_EVENT_UP, AW_KEY_MOUSERIGHT, 0);
+static int onLBUTTONUP(HWND win, int x, int y, UINT flags) {
+        return mouseUp(win, AW_KEY_MOUSELEFT);
 }
 
-static void onMW(HWND win, int x, int y, int z, UINT keys) {
+static int onMBUTTONUP(HWND win, int x, int y, UINT flags) {
+        return mouseUp(win, AW_KEY_MOUSEMIDDLE);
+}
+
+static int onRBUTTONUP(HWND win, int x, int y, UINT flags) {
+        return mouseUp(win, AW_KEY_MOUSERIGHT);
+}
+
+static int onMOUSEWHEEL(HWND win, int x, int y, int z, UINT keys) {
         int which = z >= 0? AW_KEY_MOUSEWHEELUP : AW_KEY_MOUSEWHEELDOWN;
-        wgot(win, AW_EVENT_DOWN, which, 0);
-        wgot(win, AW_EVENT_UP, which, 0);
+        return wgot(win, AW_EVENT_DOWN, which, 0)
+                && wgot(win, AW_EVENT_UP, which, 0);
+}
+
+static int onSETCURSOR(HWND win, HWND cur, UINT l, UINT h) {
+        osw * w = oswFor(win);
+        int handled = LOWORD(l) == HTCLIENT && w != 0;
+        extern void oswSetPointer(osw *);
+        if (handled)
+                oswSetPointer(w);
+        return handled;
+}
+
+static int fakeKbEvents(HWND win, unsigned type) {
+        BYTE kbstatus[256];
+        UINT vk;
+        GetKeyboardState(kbstatus);
+        for (vk = 0; vk < sizeof(kbstatus); vk++)
+                if (kbstatus[vk] & 0x80)
+                        wgot(win, type, mapkeycode(vk), 0);
+        return 0;
+}
+
+static int onSETFOCUS(HWND win, HWND next) {
+        wgot(win, AW_EVENT_SETFOCUS, (intptr_t)oswFor(next), 0);
+        return fakeKbEvents(win, AW_EVENT_DOWN);
+}
+
+static int onKILLFOCUS(HWND win, HWND next) {
+        wgot(win, AW_EVENT_KILLFOCUS, (intptr_t)oswFor(next), 0);
+        return fakeKbEvents(win, AW_EVENT_UP);
+}
+
+static int onCHAR(HWND win, TCHAR c, int repeats) {
+        return wgot(win, AW_EVENT_UNICODE, uc2aw(c), 0); 
+}
+
+static int onPAINT(HWND win) {
+        return wgot(win, AW_EVENT_EXPOSED, 0, 0);
+}
+
+static void utf8(char * d, size_t dsz, const WCHAR * t) {
+        WideCharToMultiByte(CP_UTF8, 0, t, -1, d, (int)dsz, 0, 0);
+}
+
+static int onDROPFILES(HWND win, HDROP d) {
+        unsigned n = DragQueryFileW(d, 0xffffffff, 0, 0);
+        unsigned i;
+        int ret;
+        for (i = 0; i < n; i++) {
+                WCHAR buf[8192];
+                char str[8192];
+                DragQueryFileW(d, i, buf, sizeof(buf));
+                utf8(str, sizeof(str), buf);
+                ret = wgot(win, AW_EVENT_DROP, 
+                           (intptr_t)_strdup(str), 0);
+        }
+        DragFinish(d);
+        return ret;
+}
+
+static int onNCCREATE(HWND win, CREATESTRUCT * cs) {
+        SetWindowLongPtrW(win, GWLP_USERDATA, (LONG_PTR)cs->lpCreateParams);
+        return 0;
 }
 
 
-LONG WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
-        LONG r;
-        int handled = 1;
+LRESULT WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
+        LRESULT r;
         switch (msg) {
-        case WM_NCCREATE: 
-                SetWindowLongPtrW(
-                        win, GWL_USERDATA, 
-                        (LONG_PTR)((CREATESTRUCT*)l)->lpCreateParams);
-                handled = 0;
-                break;
-        case WM_MOUSEMOVE: r = HANDLE_WM_MOUSEMOVE(win, w, l, onMMove); break;
-        case WM_SIZE: r = HANDLE_WM_SIZE(win, w, l, onSize); break;
-        case WM_CLOSE: r = HANDLE_WM_CLOSE(win, w, l, onClose); break;
-        case WM_KEYDOWN: r = HANDLE_WM_KEYDOWN(win, w, l, onKeyDown); break;
-        case WM_SYSKEYDOWN: r = HANDLE_WM_SYSKEYDOWN(win, w, l, onSysKeyDown); break;
-        case WM_SYSKEYUP: r = HANDLE_WM_SYSKEYUP(win, w, l, onSysKeyUp); break;
-        case WM_CHAR: wgot(win, AW_EVENT_UNICODE, uc2aw(w), 0); break;
-        case WM_KEYUP: r = HANDLE_WM_KEYUP(win, w, l, onKeyUp); break;
-        case WM_LBUTTONDOWN: r = HANDLE_WM_LBUTTONDOWN(win, w, l, onLD); break;
-        case WM_RBUTTONDOWN: r = HANDLE_WM_RBUTTONDOWN(win, w, l, onRD); break;
-        case WM_MBUTTONDOWN: r = HANDLE_WM_MBUTTONDOWN(win, w, l, onMD); break;
-        case WM_LBUTTONUP: r = HANDLE_WM_LBUTTONUP(win, w, l, onLU); break;
-        case WM_RBUTTONUP: r = HANDLE_WM_RBUTTONUP(win, w, l, onRU); break;
-        case WM_MBUTTONUP: r = HANDLE_WM_MBUTTONUP(win, w, l, onMU); break;
-#if defined HANDLE_WM_MOUSEWHEEL
-        case WM_MOUSEWHEEL: r = HANDLE_WM_MOUSEWHEEL(win, w, l, onMW); break;
-#endif
-        case WM_INPUTLANGCHANGEREQUEST: return DefWindowProcW(win, msg, w, l); break;
-        case WM_INPUTLANGCHANGE: return DefWindowProcW(win, msg, w, l); break;
-        default: handled = 0;
+#define HANDLE(x) case WM_##x: r = HANDLE_WM_##x(win, w, l, on##x); break
+                HANDLE(NCCREATE);
+                HANDLE(MOUSEMOVE);
+                HANDLE(MOVE);
+                HANDLE(SIZE);
+                HANDLE(CLOSE);
+                HANDLE(KEYDOWN);
+                HANDLE(SYSKEYDOWN);
+                HANDLE(SYSKEYUP);
+                HANDLE(CHAR);
+                HANDLE(KEYUP);
+                HANDLE(LBUTTONDOWN);
+                HANDLE(RBUTTONDOWN);
+                HANDLE(MBUTTONDOWN);
+                HANDLE(LBUTTONUP);
+                HANDLE(RBUTTONUP);
+                HANDLE(MBUTTONUP);
+                HANDLE(MOUSEWHEEL);
+                HANDLE(SETFOCUS);
+                HANDLE(KILLFOCUS);
+                HANDLE(SETCURSOR);
+                HANDLE(PAINT);
+                HANDLE(DROPFILES);
+#undef HANDLE
+        case WM_IME_STARTCOMPOSITION: 
+        {
+                osw * w = oswFor(win);
+                if (w) {
+                        HIMC imc = ImmGetContext(win);
+                        COMPOSITIONFORM cf;
+                        cf.dwStyle = CFS_POINT;
+                        cf.ptCurrentPos.x = wmousex(w);
+                        cf.ptCurrentPos.y = wmousey(w);
+                        ImmSetCompositionWindow(imc, &cf);
+                        ImmReleaseContext(win, imc);
+                }
+                r = w != 0;
         }
-        if (handled)
+        break;
+        case WM_IME_COMPOSITION: 
+        {
+                osw * w = oswFor(win);
+                if(w && (l & GCS_RESULTSTR)){
+                        unsigned short str[4096];
+                        unsigned len, i; 
+                        HIMC imc = ImmGetContext(win);
+                        HDC dc = GetDC(win);
+                        len = ImmGetCompositionString(imc, GCS_RESULTSTR, str, sizeof(str));
+                        len >>= 1;
+                        for (i = 0; i < len; i++)
+                                wgot(win, AW_EVENT_UNICODE, str[i], 0); 
+                        ImmReleaseContext(win, imc);
+                        ReleaseDC(win, dc);
+                }
                 r = 0;
-        else
+        }
+        break;
+        default: r = 0;
+        }
+        if (!r)
                 r = DefWindowProcW(win, msg, w, l);
         return r;
 }
 
+
+/* 
+   Local variables: **
+   c-file-style: "bsd" **
+   c-basic-offset: 8 **
+   indent-tabs-mode: nil **
+   End: **
+*/

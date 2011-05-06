@@ -40,14 +40,6 @@
 #include <UIKit/UIKit.h>
 #import <QuartzCore/QuartzCore.h>
 
-struct _aw {
-        awHeader hdr;
-};
-
-struct _ac {
-        acHeader hdr;
-};
-
 @interface glview : UIView {}
 @end
 @interface awdelegate : NSObject <UIApplicationDelegate, UITextFieldDelegate> {
@@ -60,8 +52,8 @@ struct _ac {
 	co * comain;
 	co * coaw;
 	int awdone;
-        aw w;
-        ac c;
+        osw * w;
+        osc * c;
 }
 @end
 
@@ -70,17 +62,17 @@ awdelegate * getDelegate() {
 }
 
 static void dgot(int e, int x, int y) {
-        got(&getDelegate()->w, e, x, y);
+        got(getDelegate()->w, e, x, y);
 }
 
-static void fakekeyuni(awkey key, unsigned unicode) {
+static void fakekeyuni(unsigned key, unsigned unicode) {
 	dgot(AW_EVENT_DOWN, key, 0);
 	dgot(AW_EVENT_UNICODE, unicode, 0);
 	dgot(AW_EVENT_UP, key, 0);
 }
 
-static awkey mapkey(unsigned k) {
-	awkey ret;
+static unsigned mapkey(unsigned k) {
+	unsigned ret;
 	switch (k) {
 	case 'A': ret = AW_KEY_A; break;
 	case 'B': ret = AW_KEY_B; break;
@@ -236,7 +228,6 @@ shouldChangeCharactersInRange: (NSRange)range
         [dpylink setFrameInterval: 1];
         [dpylink addToRunLoop: [NSRunLoop currentRunLoop] 
                  forMode: NSDefaultRunLoopMode];
-        dgot(AW_EVENT_RESIZE, r.size.width, r.size.height);
 }
 
 - (void) dealloc
@@ -256,59 +247,86 @@ int main(int argc, char *argv[]) {
         return ret;
 }
 
-int awosInit() {
+int osgInit(osg * g, const char * name) {
         return 1;
 }
 
-int awosEnd() {
+int osgTerm(osg * g) {
         return 1;
 }
 
-int awosSetTitle(aw * w, const char * t) {
+int oswSetTitle(osw * w, const char * t) {
         return 1;
 }
 
-aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
-        return &getDelegate()->w;
+int oswInit(osw * w, osg * g, int x, int y, 
+	      int width, int height, int bl) {
+        getDelegate()->w = w;
+	return 1;
 }
 
-int awosClose(aw * w) {
+int oswTerm(osw * w) {
         return 1;
 }
 
-int awosSwapBuffers(aw * w) {
+int oswSwapBuffers(osw * w) {
         coSwitchTo(getDelegate()->comain);
         return 1;
 }
 
-int awosShow(aw * w) {
+int oswShow(osw * w) {
         return 1;
 }
 
-int awosHide(aw * w) {
+int oswHide(osw * w) {
         return 1;
 }
 
-void awosPollEvent(aw * w) {
+void oswPollEvent(osw * w) {
 }
 
-int awosSetSwapInterval(aw * w, int i) {
+int oswSetSwapInterval(osw * w, int i) {
         return 1;
 }
 
-int awosClearCurrent(aw * w) {
+int oswClearCurrent(osw * w) {
         return 1;
 }
 
-int awosMakeCurrent(aw * w, ac * c) {
+int oswMakeCurrent(osw * w, osc * c) {
         return 1;
 }
 
-ac * acosNew(ac * share) {
-        return &getDelegate()->c;
-}
-
-int acosDel(ac * cc) {
+int oscInit(osc * c, osg * g, osc * share) {
         return 1;
 }
 
+int oscTerm(osc * cc) {
+        return 1;
+}
+
+int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
+	return 1;
+}
+
+int ospTerm(osp * p) {
+	return 1;
+}
+
+int oswMaximize(osw * w) {
+        CGRect r = [[UIScreen mainScreen] bounds];
+        dgot(AW_EVENT_RESIZE, r.size.width, r.size.height);
+	return 1;
+}
+
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
+	return oswMaximize(w);
+}
+
+void oswPointer(osw * w) {
+
+}
+
+unsigned oswOrder(osw ** w) {
+	return 0;
+}

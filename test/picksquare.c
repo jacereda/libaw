@@ -126,25 +126,25 @@ static void reshape(int w, int h)
 
 static void updateTitle(aw * w, int x, int y);
 
-static int processEvents(aw ** w, ac * c) {
+static int processEvents(ag * g, aw * w, ac * c) {
 	int keepgoing = 1;
 	static int s_x = 0;
 	static int s_y = 0;
-	const awEvent * awe;
-	while ((awe = awNextEvent(*w))) switch (awe->type) {
+	const ae * e;
+	while ((e = awNextEvent(w))) switch (aeType(e)) {
 	case AW_EVENT_RESIZE:
-		reshape(awe->u.resize.w, awe->u.resize.h);
-		updateTitle(*w, awe->u.resize.w, awe->u.resize.h);
+		reshape(aeWidth(e), aeHeight(e));
+		updateTitle(w, aeWidth(e), aeHeight(e));
 		break;
 	case AW_EVENT_CLOSE:
 		keepgoing = 0; 
 		break;
 	case AW_EVENT_MOTION:
-		s_x = awe->u.motion.x;
-		s_y = awe->u.motion.y;
+		s_x = aeX(e);
+		s_y = aeY(e);
 		break;
 	case AW_EVENT_DOWN:
-		if (awe->u.down.which == AW_KEY_MOUSELEFT)
+		if (aeWhich(e) == AW_KEY_MOUSELEFT)
 			pickSquares(s_x, s_y);
 		break;
 	default: break;

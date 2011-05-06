@@ -29,17 +29,21 @@
   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-#include "aw.h"
-#include "awos.h"
 #include <assert.h>
 #include <Foundation/NSAutoreleasePool.h>
 #include <Foundation/NSString.h>
 #include <Foundation/NSArray.h>
 #include <Foundation/NSRunLoop.h>
 #include <Foundation/NSNotification.h>
-#include <AppKit/NSApplication.h>
+//#include <AppKit/NSApplication.h>
+#include <AppKit/NSApplicationScripting.h>
 #include <AppKit/NSScreen.h>
 #include <AppKit/NSWindow.h>
+#include <AppKit/NSPasteboard.h>
+#include <AppKit/NSBitmapImageRep.h>
+#include <AppKit/NSImage.h>
+#include <AppKit/NSTrackingArea.h>
+#include <AppKit/NSCursor.h>
 #include <AppKit/NSEvent.h>
 #include <AppKit/NSOpenGL.h>
 #include <AppKit/NSTextView.h>
@@ -47,40 +51,90 @@
 #include <OpenGL/OpenGL.h>
 #include <OpenGL/gl.h>
 
+@class View;
+@class Window;
+#include "aw.h"
+#include "awos.h"
+
+@interface AppDelegate : NSObject {
+}
+@end
+
 @interface Window : NSWindow {
 @public
-        aw * _w;
-        ac * _c;
+        osw * _w;
 }
 @end
 
 @interface View : NSTextView<NSWindowDelegate> {
         unsigned _prevflags;
+        BOOL _dragging;
+        NSTrackingArea * _currta;
 @public
-        aw * _w;
+        osw * _w;
+}
+- (NSPoint)toAbs: (NSPoint)p;
+- (void) handleMove;
+@end
+
+
+#define PROLOGUE                                                        \
+        NSAutoreleasePool * __arp = [[NSAutoreleasePool alloc] init]
+
+#define EPILOGUE                                \
+        [__arp release]
+
+static int reversed(int y) {
+        NSSize ss = [[NSScreen mainScreen] frame].size;
+        return ss.height - y - 1;
+}
+
+static NSRect fromQuartz(NSRect r) {
+        NSSize ss = [[NSScreen mainScreen] frame].size;
+        return NSMakeRect(r.origin.x, 
+                          ss.height - r.origin.y - r.size.height,
+                          r.size.width, 
+                          r.size.height);
+}
+
+static NSRect toQuartz(NSRect r) {
+        return fromQuartz(r);
+}
+
+static NSCursor * currentCursor(osw * w) {
+        osp * p = wpointer(w);
+        return p? p->cur : w->defcur;
+}
+
+@implementation AppDelegate
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:
+        (NSApplication *)sender {
+        return NO;
 }
 @end
 
-struct _aw {
-        awHeader hdr;
-        View * view;
-        Window * win;
-};
+@implementation View
+//- (void) display {}
 
-struct _ac {
-        acHeader hdr;
-        NSOpenGLContext * ctx;
-};
-
-static NSAutoreleasePool * g_apppool;
-static NSAutoreleasePool * g_pool;
-
-static void resetPool() {
-        [g_pool release];
-        g_pool = [[NSAutoreleasePool alloc] init];
+- (void) dealloc {
+        _w->_vfreed = 1;
+        [super dealloc];
 }
 
-@implementation View
+- (void)establishCursor {
+        NSCursor * cur = currentCursor(_w);
+        [cur set];
+}
+
+- (void)cursorUpdate: (NSEvent*)e {
+        [super cursorUpdate: e];
+        [self establishCursor];
+
+}
+
+- (NSPoint)toAbs: (NSPoint)p {
+        return [_w->win convertBaseToScreen: p];
+}
 
 - (void)setConstrainedFrameSize:(NSSize)desiredSize{}
 
@@ -89,10 +143,32 @@ static void resetPool() {
         return YES;
 }
 
+- (void) handleMove {
+        NSSize sz = [self frame].size;
+        NSPoint ul = NSMakePoint(0, sz.height - 1);
+        NSPoint abs = [self toAbs: ul];
+        got(_w, AW_EVENT_POSITION, abs.x, reversed(abs.y));
+}
+
+- (void) windowDidMove:(NSNotification *)n {
+        [self handleMove];
+}
+
 - (void) windowDidResize:(NSNotification *)n {
-        NSSize sz = [_w->view frame].size;
-        if (_w->hdr.ctx) [_w->hdr.ctx->ctx update];
-        got(_w, AW_EVENT_RESIZE, (int)sz.width, (int)sz.height);
+        NSRect fr = [_w->view frame];
+        NSSize sz = fr.size;
+        osc * c = wcontext(_w);
+        if (c) [c->ctx update];
+        got(_w, AW_EVENT_RESIZE, sz.width, sz.height);
+        [self handleMove];
+}
+
+- (void) windowDidExpose:(NSNotification *)n {
+        got(_w, AW_EVENT_EXPOSED, 0, 0);
+}
+
+- (void) windowDidResignKey:(NSNotification *)n {
+        got(_w, AW_EVENT_KILLFOCUS, 0, 0);
 }
 
 - (BOOL) windowShouldClose: (id)s {
@@ -100,10 +176,10 @@ static void resetPool() {
         return NO;
 }
 
-extern awkey mapkey(unsigned);
+extern unsigned mapkeycode(unsigned);
 
 - (void) handleKeyEvent: (NSEvent *)ev mode: (int) mode {
-        got(_w, mode, mapkey([ev keyCode]), 0);
+        got(_w, mode, mapkeycode([ev keyCode]), 0);
 }
 
 - (void) keyUp: (NSEvent *)ev {
@@ -126,8 +202,8 @@ extern awkey mapkey(unsigned);
                 got(_w, AW_EVENT_UNICODE, [s characterAtIndex: i], 0);
 }
 
-- (awkey) keyFor: (unsigned)mask {
-        awkey ret = 0;
+- (unsigned) keyFor: (unsigned)mask {
+        unsigned ret = 0;
         switch (mask) {
         case NSShiftKeyMask: ret = AW_KEY_SHIFT; break;
         case NSControlKeyMask: ret = AW_KEY_CONTROL; break;
@@ -164,11 +240,18 @@ extern awkey mapkey(unsigned);
 }
 
 - (void) mouseDown: (NSEvent*)ev {
+        _dragging = YES;
         [self handleMouseEvent: ev mode: AW_EVENT_DOWN];
+        [self updateTrackingAreas];
+        [super mouseDown: ev];
 }
 
 - (void) mouseUp: (NSEvent*)ev {
+        _dragging = NO;
         [self handleMouseEvent: ev mode: AW_EVENT_UP];
+        [self updateTrackingAreas];
+        [self unlockFocus];
+        [super mouseUp: ev];
 }
 
 - (void) rightMouseDown: (NSEvent*)ev {
@@ -188,7 +271,7 @@ extern awkey mapkey(unsigned);
 }
 
 - (void)scrollWheel:(NSEvent *)ev {
-        awkey k = [ev deltaY] > 0? 
+        unsigned k = [ev deltaY] > 0? 
                 AW_KEY_MOUSEWHEELUP : AW_KEY_MOUSEWHEELDOWN;
         got(_w, AW_EVENT_DOWN, k, 0);
         got(_w, AW_EVENT_UP, k, 0);
@@ -207,83 +290,115 @@ extern awkey mapkey(unsigned);
         [self handleMotion: ev];
 }
 
+- (void) mouseExited: (NSEvent *)ev {
+}
+
+- (void) mouseEntered: (NSEvent *)ev {
+}
+
+- (void)updateTrackingAreas {
+        NSRect rect;
+        [self removeTrackingArea: _currta];
+        [_currta release];
+        _currta = 0;
+        if (!_dragging) {
+                rect = [self visibleRect];
+                _currta = [[NSTrackingArea alloc] 
+                                  initWithRect: rect
+                                       options: 0
+                                  | NSTrackingActiveWhenFirstResponder
+//                                     | NSTrackingActiveAlways
+                                  | NSTrackingCursorUpdate
+//                                          | NSTrackingMouseEnteredAndExited
+//                                          | NSTrackingInVisibleRect
+//                                          | NSTrackingEnabledDuringMouseDrag
+//                                          | NSTrackingAssumeInside
+                                         owner: self
+                                      userInfo: nil];
+                [self addTrackingArea: _currta];
+        }
+        [super updateTrackingAreas];
+}
+
 - (BOOL) isOpaque {
         return YES;
 }
+
+- (BOOL)performDragOperation:(id <NSDraggingInfo>)sender {
+        NSPasteboard * pb = [sender draggingPasteboard];
+        NSArray * a = [pb propertyListForType:NSFilenamesPboardType];
+        unsigned i;
+        for (i = 0; i < [a count]; i++) {
+                NSString * s = [a objectAtIndex: i];
+                got(_w, AW_EVENT_DROP, (uintptr_t)strdup([s UTF8String]), 0);
+        }
+        return YES;
+}
+
 @end
 
 @implementation Window
+//- (void) display {}
+
+- (void) dealloc {
+        _w->_wfreed = 1;
+        [super dealloc];
+}
+
 - (BOOL) canBecomeKeyWindow
 {
         return YES;
 }
+
+- (BOOL)isReleasedWhenClosed
+{
+        return NO;
+}
 @end
 
-
-int awosInit() {
-        ProcessSerialNumber psn = { 0, kCurrentProcess };
-        TransformProcessType(&psn, kProcessTransformToForegroundApplication);
-        SetFrontProcess(&psn);
-        g_apppool = [[NSAutoreleasePool alloc] init];
-        NSApp = [NSApplication sharedApplication];
-        g_pool = [[NSAutoreleasePool alloc] init];
-        [NSApp finishLaunching];
-        [NSApp activateIgnoringOtherApps: YES];
-        return 1;
-}
-
-int awosEnd() {
-        [g_pool release];
-        [NSApp release];
-        //[g_apppool release];
-        return 1;
-}
-
-int awosSetTitle(aw * w, const char * t) {
+int oswSetTitle(osw * w, const char * t) {
+        PROLOGUE;
         NSString * s = [[NSString alloc] initWithUTF8String: t];
         [w->win setTitle: s];
         [s release];
+        EPILOGUE;
         return 1;
 }
 
-static aw * openwin(int x, int y, int width, int height, unsigned style) {
-        NSRect rect;
+static void openwin(osw * w, int x, int y, 
+                    int width, int height, unsigned style) {
         Window * win;
         NSRect frm;
         View * view;
-        aw * w = 0;
-        NSSize scr = [[NSScreen mainScreen] frame].size;
-        rect = NSMakeRect(x, scr.height - y - height, width, height);
+        NSRect rect = toQuartz(NSMakeRect(x, y, width, height));
         win = [[Window alloc] initWithContentRect: rect 
                               styleMask: style
                               backing: NSBackingStoreBuffered
                               defer:NO];
         frm = [Window contentRectForFrameRect: [win frame] styleMask: style];
-        view = [[View alloc] initWithFrame: [[win contentView] frame]];
-        [view setAutoresizesSubviews:YES];
-
-        [win setContentView: view];
-        [win setDelegate: view];
-        [win makeFirstResponder: view];
-        [win setAcceptsMouseMovedEvents: YES];
-
-        w = calloc(1, sizeof(*w));
+        view = [[View alloc] initWithFrame: frm];
         w->view = view;
         w->win = win;
         w->view->_w = w;
         w->win->_w = w;
-        got(w, AW_EVENT_RESIZE, width, height);
-        return w;
+        w->defcur = [[NSCursor arrowCursor] retain];
+        [win makeFirstResponder: view];
+        [win setDelegate: view];
+        [win setContentView: view];
+        [view setAutoresizesSubviews:YES];
+        [view registerForDraggedTypes: [NSArray arrayWithObject:NSFilenamesPboardType]];
+
+        [win setAcceptsMouseMovedEvents: YES];
+        [win setReleasedWhenClosed: NO];
+//        [win setAutodisplay: NO];
+        [view updateTrackingAreas];
+
 }
 
-aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
+int oswInit(osw * w, osg * g, int x, int y, 
+            int width, int height, int bl) {
+        PROLOGUE;
         unsigned style = 0;
-        aw * w;
-        if (fs) {
-                NSSize scr = [[NSScreen mainScreen] frame].size;
-                width = scr.width;
-                height = scr.height;
-        }
         if (!bl) {
                 style += 0
                         | NSTitledWindowMask
@@ -292,100 +407,249 @@ aw * awosOpen(int x, int y, int width, int height, int fs, int bl) {
                         | NSResizableWindowMask
                         ;
         }
-        w = openwin(x, y, width, height, style);
-        if (bl) 
+        openwin(w, x, y, width, height, style);
+        if (bl)
                 [w->win setLevel: NSPopUpMenuWindowLevel];
-        return w;
+        EPILOGUE;
+        return 1;
 }
 
-static NSEvent * nextEvent(Window * win) {
-        NSEvent * e = [win nextEventMatchingMask: NSAnyEventMask 
-                           untilDate: [NSDate distantPast] 
-                           inMode: NSDefaultRunLoopMode 
-                           dequeue: YES];
-        [NSApp sendEvent: e];
+static NSEvent * nextEventUntil(id win, NSDate * until) {
+        return [win nextEventMatchingMask: NSAnyEventMask 
+                    untilDate: until
+                    inMode: NSDefaultRunLoopMode 
+                    dequeue: YES];
+}
+
+static NSEvent * pumpEvent(id win, NSDate * until) {
+        NSEvent * ev = nextEventUntil(win, until);
+        [NSApp sendEvent: ev];
         [NSApp updateWindows];
-        return e;
+        return ev;
 }
 
-int awosClose(aw * w) {
-        while (nextEvent(w->win))
+int oswTerm(osw * w) {
+        PROLOGUE;
+        [w->win makeKeyAndOrderFront: nil];
+        [w->win makeFirstResponder: nil];
+        [w->win setDelegate: nil];
+        [w->win setContentView: nil];
+        while(pumpEvent(NSApp, [NSDate distantPast]))
+                ;
+        [w->win close];
+        while(pumpEvent(NSApp, [NSDate distantPast]))
                 ;
         [w->win release];
         [w->view release];
+        while(pumpEvent(NSApp, [NSDate distantPast]))
+                ;
+        [w->defcur release];
+        EPILOGUE;
+//        assert(w->_wfreed);
+//        assert(w->_vfreed);
         return 1;
 }
 
-int awosSwapBuffers(aw * w) {
-        [w->hdr.ctx->ctx flushBuffer];
+int oswSwapBuffers(osw * w) {
+        PROLOGUE;
+        glFlush();
+        [wcontext(w)->ctx flushBuffer];
+        EPILOGUE;
         return 1;
 }
 
-int awosShow(aw * w) {
+int oswShow(osw * w) {
+        PROLOGUE;
         [w->win makeKeyAndOrderFront: w->view];
+        EPILOGUE;
         return 1;
 }
 
-int awosHide(aw * w) {
+int oswHide(osw * w) {
+        PROLOGUE;
         [w->win orderOut: nil];
+        EPILOGUE;
         return 1;
 }
 
-void awosPollEvent(aw * w) {
-        nextEvent(w->win);
-        resetPool();
+void oswPollEvent(osw * w) {
+        PROLOGUE;
+        pumpEvent(w->win, [NSDate distantPast]);
+        //pumpEvent(NSApp, [NSDate distantPast]);
+        EPILOGUE;
 }
 
-int awosSetSwapInterval(aw * w, int i) {
+int oswSetSwapInterval(osw * w, int i) {
+        PROLOGUE;
         GLint param = i;
-        [w->hdr.ctx->ctx setValues:&param forParameter:NSOpenGLCPSwapInterval];
+        [wcontext(w)->ctx setValues:&param forParameter:NSOpenGLCPSwapInterval];
+        EPILOGUE;
         return 1;
 }
 
-int awosClearCurrent(aw * w) {
-        [w->hdr.ctx->ctx clearDrawable];
+int oswClearCurrent(osw * w) {
+        PROLOGUE;
+        glFlush();
+        [wcontext(w)->ctx clearDrawable];
         [NSOpenGLContext clearCurrentContext];
+        EPILOGUE;
         return 1;
 }
 
-int awosMakeCurrent(aw * w, ac * c) {
+int oswMakeCurrent(osw * w, osc * c) {
+        PROLOGUE;
         [c->ctx setView: [w->win contentView]];
         [c->ctx makeCurrentContext];
+        EPILOGUE;
         return 1;
 }
 
-ac * acosNew(ac * share) {
-        ac * c = 0;
+int oswMaximize(osw * w) {
+        NSSize scr = [[NSScreen mainScreen] frame].size;
+        return oswGeometry(w, 0, 0, scr.width, scr.height);
+}
+
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
+        PROLOGUE;
+        NSRect r = NSMakeRect(x, reversed(y + height - 1), width, height);
+        NSRect fr = [w->win frameRectForContentRect: r];
+        [w->win setFrame: fr display: YES];
+        EPILOGUE;
+        return 1;
+}
+
+void oswPointer(osw * w) {
+        PROLOGUE;
+        [w->view establishCursor];
+        EPILOGUE;
+}
+
+unsigned oswOrder(osw ** order) {
+        PROLOGUE;
+        NSArray * wins;
+        wins = [NSApp orderedWindows];
+        unsigned n = [wins count];
+        unsigned i;
+        for (i = 0; i < n; i++)
+                order[i] = ((Window*)[wins objectAtIndex: i])->_w;
+        EPILOGUE;
+        return n;
+}
+
+int oscInit(osc * c, osg * g, osc * share) {
+        PROLOGUE;
+        int st = 0; // XXX
         NSOpenGLContext *ctx = 0;
         CGDirectDisplayID dpy = kCGDirectMainDisplay;
         NSOpenGLPixelFormatAttribute attr[] = {
                 NSOpenGLPFAFullScreen,
                 NSOpenGLPFAScreenMask, CGDisplayIDToOpenGLDisplayMask(dpy),
                 NSOpenGLPFAColorSize, 24,
+                NSOpenGLPFADepthSize, 32,
                 NSOpenGLPFAAlphaSize, 8,
-                NSOpenGLPFADepthSize, 16,
                 NSOpenGLPFADoubleBuffer,
                 NSOpenGLPFAAccelerated,
                 NSOpenGLPFANoRecovery,
-                0};
+                0, 0, 0, 0, 0, 0, 0, 0,
+                };
         NSOpenGLPixelFormat * fmt;
+        int last = sizeof(attr) / sizeof(attr[0]);
+        while (!attr[--last])
+                ;
+        last++;
+        if (st) 
+                attr[last++] = NSOpenGLPFAStereo;
         fmt = [[NSOpenGLPixelFormat alloc] initWithAttributes:attr];
         if (fmt)
                 ctx = [[NSOpenGLContext alloc] 
-                              initWithFormat:fmt 
+                              initWithFormat:fmt  
                               shareContext: share? share->ctx : 0];
         [fmt release];
-        if (ctx)
-                c = calloc(1, sizeof(*c));
-        if (c)
-                c->ctx = ctx;
-        return c;
+        c->ctx = ctx;
+        EPILOGUE;
+        return ctx != 0;
 }
 
-int acosDel(ac * c) {
+void * oscContextFor(osc * c) {
+        return c->ctx;
+}
+
+void * oscCurrentContext() {
+        return [NSOpenGLContext currentContext];
+}
+
+int oscTerm(osc * c) {
+        PROLOGUE;
         [c->ctx release];
+        EPILOGUE;
         return 1;
 }
+
+int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
+        NSBitmapImageRep * b;
+        NSImage * img;
+        uint8_t * planes[1];
+        PROLOGUE;
+        memcpy(p->rgba, rgba, sizeof(p->rgba));
+        planes[0] = p->rgba;
+        b = [[NSBitmapImageRep alloc]
+                             initWithBitmapDataPlanes: planes
+                                           pixelsWide: CURSOR_WIDTH
+                                           pixelsHigh: CURSOR_HEIGHT
+                                        bitsPerSample: 8
+                                      samplesPerPixel: 4
+                                             hasAlpha: YES
+                                             isPlanar: NO
+                                       colorSpaceName: NSDeviceRGBColorSpace
+                                          bytesPerRow: CURSOR_WIDTH*4
+                                         bitsPerPixel: 32];
+        img = [[NSImage alloc] initWithSize: NSMakeSize(CURSOR_WIDTH, 
+                                                        CURSOR_HEIGHT)];
+        [img addRepresentation: b];
+        [b release];
+        p->cur = [[NSCursor alloc] initWithImage: img 
+                                         hotSpot: NSMakePoint(hotx, hoty)];
+        [img release];
+        EPILOGUE;
+        return p->cur != 0;
+}
+
+int ospTerm(osp * p) {
+        PROLOGUE;
+        [p->cur release];
+        EPILOGUE;
+        return 1;
+}
+
+int osgInit(osg * g, const char * name) {
+        PROLOGUE;
+        EPILOGUE;
+        return 1;
+}
+
+int osgTerm(osg * g) {
+        PROLOGUE;
+        EPILOGUE;
+        return 1;
+}
+
+int main(int argc, char **argv) {
+        PROLOGUE;
+        extern int fakemain(int, char**);
+        ProcessSerialNumber psn = { 0, kCurrentProcess };
+        TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+        SetFrontProcess(&psn);
+        NSApp = [NSApplication sharedApplication];
+        [NSApp setDelegate: [[AppDelegate alloc] init]];
+        [NSApp finishLaunching];
+        [NSApp activateIgnoringOtherApps: YES];
+//        [NSApp setWindowsNeedUpdate: NO];
+        fakemain(argc, argv);
+        [NSApp release]; // ???
+        EPILOGUE;
+        return 0;
+}
+
 
 /* 
    Local variables: **
@@ -394,3 +658,4 @@ int acosDel(ac * c) {
    indent-tabs-mode: nil **
    End: **
 */
+
