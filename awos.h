@@ -11,8 +11,8 @@
 #include "awandroid.h"
 #elif defined __IPHONE_OS_VERSION_MIN_REQUIRED
 #include "awios.h"
-//#elif defined __APPLE__
-//#include "awcocoa.h"
+#elif defined __APPLE__
+#include "awcocoa.h"
 #else
 #include "awx.h"
 #endif

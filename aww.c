@@ -270,8 +270,9 @@ int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
 }
 
 void oswSetPointer(osw * w) {
-        if (wpointer(w))
-                SetCursor(wpointer(w)->icon);
+        osp * p = wpointer(w);
+        if (p)
+                SetCursor(p->icon);
         else
                 SetCursor(0);
 }
@@ -335,7 +336,6 @@ int ospTerm(osp * p) {
         int ret;
         SetCursor(0);
         ret = DestroyIcon(p->icon);
-        free(p);
         return ret;
 }
 
