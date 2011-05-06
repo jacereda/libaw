@@ -126,15 +126,15 @@ static void reshape(int w, int h)
 
 static void updateTitle(aw * w, int x, int y);
 
-static int processEvents(ag * g, aw ** w, ac * c) {
+static int processEvents(ag * g, aw * w, ac * c) {
 	int keepgoing = 1;
 	static int s_x = 0;
 	static int s_y = 0;
 	const ae * e;
-	while ((e = awNextEvent(*w))) switch (aeType(e)) {
+	while ((e = awNextEvent(w))) switch (aeType(e)) {
 	case AW_EVENT_RESIZE:
 		reshape(aeWidth(e), aeHeight(e));
-		updateTitle(*w, aeWidth(e), aeHeight(e));
+		updateTitle(w, aeWidth(e), aeHeight(e));
 		break;
 	case AW_EVENT_CLOSE:
 		keepgoing = 0; 

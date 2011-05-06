@@ -6,21 +6,21 @@ static void updateTitle(aw * w, int x, int y) {
 
 
 #if !defined NO_HANDLER
-static int processEvents(ag * g, aw ** w, ac * c) {
+static int processEvents(ag * g, aw * w, ac * c) {
 	int keepgoing = 1;
 	const ae * e;
-	while ((e = awNextEvent(*w))) switch (aeType(e)) {
+	while ((e = awNextEvent(w))) switch (aeType(e)) {
 		case AW_EVENT_DOWN:
 			if (aeWhich(e) == 'f') 
-				awFullscreen(*w);
+				awMaximize(w);
 			if (aeWhich(e) == 'w') 
-				awPlain(*w);
+				awNormalize(w);
 			if (aeWhich(e) == 'q')
 				keepgoing = 0;
 			break;
 		case AW_EVENT_RESIZE:
 			reshape(aeWidth(e), aeHeight(e));
-			updateTitle(*w, aeWidth(e), aeHeight(e));
+			updateTitle(w, aeWidth(e), aeHeight(e));
 			break;
 		case AW_EVENT_CLOSE:
 			keepgoing = 0; 
@@ -32,18 +32,18 @@ static int processEvents(ag * g, aw ** w, ac * c) {
 #endif
 
 
-static void loop(ag * g, aw ** w, ac * c) {
+static void loop(ag * g, aw * w, ac * c) {
 	while (processEvents(g, w, c)) {
-		awMakeCurrent(*w, c);
+		awMakeCurrent(w, c);
 		display();
-		awSwapBuffers(*w);
+		awSwapBuffers(w);
 	}
 }
 
 static void go(ag * g, aw * w, ac * c) {
 	awMakeCurrent(w, c);
 	init();
-	loop(g, &w, c);
+	loop(g, w, c);
 	awMakeCurrent(w, 0);
 	awDel(w);
 	acDel(c);

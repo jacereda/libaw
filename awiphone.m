@@ -228,7 +228,6 @@ shouldChangeCharactersInRange: (NSRange)range
         [dpylink setFrameInterval: 1];
         [dpylink addToRunLoop: [NSRunLoop currentRunLoop] 
                  forMode: NSDefaultRunLoopMode];
-        dgot(AW_EVENT_RESIZE, r.size.width, r.size.height);
 }
 
 - (void) dealloc
@@ -261,7 +260,7 @@ int oswSetTitle(osw * w, const char * t) {
 }
 
 int oswInit(osw * w, osg * g, int x, int y, 
-	      int width, int height, int fs, int bl) {
+	      int width, int height, int bl) {
         getDelegate()->w = w;
 	return 1;
 }
@@ -314,8 +313,14 @@ int ospTerm(osp * p) {
 	return 1;
 }
 
-int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
+int oswMaximize(osw * w) {
+        CGRect r = [[UIScreen mainScreen] bounds];
+        dgot(AW_EVENT_RESIZE, r.size.width, r.size.height);
 	return 1;
+}
+
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
+	return oswMaximize(w);
 }
 
 void oswPointer(osw * w) {
