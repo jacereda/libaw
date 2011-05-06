@@ -3,6 +3,7 @@
 
 struct _osg {
 	EGLDisplay dpy;
+	EGLint w, h;
 	struct android_app* app;
 };
 

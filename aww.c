@@ -162,7 +162,7 @@ int osgTerm(osg * g) {
 }
 
 int oswInit(osw * w, osg * g, int x, int y, 
-            int width, int height, int fs, int bl) {
+            int width, int height, int bl) {
         DWORD style, exstyle;
         if (bl) {
                 style = WS_POPUP;
@@ -211,7 +211,7 @@ int oswClearCurrent(osw * w) {
 }
 
 int oswShow(osw * w) {
-        ShowWindow(w->win, wfullscreen(w)? SW_MAXIMIZE : SW_SHOWNORMAL);
+        ShowWindow(w->win, wmaximized(w)? SW_MAXIMIZE : SW_SHOWNORMAL);
         return 1;
 }
 
@@ -252,6 +252,11 @@ int oscInit(osc * c, osg * g, osc * share) {
 int oscTerm(osc * c) {
         int ret = 0 != wglDeleteContext(c->ctx);
         return ret;
+}
+
+int oswMaximize(osw * w) {
+        // handled in oswShow()
+        return 1;
 }
 
 int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {

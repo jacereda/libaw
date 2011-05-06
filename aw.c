@@ -88,35 +88,50 @@ void agDel(ag * g) {
 }
 
 void awShow(aw * w) {
-        if (wcheck(w) && !oswShow(&w->osw))
-                report("Unable to show window");
-        else
-                w->shown = 1;
+        if (wcheck(w)) {
+                if (!oswShow(&w->osw))
+                        report("Unable to show window");
+                else
+                        w->shown = 1;
+        }
 }
 
 void awHide(aw * w) {
-        if (wcheck(w) && !oswHide(&w->osw))
-                report("Unable to hide window");
-        else
-                w->shown = 0;
+        if (wcheck(w)) {
+                if (!oswHide(&w->osw))
+                        report("Unable to hide window");
+                else
+                        w->shown = 0;
+        }
 }
 
 void awSetTitle(aw * w, const char * t) {
-        if (wcheck(w) && !w->fullscreen && !oswSetTitle(&w->osw, t))
+        if (wcheck(w) && !w->maximized && !oswSetTitle(&w->osw, t))
                 report("Unable to set window title");
 }
 
-static int wopen(ag * g, aw * w, int fs, int bl) {
+static void drain(aw * w) {
+        while (awNextEvent(w))
+                ;
+}
+
+#define BADPOS 123
+#define BADSIZE 17
+
+static int wopen(ag * g, aw * w) {
         int ok;
         memset(&w->osw, 0, sizeof(w->osw));
         w->g = g;
-        ok = oswInit(&w->osw, &g->osg, 0, 0, 10, 10, fs, bl);
-        if (!ok)
-                report("Unable to open window");
-        w->fullscreen = fs;
         w->last = w->ev;
         w->last->type = AW_EVENT_NONE;
-        w->g = g;
+        w->head = w->tail = 0;
+        ok = oswInit(&w->osw, &g->osg, w->rx, w->ry, w->rw, w->rh, !w->borders);
+        drain(w);
+        // horrible hack to workaround lack of notifications in Cocoa
+        oswGeometry(&w->osw, w->rx+1, w->ry+1, w->rw+1, w->rh+1);
+        drain(w);
+        if (!ok)
+                report("Unable to open window");
         return ok;
 }
 
@@ -124,26 +139,41 @@ static void wclose(aw * w) {
         awPointer(w, 0);
         oswClearCurrent(&w->osw);
         oswHide(&w->osw);
-        while (awNextEvent(w))
-                ;
+        drain(w);
         if (!oswTerm(&w->osw))
                 report("Unable to close window");
+        memset(&w->osw, 0, sizeof(w->osw));
 }
 
-static int wreopen(aw * w, int fs, int bl) {
+static int wreopen(aw * w) {
         int ok;
+        ac * c = w->ctx;
         wclose(w);
-        ok = wopen(w->g, w, fs, bl);
-        if (w->shown)
-                oswShow(&w->osw);
+        w->ctx = 0;
+        ok = wopen(w->g, w);
+        w->ctx = c;
         if (w->ctx)
                 oswMakeCurrent(&w->osw, &w->ctx->osc);
+        drain(w);
+        if (w->maximized)
+                oswMaximize(&w->osw);
+        else
+                oswGeometry(&w->osw, w->rx, w->ry, w->rw, w->rh);
+        if (w->shown)
+                oswShow(&w->osw);
+//        filterBad(w);
         return ok;
 }
 
 aw * awNew(ag * g) { 
         aw * w = calloc(1, sizeof(*w));
-        int ok = wopen(g, w, 0, 0);
+        int ok;
+        w->rx = 31;
+        w->ry = 31;
+        w->rw = 31;
+        w->rh = 31;
+        w->borders = 1;
+        ok = wopen(g, w);
         if (!ok) {
                 free(w);
                 w = 0;
@@ -161,20 +191,32 @@ void awDel(aw * w) {
         }
 }
 
-void awPlain(aw * w) {
-        wreopen(w, 0, 0);
+void awShowBorders(aw * w) {
+        if (wcheck(w)) {
+                w->borders = 1;
+                wreopen(w);
+        }
 }
 
-void awBorderless(aw * w) {
-        wreopen(w, 0, 1);
-}
-
-void awFullscreen(aw * w) {
-        wreopen(w, 1, 0);
+void awHideBorders(aw * w) {
+        if (wcheck(w)) {
+                w->borders = 0;
+                wreopen(w);
+        }
 }
 
 void awMaximize(aw * w) {
-        wreopen(w, 1, 1);
+        if (wcheck(w)) {
+                w->maximized = 1;
+                wreopen(w);
+        }
+}
+
+void awNormalize(aw * w) {
+        if (wcheck(w)) {
+                w->maximized = 0;
+                wreopen(w);
+        }
 }
 
 static void setInterval(aw * w) {
@@ -349,8 +391,16 @@ void * awUserData(const aw * w) {
 }
 
 void awGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
-        if (wcheck(w) && !oswGeometry(&w->osw, x, y, width, height))
-                report("unable to establish geometry");
+        if (wcheck(w)) {
+                if (!oswGeometry(&w->osw, x, y, width, height))
+                        report("unable to establish geometry");
+                else {
+                        w->rx = x;
+                        w->ry = y;
+                        w->rw = width;
+                        w->rh = height;
+                }
+        }
 }
 
 void awPointer(aw * w, ap * p) {

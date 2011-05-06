@@ -66,10 +66,6 @@
 }
 @end
 
-@interface Pointer : NSCursor {
-}
-@end
-
 @interface View : NSTextView<NSWindowDelegate> {
         unsigned _prevflags;
         BOOL _dragging;
@@ -120,6 +116,10 @@ static NSCursor * currentCursor(osw * w) {
 @implementation View
 //- (void) display {}
 
+- (void) dealloc {
+        _w->_vfreed = 1;
+        [super dealloc];
+}
 
 - (void)establishCursor {
         NSCursor * cur = currentCursor(_w);
@@ -330,7 +330,6 @@ extern unsigned mapkeycode(unsigned);
         unsigned i;
         for (i = 0; i < [a count]; i++) {
                 NSString * s = [a objectAtIndex: i];
-                report("got %s", [s UTF8String]);
                 got(_w, AW_EVENT_DROP, (uintptr_t)strdup([s UTF8String]), 0);
         }
         return YES;
@@ -342,7 +341,7 @@ extern unsigned mapkeycode(unsigned);
 //- (void) display {}
 
 - (void) dealloc {
-        _w->_freed = 1;
+        _w->_wfreed = 1;
         [super dealloc];
 }
 
@@ -356,19 +355,6 @@ extern unsigned mapkeycode(unsigned);
         return NO;
 }
 @end
-
-@implementation Pointer
-/*
-- (void) mouseExited: (NSEvent *)ev {
-        [self set];
-}
-
-- (void) mouseEntered: (NSEvent *)ev {
-        [self set];
-}
-*/
-@end
-
 
 int oswSetTitle(osw * w, const char * t) {
         PROLOGUE;
@@ -391,34 +377,28 @@ static void openwin(osw * w, int x, int y,
                               defer:NO];
         frm = [Window contentRectForFrameRect: [win frame] styleMask: style];
         view = [[View alloc] initWithFrame: frm];
-        [view setAutoresizesSubviews:YES];
-        [view registerForDraggedTypes: [NSArray arrayWithObject:NSFilenamesPboardType]];
-
-        [win setContentView: view];
-        [win setDelegate: view];
-        [win makeFirstResponder: view];
-        [win setAcceptsMouseMovedEvents: YES];
-        [win setReleasedWhenClosed: NO];
-//        [win setAutodisplay: NO];
-        [view release];
-        [view updateTrackingAreas];
-
         w->view = view;
         w->win = win;
         w->view->_w = w;
         w->win->_w = w;
         w->defcur = [[NSCursor arrowCursor] retain];
+        [win makeFirstResponder: view];
+        [win setDelegate: view];
+        [win setContentView: view];
+        [view setAutoresizesSubviews:YES];
+        [view registerForDraggedTypes: [NSArray arrayWithObject:NSFilenamesPboardType]];
+
+        [win setAcceptsMouseMovedEvents: YES];
+        [win setReleasedWhenClosed: NO];
+//        [win setAutodisplay: NO];
+        [view updateTrackingAreas];
+
 }
 
 int oswInit(osw * w, osg * g, int x, int y, 
-            int width, int height, int fs, int bl) {
+            int width, int height, int bl) {
         PROLOGUE;
         unsigned style = 0;
-        if (fs) {
-                NSSize scr = [[NSScreen mainScreen] frame].size;
-                width = scr.width;
-                height = scr.height;
-        }
         if (!bl) {
                 style += 0
                         | NSTitledWindowMask
@@ -428,7 +408,7 @@ int oswInit(osw * w, osg * g, int x, int y,
                         ;
         }
         openwin(w, x, y, width, height, style);
-        if (bl) 
+        if (bl)
                 [w->win setLevel: NSPopUpMenuWindowLevel];
         EPILOGUE;
         return 1;
@@ -450,15 +430,23 @@ static NSEvent * pumpEvent(id win, NSDate * until) {
 
 int oswTerm(osw * w) {
         PROLOGUE;
+        [w->win makeKeyAndOrderFront: nil];
+        [w->win makeFirstResponder: nil];
+        [w->win setDelegate: nil];
+        [w->win setContentView: nil];
+        while(pumpEvent(NSApp, [NSDate distantPast]))
+                ;
         [w->win close];
         while(pumpEvent(NSApp, [NSDate distantPast]))
                 ;
         [w->win release];
+        [w->view release];
         while(pumpEvent(NSApp, [NSDate distantPast]))
                 ;
         [w->defcur release];
         EPILOGUE;
-//        assert(w->_freed);
+//        assert(w->_wfreed);
+//        assert(w->_vfreed);
         return 1;
 }
 
@@ -514,6 +502,11 @@ int oswMakeCurrent(osw * w, osc * c) {
         [c->ctx makeCurrentContext];
         EPILOGUE;
         return 1;
+}
+
+int oswMaximize(osw * w) {
+        NSSize scr = [[NSScreen mainScreen] frame].size;
+        return oswGeometry(w, 0, 0, scr.width, scr.height);
 }
 
 int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {

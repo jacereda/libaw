@@ -11,8 +11,8 @@
 #include "awandroid.h"
 #elif defined __IPHONE_OS_VERSION_MIN_REQUIRED
 #include "awios.h"
-#elif defined __APPLE__
-#include "awcocoa.h"
+//#elif defined __APPLE__
+//#include "awcocoa.h"
 #else
 #include "awx.h"
 #endif
@@ -38,7 +38,9 @@ struct _aw {
         unsigned head, tail;
         unsigned width, height;
         int mx, my;
-        int fullscreen;
+        int rx, ry, rw, rh;
+        int maximized;
+        int borders;
         int shown;
 };
 
@@ -66,7 +68,7 @@ struct _ap {
 
 int osgInit(osg *, const char *);
 int osgTerm(osg *);
-int oswInit(osw *, osg *, int, int, int, int, int, int);
+int oswInit(osw *, osg *, int, int, int, int, int);
 int oswTerm(osw *);
 int oswSetTitle(osw *, const char *);
 int oswMakeCurrent(osw *, osc *);
@@ -77,6 +79,7 @@ int oswHide(osw *);
 void oswPollEvent(osw *);
 void oswThreadEvents();
 int oswSetSwapInterval(osw *, int);
+int oswMaximize(osw *);
 int oswGeometry(osw *, int, int, unsigned, unsigned);
 void oswPointer(osw *);
 unsigned oswOrder(osw **);
@@ -97,7 +100,7 @@ static __inline void debug(const char * fmt, ...) {}
 #endif
 
 
-#define wfullscreen(w) (((aw*)w)->fullscreen)
+#define wmaximized(w) (((aw*)w)->maximized)
 #define wgroup(w) (&(((aw*)w)->g->osg))
 #define cgroup(c) (&(((ac*)c)->g->osg))
 #define wpointer(w) (&(((aw*)w)->pointer->osp))

@@ -214,10 +214,10 @@ static aw * processEvents(ag * g, aw * w, ac * c) {
                         switch (aeWhich(e)) {
                         case AW_KEY_1: setCursor1(w); break;
                         case AW_KEY_2: setCursor2(w); break;
-                        case AW_KEY_F: awFullscreen(w); break;
-                        case AW_KEY_B: awBorderless(w); break;
-                        case AW_KEY_W: awPlain(w); break;
+                        case AW_KEY_S: awShowBorders(w); break;
+                        case AW_KEY_H: awHideBorders(w); break;
                         case AW_KEY_M: awMaximize(w); break;
+                        case AW_KEY_N: awNormalize(w); break;
                         case AW_KEY_V: {
                                 static int v = 0;
                                 v = 1 - v;

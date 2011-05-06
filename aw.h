@@ -202,10 +202,10 @@ EXPORTED const char * agResourcesPath(ag *);
 
 EXPORTED aw * awNew(ag *);
 EXPORTED void awDel(aw *);
-EXPORTED void awPlain(aw *);
-EXPORTED void awBorderless(aw *);
-EXPORTED void awFullscreen(aw *);
+EXPORTED void awShowBorders(aw *);
+EXPORTED void awHideBorders(aw *);
 EXPORTED void awMaximize(aw *);
+EXPORTED void awNormalize(aw *);
 EXPORTED void awGeometry(aw *, int x, int y, unsigned w, unsigned h);
 EXPORTED void awShow(aw *);
 EXPORTED void awHide(aw *);

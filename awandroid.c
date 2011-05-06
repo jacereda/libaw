@@ -202,21 +202,6 @@ void android_main(struct android_app* app) {
 	debug("terminating");
 }
 
-int osgInit(osg * g, const char * name) {
-	g->dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-	ASSERT(g->dpy);
-	g->app = g_app;
-	return eglInitialize(g->dpy, 0, 0) == EGL_TRUE;
-}
-
-int osgTerm(osg * g) {
-	return eglTerminate(g->dpy) == EGL_TRUE;
-}
-
-int oswSetTitle(osw * w, const char * t) {
-        return 1;
-}
-
 static void getcfg(osg * g, EGLConfig * cfg) {
 	EGLint ncfg;
 	const EGLint attr[] = {
@@ -230,32 +215,71 @@ static void getcfg(osg * g, EGLConfig * cfg) {
 	ASSERT(ncfg > 0);
 }
 
-int oswInit(osw * w, osg * g, int x, int y, 
-	      int width, int height, int fs, int bl) {
-	EGLint ww=0, wh=0;
+static EGLSurface surfnew(osg * g) {
+	EGLConfig cfg;
+	getcfg(g, &cfg);
+	return eglCreateWindowSurface(g->dpy, cfg, g->app->window, 0);	
+}
+
+static int surfdel(osg * g, EGLSurface s) {
+	return EGL_TRUE == eglDestroySurface(g->dpy, s) ;
+}
+
+static EGLContext ctxnew(osg * g) {
+	EGLConfig cfg;
+	getcfg(g, &cfg);
+	return eglCreateContext(g->dpy, cfg, 0, 0);
+}
+
+static int ctxdel(osg * g, EGLContext c) {
+	return EGL_TRUE == eglDestroyContext(g->dpy, c);
+}
+
+int osgInit(osg * g, const char * name) {
+	int ok;
 	EGLConfig cfg;
 	EGLint fmt;
-	EGLContext fakectx;
-	g->app->userData = w;
-	getcfg(g, &cfg);
+	g->dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+	ASSERT(g->dpy);
+	g->app = g_app;
 	ASSERT(g->app->window);
+	ok = eglInitialize(g->dpy, 0, 0) == EGL_TRUE;
+	getcfg(g, &cfg);
 	eglGetConfigAttrib(g->dpy, cfg, EGL_NATIVE_VISUAL_ID, &fmt);
 	ANativeWindow_setBuffersGeometry(g->app->window, 0, 0, fmt);
-	w->surf = eglCreateWindowSurface(g->dpy, cfg, g->app->window, 0);
+	if (ok) {
+		EGLSurface fakesurf = surfnew(g);
+		EGLContext fakectx = ctxnew(g);
+		eglMakeCurrent(g->dpy, fakesurf, fakesurf, fakectx);
+		eglQuerySurface(g->dpy, fakesurf, EGL_WIDTH, &g->w);
+		eglQuerySurface(g->dpy, fakesurf, EGL_HEIGHT, &g->h);
+		eglMakeCurrent(g->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
+			       EGL_NO_CONTEXT);
+		ctxdel(g, fakectx);
+		surfdel(g, fakesurf);
+	}
+	return ok;
+}
+
+int osgTerm(osg * g) {
+	return eglTerminate(g->dpy) == EGL_TRUE;
+}
+
+int oswSetTitle(osw * w, const char * t) {
+        return 1;
+}
+
+int oswInit(osw * w, osg * g, int x, int y, 
+	      int width, int height, int bl) {
+	EGLContext fakectx;
+	g->app->userData = w;
+	w->surf = surfnew(g);
 	ASSERT(w->surf);
-	fakectx = eglCreateContext(g->dpy, cfg, 0, 0);
-	eglMakeCurrent(g->dpy, w->surf, w->surf, fakectx);
-	eglQuerySurface(g->dpy, w->surf, EGL_WIDTH, &ww);
-	eglQuerySurface(g->dpy, w->surf, EGL_HEIGHT, &wh);
-	eglMakeCurrent(g->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, 
-		       EGL_NO_CONTEXT);
-	eglDestroyContext(g->dpy, fakectx);
-	got(w, AW_EVENT_RESIZE, ww, wh);
         return w->surf != 0;
 }
 
 int oswTerm(osw * w) {
-	return eglDestroySurface(wgroup(w)->dpy, w->surf) == EGL_TRUE;
+	return surfdel(wgroup(w), w->surf);
 }
 
 int oswSwapBuffers(osw * w) {
@@ -291,12 +315,12 @@ int oswSetSwapInterval(osw * w, int si) {
 int oscInit(osc * c, osg * g, osc * share) {
 	EGLConfig cfg;
 	getcfg(g, &cfg);
-	c->ctx = eglCreateContext(g->dpy, cfg, 0, 0);
+	c->ctx = ctxnew(g);
         return c->ctx != 0;
 }
 
 int oscTerm(osc * c) {
-	return eglDestroyContext(cgroup(c)->dpy, c->ctx) == EGL_TRUE;
+	return ctxdel(cgroup(c), c->ctx);
 }
 
 int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
@@ -307,8 +331,13 @@ int ospTerm(osp * p) {
 	return 1;
 }
 
-int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
+int oswMaximize(osw * w) {
+	got(w, AW_EVENT_RESIZE, wgroup(w)->w, wgroup(w)->h);
 	return 1;
+}
+
+int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
+	return oswMaximize(w);
 }
 
 void oswPointer(osw * w) {

@@ -31,7 +31,7 @@ else:
 backends = {
 	'iphone' : ['iphone'],
 	'iphonesim' : ['iphone'],
-	'darwin' : ['cocoa'],
+	'darwin' : ['x11'],
 	'android' : ['android'],
 	'linux' : ['x11'],
 	'win32' : ['nt'],

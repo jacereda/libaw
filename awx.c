@@ -145,12 +145,8 @@ static int openwin(osw * w, osg * g, int x, int y, int width, int height) {
 }
 
 int oswInit(osw * w, osg * g, int x, int y, 
-            int width, int height, int fs, int bl) {
+            int width, int height, int bl) {
         int ok;
-        if (fs) {
-                width = DisplayWidth(g->dpy, g->screen);
-                height = DisplayHeight(g->dpy, g->screen);
-        }
         if (!bl) {
                 x -= g->bw;
                 y -= g->bh;
@@ -309,6 +305,13 @@ int oswSetSwapInterval(osw * w, int interval) {
                 group(w)->swapInterval(interval);
         return 1;
 #endif
+}
+
+int oswMaximize(osw * w) {
+        osg * g = wgroup(w);
+        unsigned width = DisplayWidth(g->dpy, g->screen);
+        unsigned height = DisplayHeight(g->dpy, g->screen);
+        return oswGeometry(w, 0, 0, width, height);
 }
 
 int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {

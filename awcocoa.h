@@ -13,7 +13,8 @@ struct _osw {
         View * view;
         Window * win;
         NSCursor * defcur;
-        int _freed;
+        int _vfreed;
+        int _wfreed;
 };
 
 struct _osc {
