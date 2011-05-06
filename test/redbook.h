@@ -6,71 +6,71 @@ static void updateTitle(aw * w, int x, int y) {
 
 
 #if !defined NO_HANDLER
-static int processEvents(aw ** w, ac * c) {
+static int processEvents(ag * g, aw * w, ac * c) {
 	int keepgoing = 1;
-	const awEvent * awe;
-	while ((awe = awNextEvent(*w))) switch (awe->type) {
-	case AW_EVENT_DOWN:
-		if (awe->u.down.which == 'f') {
-			awMakeCurrent(*w, 0);
-			awClose(*w);
-			*w = awOpenFullscreen();
+	const ae * e;
+	while ((e = awNextEvent(w))) switch (aeType(e)) {
+		case AW_EVENT_DOWN:
+			if (aeWhich(e) == 'f') 
+				awMaximize(w);
+			if (aeWhich(e) == 'w') 
+				awNormalize(w);
+			if (aeWhich(e) == 'q')
+				keepgoing = 0;
+			break;
+		case AW_EVENT_RESIZE:
+			reshape(aeWidth(e), aeHeight(e));
+			updateTitle(w, aeWidth(e), aeHeight(e));
+			break;
+		case AW_EVENT_CLOSE:
+			keepgoing = 0; 
+			break;
+		default: break;
 		}
-		if (awe->u.down.which == 'w') {
-			awMakeCurrent(*w, 0);
-			awClose(*w);
-			*w = awOpen(100, 100, 300, 400);
-		}
-		if (awe->u.down.which == 'q')
-			keepgoing = 0;
-		break;
-	case AW_EVENT_RESIZE:
-		reshape(awe->u.resize.w, awe->u.resize.h);
-		updateTitle(*w, awe->u.resize.w, awe->u.resize.h);
-		break;
-	case AW_EVENT_CLOSE:
-		keepgoing = 0; 
-		break;
-	default: break;
-	}
 	return keepgoing;
 }
 #endif
 
 
-static void loop(aw ** w, ac * c) {
-	while (processEvents(w, c)) {
-		awMakeCurrent(*w, c);
+static void loop(ag * g, aw * w, ac * c) {
+	while (processEvents(g, w, c)) {
+		awMakeCurrent(w, c);
 		display();
-		awSwapBuffers(*w);
+		awSwapBuffers(w);
 	}
 }
 
-static void go(aw * w, ac * c) {
+static void go(ag * g, aw * w, ac * c) {
 	awMakeCurrent(w, c);
 	init();
-	loop(&w, c);
+	loop(g, w, c);
 	awMakeCurrent(w, 0);
-	awClose(w);
+	awDel(w);
 	acDel(c);
-	awEnd();
+	agDel(g);
 }
 
 int main(int argc, char ** argv) {
+	ag * g = 0;
 	aw * w = 0;
 	ac * c = 0;
-	if (awInit())
-		w = awOpen(100, 100, 500, 500);
+	g = agNew("redbook");
+	if (g)
+		w = awNew(g);
 	else
 		Log("unable to initialize AW");
 	if (!w)
 		Log("unable to open window (is DISPLAY set?)");
 	if (w)
-		c = acNew(0);
-	if (c)
-		acSetInterval(c, 1);
+		c = acNew(g, 0);
+	if (w)
+		awGeometry(w, 100, 100, 500, 500);
+	if (w)
+		awShow(w);
+	if (w)
+		awSetInterval(w, 1);
 	if (c) 
-		go(w, c);
+		go(g, w, c);
 	return w == 0;
 }
 

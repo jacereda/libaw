@@ -5,7 +5,7 @@ aw.UsesOpenGL()
 backend = {
 'android' : 'awandroid.c ',
 'iphone' : 'awiphone.m co.c coroutine/source/Coro.c awreportfile.c tlspthread.c',
-'cocoa': 'awmain.c awcocoa.m awmackeycodes.c awreportconsole.c',
+'cocoa': 'awcocoa.m awmackeycodes.c awreportconsole.c',
 'x11': 'awmain.c awx.c awx11keycodes.c awreportconsole.c',
 'nt': 'awmain.c aww.c awntkeycodes.c awntevent.c awreportconsole.c',
 }[aw['BACKEND']]
@@ -20,7 +20,7 @@ if backend.find('coroutine/') >= 0:
 aw.Append(CPPDEFINES=['BUILDING_AW'])
 aw.Lib('aw', 'aw.c ' + backend)
 
-aw.Install('include/aw', ['aw.h', 'sysgl.h', 'sysglu.h'])
+aw.Install('include/aw', ['aw.h', 'awtypes.h', 'sysgl.h', 'sysglu.h'])
 awnpapi = env.ForNPAPI()
 if awnpapi:
     awnpapi.CompileAs32Bits()

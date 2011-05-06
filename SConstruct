@@ -79,7 +79,7 @@ class Env(Environment):
 					     '/usr/include/gtk-2.0/'])
 			self.Append(LIBS=['GL', 'GLU', 'X11'])
 		if self['BACKEND'] == 'nt':
-			self.Append(LIBS=['opengl32', 'gdi32', 'glu32', 'user32'])
+			self.Append(LIBS=['opengl32', 'gdi32', 'glu32', 'user32', 'imm32'])
 
 	def _Objects(self, bdir, sources):
 		if self['BACKEND'] in ['android']:
@@ -304,6 +304,5 @@ for backend in backends:
 		cnf['CONF'] = conf
 		env = cnf.Clone()
 		env['BACKEND'] = backend
-		env.Append(CPPDEFINES=[['AWBACKEND', backend]])
 		Export("env")
 		env.SConscript(dir  + '/SConscript')

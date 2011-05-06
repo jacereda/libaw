@@ -1,10 +1,8 @@
 #include <stdarg.h>
 #include <stdio.h>
-#include "aw.h"
-#include "awos.h"
 
 void report(const char *fmt, ...) {
-#if defined _WIN32 || defined __ANDROID__
+#if defined(_WIN32)
 	FILE *out = fopen("aw.log", "a");
 #else
 	FILE *out = fopen("/tmp/aw.log", "a");

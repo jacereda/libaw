@@ -1,6 +1,5 @@
 #include <Coro.h>
 #include <stdlib.h>
-#include "tls.h"
 #include "co.h"
 
 struct _co {
@@ -9,7 +8,7 @@ struct _co {
 	void (*func)(void*);
 };
 
-static tls * g_curr = 0;
+static co * g_curr;
 
 co * coMain(void * data) {
 	co * co = malloc(sizeof(*co));
@@ -17,9 +16,7 @@ co * coMain(void * data) {
 	co->data = data;
 	co->func = 0;
 	Coro_initializeMainCoro(co->co);
-	if (!g_curr)
-		g_curr = tlsNew();
-	tlsSet(g_curr, co);
+	g_curr = co;
 	return co;
 }
 
@@ -38,9 +35,8 @@ void coDel(co * co) {
 }
 
 void coSwitchTo(co * next) {
-	co * curr;
-	curr = coCurrent();
-	tlsSet(g_curr, next);
+	co * curr = coCurrent();
+	g_curr = next;
 	if (next->func) {
 		Coro_startCoro_(curr->co, next->co,
 				next->data, next->func);
@@ -51,7 +47,7 @@ void coSwitchTo(co * next) {
 }
 
 co * coCurrent() {
-	return tlsGet(g_curr);
+	return g_curr;
 }
 
 void * coData(co * co) {

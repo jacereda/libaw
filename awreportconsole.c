@@ -1,7 +1,5 @@
 #include <stdarg.h>
 #include <stdio.h>
-#include "aw.h"
-#include "awos.h"
 
 void report(const char * fmt, ...) {
         va_list ap;
