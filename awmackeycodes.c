@@ -116,7 +116,7 @@ unsigned mapkeycode(unsigned k) {
 	case kVK_RightArrow: ret = AW_KEY_RIGHTARROW; break;
 	case kVK_DownArrow: ret = AW_KEY_DOWNARROW; break;
 	case kVK_UpArrow: ret = AW_KEY_UPARROW; break;
-	default: ret = k;
+	default: ret = AW_KEY_NONE;
 	}
 	return ret;
 }
