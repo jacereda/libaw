@@ -89,8 +89,8 @@ static void findBorderSize(osg * g) {
         Window w = createWin(g, -100, -100, 1, 1);
         XMapWindow(g->dpy, w);
         while (g->bh < 0) {
-                XCheckWindowEvent(g->dpy, w, StructureNotifyMask, &e);
-                if (e.type == ConfigureNotify 
+                if (XCheckWindowEvent(g->dpy, w, StructureNotifyMask, &e)
+                    && e.type == ConfigureNotify 
                     && !e.xconfigure.override_redirect) {
                         g->bw = e.xconfigure.x;
                         g->bh = e.xconfigure.y;
