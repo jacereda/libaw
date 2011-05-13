@@ -79,7 +79,7 @@ class Env(Environment):
 					     '/usr/include/gtk-2.0/'])
 			self.Append(LIBS=['GL', 'GLU', 'X11'])
 		if self['BACKEND'] == 'nt':
-			self.Append(LIBS=['opengl32', 'gdi32', 'glu32', 'user32', 'imm32'])
+			self.Append(LIBS=['opengl32', 'gdi32', 'glu32', 'user32', 'imm32', 'shell32'])
 
 	def _Objects(self, bdir, sources):
 		if self['BACKEND'] in ['android']:
