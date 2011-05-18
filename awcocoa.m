@@ -241,9 +241,10 @@ extern unsigned mapkeycode(unsigned);
 
 - (void) mouseDown: (NSEvent*)ev {
         _dragging = YES;
+        [self lockFocus];
         [self handleMouseEvent: ev mode: AW_EVENT_DOWN];
         [self updateTrackingAreas];
-        [super mouseDown: ev];
+//        [super mouseDown: ev];
 }
 
 - (void) mouseUp: (NSEvent*)ev {
@@ -251,7 +252,7 @@ extern unsigned mapkeycode(unsigned);
         [self handleMouseEvent: ev mode: AW_EVENT_UP];
         [self updateTrackingAreas];
         [self unlockFocus];
-        [super mouseUp: ev];
+//        [super mouseUp: ev];
 }
 
 - (void) rightMouseDown: (NSEvent*)ev {
