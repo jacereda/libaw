@@ -252,6 +252,11 @@ static aw * processEvents(ag * g, aw * w, ac * c) {
                 }
         if (awPressed(w, AW_KEY_A))
                 Log("a pressed");
+        if (awPressed(w, AW_KEY_MOUSELEFT))
+                Log("mleft pressed");
+        if (awPressed(w, AW_KEY_MOUSERIGHT))
+                Log("mright pressed");
+
         return w;
 }
 
