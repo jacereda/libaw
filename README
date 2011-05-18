@@ -1,0 +1,31 @@
+libaw README.
+=============
+
+WHAT?
+
+A simple and portable window handling library suitable for use in small
+OpenGL applications.
+
+WHY? 
+
+GLUT and SDL are simply huge. They try to do too much. I don't want
+their threads abstraction / font rendering / sound output / widgets /
+whatever. Those things should be handled by separate libraries. I just
+want to open a damn window and draw some OpenGL stuff on it. And I
+want to remain in control of the program all the time. If I want
+callbacks, I'll implement them.
+
+Also, this library is quite simple and should be easy to integrate in
+interpreters.
+
+BUILDING
+
+- Install scons ( http://scons.org )
+- Type 'scons' in this directory. 
+
+This should build a dynamic library and some test programs.
+
+FEEDBACK
+
+You can send your suggestions/comments/patches to:
+Jorge Acereda <jacereda@gmail.com>
