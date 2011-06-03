@@ -624,19 +624,6 @@ int ospTerm(osp * p) {
 
 int osgInit(osg * g, const char * name) {
         PROLOGUE;
-        EPILOGUE;
-        return 1;
-}
-
-int osgTerm(osg * g) {
-        PROLOGUE;
-        EPILOGUE;
-        return 1;
-}
-
-int main(int argc, char **argv) {
-        PROLOGUE;
-        extern int fakemain(int, char**);
         ProcessSerialNumber psn = { 0, kCurrentProcess };
         TransformProcessType(&psn, kProcessTransformToForegroundApplication);
         SetFrontProcess(&psn);
@@ -645,8 +632,21 @@ int main(int argc, char **argv) {
         [NSApp finishLaunching];
         [NSApp activateIgnoringOtherApps: YES];
 //        [NSApp setWindowsNeedUpdate: NO];
-        fakemain(argc, argv);
+        EPILOGUE;
+        return 1;
+}
+
+int osgTerm(osg * g) {
+        PROLOGUE;
         [NSApp release]; // ???
+        EPILOGUE;
+        return 1;
+}
+
+int main(int argc, char **argv) {
+        PROLOGUE;
+        extern int fakemain(int, char**);
+        fakemain(argc, argv);
         EPILOGUE;
         return 0;
 }
