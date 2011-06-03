@@ -293,11 +293,12 @@ void Coro_setup(Coro *self, void *arg)
 {
 	uintptr_t stackend = Coro_stackSize(self) + (uintptr_t)Coro_stack(self);
 	uintptr_t start = (uintptr_t)Coro_Start;
-	/* since ucontext seems to be broken on amg64 */
+	/* since ucontext seems to be broken on amd64 */
 	globalCallbackBlock.context=((CallbackBlock*)arg)->context;
 	globalCallbackBlock.func=((CallbackBlock*)arg)->func;
 
 	setjmp(self->env);
+end:
 	/* This is probably not nice in that it deals directly with
 	* something with __ in front of it.
 	*
@@ -327,6 +328,16 @@ void Coro_setup(Coro *self, void *arg)
 	// Broken, use fibers
 	*(uintptr_t*)(self->env+4) = stackend - 8;
 	*(uintptr_t*)(self->env+5) = start;
+#elif defined(__ANDROID__)
+	{ 
+		unsigned i;
+		// Try to guess PC offset
+		for (i = 0; i < sizeof(self->env)/sizeof(self->env[0]); i++)
+			if (&&end == (void*)self->env[i])
+				break;
+		self->env[i] = start;
+		self->env[i-1] = stackend - 4;
+	}
 #else
 	self->env[0].__jmpbuf[6] = ((unsigned long)(Coro_stack(self)));
 	self->env[0].__jmpbuf[7] = ((long)Coro_Start);
