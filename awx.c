@@ -297,14 +297,8 @@ void oswPollEvent(osw * w) {
 }
 
 int oswSetSwapInterval(osw * w, int interval) {
-#if 1
         return !wgroup(w)->swapInterval 
                 || 0 == wgroup(w)->swapInterval(interval);
-#else
-        if (group(w)->swapInterval)
-                group(w)->swapInterval(interval);
-        return 1;
-#endif
 }
 
 int oswMaximize(osw * w) {
