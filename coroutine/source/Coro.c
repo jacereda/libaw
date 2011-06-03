@@ -14,6 +14,8 @@
 	Ucontext arg support by Olivier Ansaldi
 	Ucontext x86-64 support by James Burgess and Jonathan Wright
 	Russ Cox for the newer portable ucontext implementions.
+	Mac OS X support by Jorge Acereda
+	Guessed setjmp support (Android/Mac OS X/others?) by Jorge Acereda
 
  Notes
 
@@ -33,13 +35,12 @@
 	before the setjmp occurs would be helpful also.
  */
 
-//#include "Base.h"
 #include "Coro.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <stddef.h>
-//#include "taskimpl.h"
 #if defined(USE_UCONTEXT)
 #define _XOPEN_SOURCE
 #include <ucontext.h>
@@ -277,7 +278,7 @@ void Coro_switchTo_(Coro *self, Coro *next)
 	SwitchToFiber(next->fiber);
 #elif defined(USE_UCONTEXT)
 	swapcontext(&self->env, &next->env);
-#elif defined(USE_SETJMP)
+#elif defined USE_SETJMP || defined USE_GUESSED_SETJMP
 	if (setjmp(self->env) == 0)
 	{
 		longjmp(next->env, 1);
@@ -286,9 +287,40 @@ void Coro_switchTo_(Coro *self, Coro *next)
 }
 
 // ---- setup ------------------------------------------
+#if defined USE_GUESSED_SETJMP
+// This isn't bulletproof, but seems to work Well Enough (TM)
+void Coro_setup(Coro *self, void *arg)
+{
+	uintptr_t stackend = Coro_stackSize(self) + (uintptr_t)Coro_stack(self);
+	uintptr_t start = (uintptr_t)Coro_Start;
+	/* since ucontext seems to be broken on amd64 */
+	globalCallbackBlock.context=((CallbackBlock*)arg)->context;
+	globalCallbackBlock.func=((CallbackBlock*)arg)->func;
+	setjmp(self->env);
+end:
+	{ 
+		uintptr_t i;
+		size_t sz = sizeof(self->env)/sizeof(sav[0]);
+		uintptr_t * sav = (uintptr_t*)self->env;
 
-#if defined(USE_SETJMP)
+		// Try to guess PC index
+		i = sz;
+		while (i--)
+			if (sav[i] == (uintptr_t)&&end)
+				break;
+		assert(i < sz);
+		sav[i] = start;
 
+		// Try to guess SP index
+		i = sz;
+		while (i--)
+			if (64 > (- sav[i] + (uintptr_t)&i))
+				break;
+		assert(i < sz);
+		sav[i] = stackend - sizeof(uintptr_t) - 128;
+	}
+}
+#elif defined USE_SETJMP
 void Coro_setup(Coro *self, void *arg)
 {
 	uintptr_t stackend = Coro_stackSize(self) + (uintptr_t)Coro_stack(self);
@@ -298,7 +330,6 @@ void Coro_setup(Coro *self, void *arg)
 	globalCallbackBlock.func=((CallbackBlock*)arg)->func;
 
 	setjmp(self->env);
-end:
 	/* This is probably not nice in that it deals directly with
 	* something with __ in front of it.
 	*
@@ -318,6 +349,7 @@ end:
 	*   amd64 computer:
 	*   /usr/include/gento-multilib/amd64/bits/setjmp.h
 	*   Which was ultimatly included from setjmp.h in /usr/include. */
+
 #if defined(__APPLE__) && defined(__x86_64__)
 	*(uintptr_t*)(self->env+4) = stackend - 8;
 	*(uintptr_t*)(self->env+14) = start;
@@ -328,16 +360,6 @@ end:
 	// Broken, use fibers
 	*(uintptr_t*)(self->env+4) = stackend - 8;
 	*(uintptr_t*)(self->env+5) = start;
-#elif defined(__ANDROID__)
-	{ 
-		unsigned i;
-		// Try to guess PC offset
-		for (i = 0; i < sizeof(self->env)/sizeof(self->env[0]); i++)
-			if (&&end == (void*)self->env[i])
-				break;
-		self->env[i] = start;
-		self->env[i-1] = stackend - 4;
-	}
 #else
 	self->env[0].__jmpbuf[6] = ((unsigned long)(Coro_stack(self)));
 	self->env[0].__jmpbuf[7] = ((long)Coro_Start);
