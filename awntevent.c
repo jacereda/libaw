@@ -146,7 +146,7 @@ static int onKILLFOCUS(HWND win, HWND next) {
         return fakeKbEvents(win, AW_EVENT_UP);
 }
 
-static int onCHAR(HWND win, TCHAR c, int repeats) {
+static int onCHAR(HWND win, unsigned c, int repeats) {
         return wgot(win, AW_EVENT_UNICODE, uc2aw(c), 0); 
 }
 
