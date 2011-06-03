@@ -137,7 +137,8 @@ static int wopen(ag * g, aw * w) {
 
 static void wclose(aw * w) {
         awPointer(w, 0);
-        oswClearCurrent(&w->osw);
+        if (w->ctx)
+                oswClearCurrent(&w->osw);
         oswHide(&w->osw);
         drain(w);
         if (!oswTerm(&w->osw))
@@ -288,6 +289,7 @@ const ae * awNextEvent(aw * w) {
                 last->p[0] = 0;
                 last->type = AW_EVENT_NONE;
         }
+        
         oswPollEvent(&w->osw);
         if (w->head != w->tail) {
                 e = w->ev + w->tail;
