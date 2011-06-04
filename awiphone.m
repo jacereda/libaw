@@ -32,7 +32,6 @@
 #include "aw.h"
 #include "awos.h"
 #include "sysgl.h"
-#include "co.h"
 #include <OpenGLES/ES1/glext.h>
 #include <assert.h>
 
@@ -49,9 +48,6 @@
         CADisplayLink * dpylink;
 	UITextField * tf;
 @public
-	co * comain;
-	co * coaw;
-	int awdone;
         osw * w;
         osc * c;
 }
@@ -159,15 +155,6 @@ static void fakekey(unsigned unicode) {
 
 @end
 
-void awentry(void * data) {
-	extern int fakemain(int argc, char ** argv);
-	int argc = 1;
-	char * argv0 = "awiphone";
-	fakemain(argc, &argv0);
-	coSwitchTo(getDelegate()->comain);
-	assert(0);
-}
-
 @implementation awdelegate
 - (BOOL) textField: (UITextField *)tf 
 shouldChangeCharactersInRange: (NSRange)range 
@@ -187,14 +174,12 @@ shouldChangeCharactersInRange: (NSRange)range
 }
 
 - (void) update {
-        coSwitchTo(coaw);
+	yield();
         [ctx presentRenderbuffer: GL_RENDERBUFFER_OES];
 }
 
 - (void) applicationDidFinishLaunching: (UIApplication*) application 
 {
-        comain = coMain(self);
-        coaw = coNew(awentry, self);
         CGRect r = [[UIScreen mainScreen] bounds];
         win = [[UIWindow alloc] initWithFrame: r];
         view = [[glview alloc] initWithFrame: r];
@@ -228,6 +213,7 @@ shouldChangeCharactersInRange: (NSRange)range
         [dpylink setFrameInterval: 1];
         [dpylink addToRunLoop: [NSRunLoop currentRunLoop] 
                  forMode: NSDefaultRunLoopMode];
+	yield();
 }
 
 - (void) dealloc
@@ -240,15 +226,15 @@ shouldChangeCharactersInRange: (NSRange)range
 }
 @end
 
-int main(int argc, char *argv[]) {
-        NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-        int ret = UIApplicationMain(argc, argv, nil, @"awdelegate");
+int osgInit(osg * g, const char * name) {
+	static NSAutoreleasePool * pool;
+        pool = [[NSAutoreleasePool alloc] init];
+        int ret = UIApplicationMain(1, (char**)&name, nil, @"awdelegate");
         [pool release];
-        return ret;
+        return 1;
 }
 
-int osgInit(osg * g, const char * name) {
-        return 1;
+void osgTick(osg * g) {
 }
 
 int osgTerm(osg * g) {
@@ -270,7 +256,6 @@ int oswTerm(osw * w) {
 }
 
 int oswSwapBuffers(osw * w) {
-        coSwitchTo(getDelegate()->comain);
         return 1;
 }
 
@@ -330,3 +315,4 @@ void oswPointer(osw * w) {
 unsigned oswOrder(osw ** w) {
 	return 0;
 }
+

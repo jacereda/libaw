@@ -622,6 +622,9 @@ int ospTerm(osp * p) {
         return 1;
 }
 
+void osgTick(osg * g) {
+}
+
 int osgInit(osg * g, const char * name) {
         PROLOGUE;
         ProcessSerialNumber psn = { 0, kCurrentProcess };
@@ -641,14 +644,6 @@ int osgTerm(osg * g) {
         [NSApp release]; // ???
         EPILOGUE;
         return 1;
-}
-
-int main(int argc, char **argv) {
-        PROLOGUE;
-        extern int fakemain(int, char**);
-        fakemain(argc, argv);
-        EPILOGUE;
-        return 0;
 }
 
 

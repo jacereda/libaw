@@ -296,6 +296,8 @@ for backend in backends:
 			  CPPDEFINES=confcppdefines[conf]+compcppdefines[comp],
 			  LINKFLAGS=lf,
 			  )
+#		cnf.CompileAs32Bits()
+
 		if tools:
 			cnf.Tool(tools, '.')
 		dir = conf + '/' + backend

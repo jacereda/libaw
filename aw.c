@@ -39,9 +39,14 @@
 #include "awos.h"
 #include "bit.h"
 
+static co * g_mainco;
+
 #if defined(_MSC_VER)
 #define snprintf _snprintf
 #endif
+
+#define D report(__func__)
+//#define D 
 
 static int gcheck(const ag * g) {
         if (!g)
@@ -67,27 +72,49 @@ static int pcheck(const ap * p) {
         return p != 0;
 }
 
+static void agentry(void * data) {
+        ag * g = (ag*)data;
+        int ok;
+        D;
+        ok = osgInit(&g->osg, g->name);
+        g->name = 0;
+        assert(ok);
+        while (1) {
+                D;
+                yield();
+                osgTick(&g->osg);
+        }
+}
+
+
 ag * agNew(const char * appname) {
         ag * g = calloc(1, sizeof(*g));
-        int ok;
-        ok = osgInit(&g->osg, appname);
-        if (!ok) {
-                report("creating group %s", appname);
-                free(g);
-                g = 0;
-        }
+        D;
+        g->name = appname;
+        g->co = coNew(agentry, g);
+        D;
+        coSwitchTo(g->co);
+        D;
         return g;
 }
 
+void agTick(ag * g) {
+        D;
+        coSwitchTo(g->co);
+}
+
 void agDel(ag * g) {
+        D;
         if (gcheck(g)) {
                 if (!osgTerm(&g->osg))
                         report("deleting group");
+                coDel(g->co);
                 free(g);
         }
 }
 
 void awShow(aw * w) {
+        D;
         if (wcheck(w)) {
                 if (!oswShow(&w->osw))
                         report("Unable to show window");
@@ -97,6 +124,7 @@ void awShow(aw * w) {
 }
 
 void awHide(aw * w) {
+        D;
         if (wcheck(w)) {
                 if (!oswHide(&w->osw))
                         report("Unable to hide window");
@@ -106,6 +134,7 @@ void awHide(aw * w) {
 }
 
 void awSetTitle(aw * w, const char * t) {
+        D;
         if (wcheck(w) && !w->maximized && !oswSetTitle(&w->osw, t))
                 report("Unable to set window title");
 }
@@ -115,20 +144,41 @@ static void drain(aw * w) {
                 ;
 }
 
+void yield() {
+        D;
+        coSwitchTo(g_mainco);
+}
+
+static void awentry(void * data) {
+        aw * w = (aw*)data;
+        while (1) {
+                D;
+                yield();
+                oswPollEvent(&w->osw);
+        }
+}
+
 #define BADPOS 123
 #define BADSIZE 17
 
 static int wopen(ag * g, aw * w) {
         int ok;
+        D;
         memset(&w->osw, 0, sizeof(w->osw));
         w->g = g;
         w->last = w->ev;
         w->last->type = AW_EVENT_NONE;
         w->head = w->tail = 0;
+        D;
         ok = oswInit(&w->osw, &g->osg, w->rx, w->ry, w->rw, w->rh, !w->borders);
+        D;
+        w->co = coNew(awentry, w);
+        D;
         drain(w);
+        D;
         // horrible hack to workaround lack of notifications in Cocoa
         oswGeometry(&w->osw, w->rx+1, w->ry+1, w->rw+1, w->rh+1);
+        D;
         drain(w);
         if (!ok)
                 report("Unable to open window");
@@ -143,6 +193,7 @@ static void wclose(aw * w) {
         drain(w);
         if (!oswTerm(&w->osw))
                 report("Unable to close window");
+        coDel(w->co); w->co = 0;
         memset(&w->osw, 0, sizeof(w->osw));
 }
 
@@ -169,6 +220,7 @@ static int wreopen(aw * w) {
 aw * awNew(ag * g) { 
         aw * w = calloc(1, sizeof(*w));
         int ok;
+        D;
         w->rx = 31;
         w->ry = 31;
         w->rw = 31;
@@ -183,6 +235,7 @@ aw * awNew(ag * g) {
 }
 
 void awDel(aw * w) {  
+        D;
         if (wcheck(w)) {
                 if (w->pointer) 
                         report("Closing window with cursor established");
@@ -193,6 +246,7 @@ void awDel(aw * w) {
 }
 
 void awShowBorders(aw * w) {
+        D;
         if (wcheck(w)) {
                 w->borders = 1;
                 wreopen(w);
@@ -200,6 +254,7 @@ void awShowBorders(aw * w) {
 }
 
 void awHideBorders(aw * w) {
+        D;
         if (wcheck(w)) {
                 w->borders = 0;
                 wreopen(w);
@@ -207,6 +262,7 @@ void awHideBorders(aw * w) {
 }
 
 void awMaximize(aw * w) {
+        D;
         if (wcheck(w)) {
                 w->maximized = 1;
                 wreopen(w);
@@ -214,6 +270,7 @@ void awMaximize(aw * w) {
 }
 
 void awNormalize(aw * w) {
+        D;
         if (wcheck(w)) {
                 w->maximized = 0;
                 wreopen(w);
@@ -226,6 +283,7 @@ static void setInterval(aw * w) {
 }
 
 void awSwapBuffers(aw * w) {
+        D;
         if (wcheck(w)) {
                 setInterval(w);
                 glFlush();
@@ -238,6 +296,7 @@ void awSwapBuffers(aw * w) {
 }
 
 void awMakeCurrent(aw * w, ac * c) {
+        D;
         if (wcheck(w)) {
                 if (w->ctx)
                         glFlush();
@@ -279,6 +338,7 @@ static void release(aw * w, awkey k) {
 
 const ae * awNextEvent(aw * w) {
         const ae * e = 0;
+        D;
         if (!wcheck(w))
                 return 0;
         assert(w->last);
@@ -289,8 +349,7 @@ const ae * awNextEvent(aw * w) {
                 last->p[0] = 0;
                 last->type = AW_EVENT_NONE;
         }
-        
-        oswPollEvent(&w->osw);
+        coSwitchTo(w->co);
         if (w->head != w->tail) {
                 e = w->ev + w->tail;
                 w->tail++;
@@ -348,16 +407,19 @@ int awReleased(const aw * w, awkey k) {
 void got(osw * osw, int type, intptr_t p1, intptr_t p2) {
         aw * w = (aw*)osw;
         ae * e = w->ev + w->head;
+        D;
         w->head++;
         w->head %= MAX_EVENTS;
         e->type = type;
         e->p[0] = p1;
         e->p[1] = p2;
+        yield();
 }
 
 ac * acNew(ag * g, ac * share) {
         ac * c = calloc(1, sizeof(*c));
         int ok;
+        D;
         c->g = g;
         ok = oscInit(&c->osc, &g->osg, &share->osc);
         if (!ok) {
@@ -369,10 +431,12 @@ ac * acNew(ag * g, ac * share) {
 }
 
 ac * acNewStereo(ag * g, ac * share) {
+        D;
         return 0; // XXX
 }
 
 void acDel(ac * c) {
+        D;
         if (ccheck(c)) {
                 if (!oscTerm(&c->osc))
                         report("unable to delete context %p", c);
@@ -381,18 +445,22 @@ void acDel(ac * c) {
 }
 
 void awSetInterval(aw * w, int interval) {
+        D;
         w->interval = interval;
 }
 
 void awSetUserData(aw * w, void * user) {
+        D;
         w->user = user;
 }
 
 void * awUserData(const aw * w) {
+        D;
         return w->user;
 }
 
 void awGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+        D;
         if (wcheck(w)) {
                 if (!oswGeometry(&w->osw, x, y, width, height))
                         report("unable to establish geometry");
@@ -406,6 +474,7 @@ void awGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
 }
 
 void awPointer(aw * w, ap * p) {
+        D;
         if (w->pointer)
                 w->pointer->refs--;
         w->pointer = p;
@@ -417,6 +486,7 @@ void awPointer(aw * w, ap * p) {
 ap * apNew(const void * rgba, unsigned hotx, unsigned hoty) {
         ap * p = calloc(1, sizeof(*p));
         int ok;
+        D;
         ok = ospInit(&p->osp, rgba, hotx, hoty);
         if (!ok) {
                 report("unable to create pointer");
@@ -427,6 +497,7 @@ ap * apNew(const void * rgba, unsigned hotx, unsigned hoty) {
 }
 
 void apDel(ap * p) {
+        D;
         if (p->refs)
                 report("destroying referenced pointer");
         else if (pcheck(p)) {
@@ -438,8 +509,10 @@ void apDel(ap * p) {
 
 unsigned awOrder(const aw * w) {
         aw * zorder[MAX_WINDOWS];
-        unsigned n = oswOrder((osw**)zorder);
+        unsigned n;
         unsigned i = 0;
+        D;
+        n = oswOrder((osw**)zorder);
         assert(n < MAX_WINDOWS);
 #if !defined NDEBUG
         for (i = 0; i < n; i++)
@@ -622,6 +695,26 @@ const char * aeKeyName(const ae * e) {
                 snprintf(buf, sizeof(buf), "0x%x", (unsigned)k);
 	return buf;
 }
+
+void comainNew() {
+        D;
+        g_mainco = coMain(0);
+}
+
+void comainDel() {
+        D;
+        coDel(g_mainco);
+}
+
+int main(int argc, char ** argv) {
+        extern int fakemain(int, char **);
+        int ret;
+        comainNew();
+        ret = fakemain(argc, argv);
+        comainDel();
+        return ret;
+}
+
 
 /* 
    Local variables: **

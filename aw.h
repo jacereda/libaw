@@ -197,6 +197,7 @@ typedef enum {
 #endif
 
 EXPORTED ag * agNew(const char * name);
+EXPORTED void agTick(ag *);
 EXPORTED void agDel(ag *);
 EXPORTED const char * agResourcesPath(ag *);
 
@@ -243,6 +244,6 @@ EXPORTED const char * aeKeyName(const ae *);
 EXPORTED const char * aePath(const ae *);
 
 
-#if !defined BUILDING_AW && !defined _WIN32
+#if !defined BUILDING_AW
 #define main EXPORTED fakemain
 #endif

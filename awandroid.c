@@ -193,12 +193,14 @@ void android_main(struct android_app* app) {
 	while (!app->userData)
 		pollEvent(app);
 	ASSERT(app->window);
-	debug("fakemain\n");
 	g_app = app;
+	comainNew();
+	debug("fakemain\n");
 	fakemain(1, argv);
 	debug("waiting destroy");
 	while (!app->destroyRequested)
 		oswPollEvent(0);
+	comainDel();
 	debug("terminating");
 }
 
@@ -242,6 +244,7 @@ int osgInit(osg * g, const char * name) {
 	g->dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
 	ASSERT(g->dpy);
 	g->app = g_app;
+	report("g_app: %p", g->app);
 	ASSERT(g->app->window);
 	ok = eglInitialize(g->dpy, 0, 0) == EGL_TRUE;
 	getcfg(g, &cfg);
@@ -261,6 +264,10 @@ int osgInit(osg * g, const char * name) {
 	return ok;
 }
 
+void osgTick(osg * g) {
+
+}
+
 int osgTerm(osg * g) {
 	return eglTerminate(g->dpy) == EGL_TRUE;
 }
@@ -272,8 +279,11 @@ int oswSetTitle(osw * w, const char * t) {
 int oswInit(osw * w, osg * g, int x, int y, 
 	      int width, int height, int bl) {
 	EGLContext fakectx;
+	report("app %p", g->app);
 	g->app->userData = w;
+	report("surfnew");
 	w->surf = surfnew(g);
+	report("/surfnew");
 	ASSERT(w->surf);
         return w->surf != 0;
 }

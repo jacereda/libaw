@@ -48,7 +48,7 @@ def generate(env):
             'SK_RELEASE',
             ])
 
-    env.Replace(CCFLAGS='-fpic -ffunction-sections -funwind-tables -fstack-protector -Wno-psabi -march=armv5te -mtune=xscale -msoft-float -mthumb -fno-strict-aliasing -finline-limit=64   -Wa,--noexecstack ')
+    env.Replace(CCFLAGS='-fpic -ffunction-sections -funwind-tables -fstack-protector -Wno-psabi -march=armv5te -mtune=xscale -msoft-float -fno-strict-aliasing -finline-limit=64   -Wa,--noexecstack ')
     env.Append(LIBS=['log', 'android', 'EGL', 'GLESv1_CM', 'GLESv2', 'c', 'm', 'supc++'])
     env.Replace(LINKFLAGS=common + ' -Wl,-soname,${TARGET.file} -Wl,--no-undefined -Wl,-z,noexecstack ')
     env.Replace(SHLINKFLAGS=env['LINKFLAGS'])

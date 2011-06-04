@@ -4,21 +4,22 @@ aw = env.ForLib()
 aw.UsesOpenGL()
 backend = {
 'android' : 'awandroid.c ',
-'iphone' : 'awiphone.m co.c coroutine/source/Coro.c awreportfile.c tlspthread.c',
+'iphone' : 'awiphone.m awreportfile.c tlspthread.c',
 'cocoa': 'awcocoa.m awmackeycodes.c awreportconsole.c',
-'x11': 'awmain.c awx.c awx11keycodes.c awreportconsole.c',
-'nt': 'awmain.c aww.c awntkeycodes.c awntevent.c awreportconsole.c',
+'x11': 'awx.c awx11keycodes.c awreportconsole.c',
+'nt': 'aww.c awntkeycodes.c awntevent.c awreportconsole.c',
 }[aw['BACKEND']]
 
 if aw['BACKEND'] == 'android':
     backend += aw['ANDROIDNDK'] + '/sources/android/native_app_glue/android_native_app_glue.c'
 
-if backend.find('coroutine/') >= 0:
-    aw.Append(CPPPATH=['coroutine/source',])
-    aw.Append(CPPDEFINES=['USE_SETJMP',])
-
+aw.Append(CPPPATH=['coroutine/source',])
+if aw['BACKEND'] == 'nt':
+    aw.Append(CPPDEFINES=['USE_FIBERS'])
+else:
+    aw.Append(CPPDEFINES=['USE_GUESSED_SETJMP'])
 aw.Append(CPPDEFINES=['BUILDING_AW'])
-aw.Lib('aw', 'aw.c ' + backend)
+aw.Lib('aw', 'aw.c co.c coroutine/source/Coro.c ' + backend)
 
 aw.Install('include/aw', ['aw.h', 'awtypes.h', 'sysgl.h', 'sysglu.h'])
 awnpapi = env.ForNPAPI()

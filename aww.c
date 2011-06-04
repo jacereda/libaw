@@ -131,6 +131,9 @@ static DWORD __stdcall groupThread(LPVOID param) {
         return 0; 
 }
 
+void osgTick(osg * g) {
+}
+
 
 int osgInit(osg * g, const char * appname) {
         extern LRESULT CALLBACK handle(HWND win, UINT msg, WPARAM w, LPARAM l); 
