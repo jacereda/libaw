@@ -646,6 +646,9 @@ int osgTerm(osg * g) {
         return 1;
 }
 
+int main(int argc, char ** argv) {
+        return progrun(argc, argv);
+}
 
 /* 
    Local variables: **

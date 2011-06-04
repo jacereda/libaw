@@ -40,6 +40,7 @@
 #include "bit.h"
 
 static co * g_mainco;
+static co * g_progco;
 
 #if defined(_MSC_VER)
 #define snprintf _snprintf
@@ -86,15 +87,12 @@ static void agentry(void * data) {
         }
 }
 
-
 ag * agNew(const char * appname) {
         ag * g = calloc(1, sizeof(*g));
         D;
         g->name = appname;
         g->co = coNew(agentry, g);
-        D;
-        coSwitchTo(g->co);
-        D;
+        agTick(g);
         return g;
 }
 
@@ -146,7 +144,7 @@ static void drain(aw * w) {
 
 void yield() {
         D;
-        coSwitchTo(g_mainco);
+        coSwitchTo(g_progco);
 }
 
 static void awentry(void * data) {
@@ -696,25 +694,33 @@ const char * aeKeyName(const ae * e) {
 	return buf;
 }
 
-void comainNew() {
-        D;
-        g_mainco = coMain(0);
-}
 
-void comainDel() {
-        D;
-        coDel(g_mainco);
-}
 
-int main(int argc, char ** argv) {
-        extern int fakemain(int, char **);
+struct args {
+        int argc;
+        char ** argv;
         int ret;
-        comainNew();
-        ret = fakemain(argc, argv);
-        comainDel();
-        return ret;
+};
+
+static void prgentry(void * vargs) {
+        extern int fakemain(int, char **);
+        struct args * a = (struct args *)vargs;
+        a->ret = fakemain(a->argc, a->argv);
+        while (1)
+                coSwitchTo(g_mainco);
 }
 
+int progrun(int argc, char ** argv) {
+        struct args a;
+        a.argc = argc;
+        a.argv = argv;
+        g_mainco = coMain(0);
+        g_progco = coNew(prgentry, &a);
+        coSwitchTo(g_progco);
+        coDel(g_progco);
+        coDel(g_mainco);
+        return a.ret;
+}
 
 /* 
    Local variables: **

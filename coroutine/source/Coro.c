@@ -36,6 +36,7 @@
  */
 
 #include "Coro.h"
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -300,8 +301,8 @@ void Coro_setup(Coro *self, void *arg)
 end:
 	{ 
 		uintptr_t i;
-		size_t sz = sizeof(self->env)/sizeof(sav[0]);
 		uintptr_t * sav = (uintptr_t*)self->env;
+		size_t sz = sizeof(self->env)/sizeof(sav[0]);
 
 		// Try to guess PC index
 		i = sz;

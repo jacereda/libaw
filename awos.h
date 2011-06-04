@@ -102,7 +102,7 @@ int osTerm();
 void got(osw * w, int, intptr_t, intptr_t);
 void report(const char * fmt, ...);
 void yield();
-void prgmain(int argc, char ** argv);
+int progrun(int argc, char ** argv);
 #if defined NDEBUG
 static __inline void debug(const char * fmt, ...) {}
 #else
