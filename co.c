@@ -38,9 +38,10 @@ void coSwitchTo(co * next) {
 	co * curr = coCurrent();
 	g_curr = next;
 	if (next->func) {
-		Coro_startCoro_(curr->co, next->co,
-				next->data, next->func);
+		void (*func)(void*) = next->func;
 		next->func = 0;
+		Coro_startCoro_(curr->co, next->co,
+				next->data, func);
 	}
 	else
 		Coro_switchTo_(curr->co, next->co);
