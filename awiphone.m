@@ -53,8 +53,10 @@
 }
 @end
 
+static awdelegate * g_delegate;
+
 awdelegate * getDelegate() {
-	return (awdelegate*)coData(coCurrent());
+	return g_delegate;
 }
 
 static void dgot(int e, int x, int y) {
@@ -180,6 +182,7 @@ shouldChangeCharactersInRange: (NSRange)range
 
 - (void) applicationDidFinishLaunching: (UIApplication*) application 
 {
+	g_delegate = self;
         CGRect r = [[UIScreen mainScreen] bounds];
         win = [[UIWindow alloc] initWithFrame: r];
         view = [[glview alloc] initWithFrame: r];
@@ -213,7 +216,7 @@ shouldChangeCharactersInRange: (NSRange)range
         [dpylink setFrameInterval: 1];
         [dpylink addToRunLoop: [NSRunLoop currentRunLoop] 
                  forMode: NSDefaultRunLoopMode];
-	yield();
+	progrun(1, &"awapp");
 }
 
 - (void) dealloc
@@ -227,11 +230,7 @@ shouldChangeCharactersInRange: (NSRange)range
 @end
 
 int osgInit(osg * g, const char * name) {
-	static NSAutoreleasePool * pool;
-        pool = [[NSAutoreleasePool alloc] init];
-        int ret = UIApplicationMain(1, (char**)&name, nil, @"awdelegate");
-        [pool release];
-        return 1;
+	return 1;
 }
 
 void osgTick(osg * g) {
@@ -309,10 +308,16 @@ int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
 }
 
 void oswPointer(osw * w) {
-
 }
 
 unsigned oswOrder(osw ** w) {
 	return 0;
+}
+
+int main(int argc, char ** argv) {
+	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+        int ret = UIApplicationMain(argc, argv, nil, @"awdelegate");
+        [pool release];
+        return 1;
 }
 
