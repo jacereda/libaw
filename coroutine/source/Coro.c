@@ -300,8 +300,8 @@ void Coro_setup(Coro *self, void *arg)
 end:
 	{ 
 		uintptr_t i;
-		size_t sz = sizeof(self->env)/sizeof(sav[0]);
 		uintptr_t * sav = (uintptr_t*)self->env;
+		size_t sz = sizeof(self->env)/sizeof(sav[0]);
 
 		// Try to guess PC index
 		i = sz;
