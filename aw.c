@@ -39,6 +39,9 @@
 #include "awos.h"
 #include "bit.h"
 
+#define OSSTK 64*1024
+#define PROGSTK 8*1024*1024
+
 static co * g_mainco;
 static co * g_progco;
 
@@ -91,7 +94,7 @@ ag * agNew(const char * appname) {
         ag * g = calloc(1, sizeof(*g));
         D;
         g->name = appname;
-        g->co = coNew(agentry, g);
+        g->co = coNew(agentry, g, OSSTK);
         agTick(g);
         return g;
 }
@@ -170,7 +173,7 @@ static int wopen(ag * g, aw * w) {
         D;
         ok = oswInit(&w->osw, &g->osg, w->rx, w->ry, w->rw, w->rh, !w->borders);
         D;
-        w->co = coNew(awentry, w);
+        w->co = coNew(awentry, w, OSSTK);
         D;
         drain(w);
         D;
@@ -715,7 +718,7 @@ int progrun(int argc, char ** argv) {
         a.argc = argc;
         a.argv = argv;
         g_mainco = coMain(0);
-        g_progco = coNew(prgentry, &a);
+        g_progco = coNew(prgentry, &a, PROGSTK);
         coSwitchTo(g_progco);
         coDel(g_progco);
         coDel(g_mainco);
