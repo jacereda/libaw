@@ -37,6 +37,8 @@
 #include "sysgl.h"
 #include "aw.h"
 #include "awos.h"
+#include "cotypes.h"
+#include "co.h"
 #include "bit.h"
 
 #define OSSTK 64*1024

@@ -194,13 +194,8 @@ void android_main(struct android_app* app) {
 		pollEvent(app);
 	ASSERT(app->window);
 	g_app = app;
-	comainNew();
 	debug("fakemain\n");
-	fakemain(1, argv);
-	debug("waiting destroy");
-	while (!app->destroyRequested)
-		oswPollEvent(0);
-	comainDel();
+	progrun(1, argv);
 	debug("terminating");
 }
 

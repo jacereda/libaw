@@ -16,12 +16,13 @@
 #else
 #include "awx.h"
 #endif
-#include "co.h"
+
 struct _ae {
 	awcell type;
         awcell p[2];
 };
 
+#include "cotypes.h"
 typedef struct _osw osw;
 
 struct _aw {

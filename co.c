@@ -1,5 +1,6 @@
 #include <Coro.h>
 #include <stdlib.h>
+#include "cotypes.h"
 #include "co.h"
 
 struct _co {
