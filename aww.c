@@ -131,10 +131,6 @@ static DWORD __stdcall groupThread(LPVOID param) {
         return 0; 
 }
 
-void osgTick(osg * g) {
-}
-
-
 int osgInit(osg * g, const char * appname) {
         extern LRESULT CALLBACK handle(HWND win, UINT msg, WPARAM w, LPARAM l); 
         WNDCLASSW  wc;
@@ -162,6 +158,9 @@ int osgTerm(osg * g) {
         assert(ret == WAIT_OBJECT_0);
         ret = 0 != CloseHandle(g->thread);
         return ret;
+}
+
+void osgTick(osg * g) {
 }
 
 int oswInit(osw * w, osg * g, int x, int y, 
@@ -340,6 +339,10 @@ int ospTerm(osp * p) {
         SetCursor(0);
         ret = DestroyIcon(p->icon);
         return ret;
+}
+
+int main(int argc, char ** argv) {
+        return progrun(argc, argv);
 }
 
 /* 
