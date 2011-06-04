@@ -124,6 +124,9 @@ int osgTerm(osg * g) {
         return ret;
 }
 
+void osgTick(osg * g) {
+}
+
 int oswSetTitle(osw * w, const char * t) {
         return XSetStandardProperties(wgroup(w)->dpy, w->win, t, t, None,
                                       (char**)0, 0, 0);
@@ -347,6 +350,10 @@ unsigned oswOrder(osw ** w) {
 
 void oswPointer(osw * w) {
 
+}
+
+int main(int argc, char ** argv) {
+        return progrun(argc, argv);
 }
 
 /* 

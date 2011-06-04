@@ -20,10 +20,10 @@ co * coMain(void * data) {
 	return co;
 }
 
-co * coNew(void (*func)(void*), void * data) {
+co * coNew(void (*func)(void*), void * data, size_t stksz) {
 	co * co = malloc(sizeof(*co));
 	co->co = Coro_new();
-	Coro_setStackSize_(co->co, 8*1024*1024);
+	Coro_setStackSize_(co->co, stksz);
 	co->data = data;
 	co->func = func;
 	return co;
