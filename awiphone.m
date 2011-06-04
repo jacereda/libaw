@@ -53,9 +53,10 @@
 }
 @end
 
-static awdelegate * g_delegate;
+static awdelegate * g_delegate = 0;
 
 awdelegate * getDelegate() {
+	assert(g_delegate);
 	return g_delegate;
 }
 
@@ -176,12 +177,14 @@ shouldChangeCharactersInRange: (NSRange)range
 }
 
 - (void) update {
-	yield();
+	report("UPDATE");
+//	yield();
         [ctx presentRenderbuffer: GL_RENDERBUFFER_OES];
 }
 
 - (void) applicationDidFinishLaunching: (UIApplication*) application 
 {
+	char * argv[] = {"awandroid"};
 	g_delegate = self;
         CGRect r = [[UIScreen mainScreen] bounds];
         win = [[UIWindow alloc] initWithFrame: r];
@@ -216,7 +219,7 @@ shouldChangeCharactersInRange: (NSRange)range
         [dpylink setFrameInterval: 1];
         [dpylink addToRunLoop: [NSRunLoop currentRunLoop] 
                  forMode: NSDefaultRunLoopMode];
-	progrun(1, &"awapp");
+	progrun(1, argv);
 }
 
 - (void) dealloc
@@ -267,6 +270,7 @@ int oswHide(osw * w) {
 }
 
 void oswPollEvent(osw * w) {
+	
 }
 
 int oswSetSwapInterval(osw * w, int i) {
@@ -318,6 +322,6 @@ int main(int argc, char ** argv) {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
         int ret = UIApplicationMain(argc, argv, nil, @"awdelegate");
         [pool release];
-        return 1;
+        return ret;
 }
 

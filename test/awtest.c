@@ -195,6 +195,7 @@ static void setCursor2(aw * w) {
 
 static void draw() {
         static int i = 0;
+        Log("DRAW");
         glClearColor((i++ & 0xff) / 255.0f, 0.f, 1.f, 0.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glFlush();
@@ -203,7 +204,8 @@ static void draw() {
 static aw * processEvents(ag * g, aw * w, ac * c) {
         const ae * e;
         agTick(g);
-        if ((e = awNextEvent(w))) switch (aeType(e)) {
+        if ((e = awNextEvent(w))) 
+                switch (aeType(e)) {
                 case AW_EVENT_RESIZE:
                         resize(w, aeWidth(e), aeHeight(e));
                         Log("Resized to %d %d", aeWidth(e), aeHeight(e));

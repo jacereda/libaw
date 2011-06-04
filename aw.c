@@ -41,7 +41,7 @@
 #include "co.h"
 #include "bit.h"
 
-#define OSSTK 64*1024
+#define OSSTK 1024*1024
 #define PROGSTK 8*1024*1024
 
 static co * g_mainco;
@@ -411,6 +411,7 @@ void got(osw * osw, int type, intptr_t p1, intptr_t p2) {
         aw * w = (aw*)osw;
         ae * e = w->ev + w->head;
         D;
+        assert(w);
         w->head++;
         w->head %= MAX_EVENTS;
         e->type = type;
@@ -719,6 +720,7 @@ int progrun(int argc, char ** argv) {
         struct args a;
         a.argc = argc;
         a.argv = argv;
+        D;
         g_mainco = coMain(0);
         g_progco = coNew(prgentry, &a, PROGSTK);
         coSwitchTo(g_progco);
