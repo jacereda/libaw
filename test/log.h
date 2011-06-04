@@ -1,6 +1,6 @@
 #include <stdarg.h>
 #include <stdio.h>
-#if defined AWPLUGIN
+#if defined AWPLUGIN || defined __IPHONE_OS_VERSION_MIN_REQUIRED
 extern void report(const char * fmt, ...);
 #define Log report
 #else
