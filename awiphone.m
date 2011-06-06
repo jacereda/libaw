@@ -230,7 +230,6 @@ shouldChangeCharactersInRange: (NSRange)range
                      (CAEAGLLayer *) [view layer]];
         dpylink = [CADisplayLink displayLinkWithTarget: self
                                  selector: @selector(update)];
-        [dpylink setFrameInterval: 1];
         [dpylink addToRunLoop: [NSRunLoop currentRunLoop] 
                  forMode: NSDefaultRunLoopMode];
 }
@@ -287,6 +286,7 @@ void oswPollEvent(osw * w) {
 }
 
 int oswSetSwapInterval(osw * w, int i) {
+        [getDelegate()->dpylink setFrameInterval: i];
         return 1;
 }
 
