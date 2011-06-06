@@ -226,6 +226,10 @@ EXPORTED void * awUserData(const aw * w);
 EXPORTED void awSetInterval(aw *, int);
 EXPORTED void awPointer(aw *, ap *);
 
+EXPORTED void awShowKeyboard(aw *);
+EXPORTED void awHideKeyboard(aw *);
+
+
 EXPORTED ac * acNew(ag * g, ac *);
 EXPORTED ac * acNewStereo(ag * g, ac *);
 EXPORTED void acDel(ac *);
@@ -242,6 +246,7 @@ EXPORTED int aeX(const ae *);
 EXPORTED int aeY(const ae *);
 EXPORTED const char * aeKeyName(const ae *);
 EXPORTED const char * aePath(const ae *);
+
 
 
 #if !defined BUILDING_AW

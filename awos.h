@@ -87,6 +87,8 @@ int oswMaximize(osw *);
 int oswGeometry(osw *, int, int, unsigned, unsigned);
 void oswPointer(osw *);
 unsigned oswOrder(osw **);
+int oswShowKeyboard(osw *);
+int oswHideKeyboard(osw *);
 
 int oscInit(osc *, osg *, osc *);
 int oscTerm(osc *);

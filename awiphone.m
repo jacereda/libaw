@@ -42,15 +42,18 @@
 @interface glview : UIView {}
 @end
 
+@interface textfield : UITextField {}
+@end
+
 @interface delegate : NSObject <UIApplicationDelegate, UITextFieldDelegate> {
         UIWindow * win;
-        glview* view; 
+        glview * view; 
         EAGLContext * ctx;
-        CADisplayLink * dpylink;
 	UITextField * tf;
         osc * c;
 @public
         osw * w;
+        CADisplayLink * dpylink;
 }
 
 - (void) update;
@@ -186,7 +189,19 @@ shouldChangeCharactersInRange: (NSRange)range
 	return NO;
 }
 
-- (void) update {
+- (void)showKeyboard {
+	report("showing");
+	[tf becomeFirstResponder];
+	[tf setHidden: NO];
+}
+
+- (void)hideKeyboard {
+	report("hiding");
+	[tf setHidden: YES];
+	[tf resignFirstResponder];	
+}
+
+- (void)update {
 	if (w) {
 		w->swapped = 0;
 		while (!w->swapped && !progfinished())
@@ -197,37 +212,50 @@ shouldChangeCharactersInRange: (NSRange)range
 		dispatch();
 }
 
-- (void) applicationDidFinishLaunching: (UIApplication*) application 
-{
-	g_delegate = self;
+- (void) clearCurrent {
+	[EAGLContext setCurrentContext: nil];	
+}
+
+- (void) makeCurrent {
+	[ctx renderbufferStorage: GL_RENDERBUFFER_OES 
+		    fromDrawable: (CAEAGLLayer *) [view layer]];
+	[EAGLContext setCurrentContext: ctx];
+}
+
+- (void) initWindow {
         CGRect r = [[UIScreen mainScreen] bounds];
         win = [[UIWindow alloc] initWithFrame: r];
         view = [[glview alloc] initWithFrame: r];
-	tf = [[UITextField alloc] initWithFrame: r];
-	[tf becomeFirstResponder];
+	tf = [[UITextField alloc] initWithFrame: CGRectMake(0,0,0,0)];
 	[tf setDelegate: self];
 	[tf setAutocapitalizationType: UITextAutocapitalizationTypeNone];
 	[tf setAutocorrectionType: UITextAutocorrectionTypeNo];
 	[tf setEnablesReturnKeyAutomatically: NO];
 	[tf setText: @" "];
 	[tf setHidden: YES];
-        [win makeKeyAndVisible]; 
-        [win addSubview: view]; 
+        [win makeKeyAndVisible];
+        [win addSubview: view];
 	[win addSubview: tf];
+}
+
+-(void) initContext {
         ctx = [[EAGLContext alloc] initWithAPI: kEAGLRenderingAPIOpenGLES2];
-        [EAGLContext setCurrentContext: ctx];
-        GLuint cb;
-        GLuint fb;
-        glGenFramebuffersOES(1, &fb);
-        glGenRenderbuffersOES(1, &cb);
-        glBindFramebufferOES(GL_FRAMEBUFFER_OES, fb);
-        glBindRenderbufferOES(GL_RENDERBUFFER_OES , cb);
-        glFramebufferRenderbufferOES(GL_FRAMEBUFFER_OES, 
-                                     GL_COLOR_ATTACHMENT0_OES, 
-                                     GL_RENDERBUFFER_OES, 
-                                     cb);
-        [ctx renderbufferStorage: GL_RENDERBUFFER_OES fromDrawable:
-                     (CAEAGLLayer *) [view layer]];
+	[EAGLContext setCurrentContext: ctx];
+	GLuint cb, fb;
+	glGenFramebuffersOES(1, &fb);
+	glGenRenderbuffersOES(1, &cb);
+	glBindFramebufferOES(GL_FRAMEBUFFER_OES, fb);
+	glBindRenderbufferOES(GL_RENDERBUFFER_OES , cb);
+	glFramebufferRenderbufferOES(GL_FRAMEBUFFER_OES, 
+				     GL_COLOR_ATTACHMENT0_OES, 
+				     GL_RENDERBUFFER_OES, 
+				     cb);
+	[self clearCurrent];
+}
+
+- (void) applicationDidFinishLaunching: (UIApplication*) application 
+{
+	g_delegate = self;
         dpylink = [CADisplayLink displayLinkWithTarget: self
                                  selector: @selector(update)];
         [dpylink addToRunLoop: [NSRunLoop currentRunLoop] 
@@ -242,6 +270,7 @@ shouldChangeCharactersInRange: (NSRange)range
         [ctx release];
         [super dealloc];
 }
+
 @end
 
 int osgInit(osg * g, const char * name) {
@@ -262,6 +291,7 @@ int oswSetTitle(osw * w, const char * t) {
 int oswInit(osw * w, osg * g, int x, int y, 
 	      int width, int height, int bl) {
         getDelegate()->w = w;
+	[getDelegate() initWindow];
 	return 1;
 }
 
@@ -291,14 +321,17 @@ int oswSetSwapInterval(osw * w, int i) {
 }
 
 int oswClearCurrent(osw * w) {
+	[getDelegate() clearCurrent];	
         return 1;
 }
 
 int oswMakeCurrent(osw * w, osc * c) {
+	[getDelegate() makeCurrent];
         return 1;
 }
 
 int oscInit(osc * c, osg * g, osc * share) {
+	[getDelegate() initContext];
         return 1;
 }
 
@@ -331,15 +364,24 @@ unsigned oswOrder(osw ** w) {
 	return 0;
 }
 
+int oswShowKeyboard(osw * w) {
+	[getDelegate() showKeyboard];
+	return 1;
+}
+
+int oswHideKeyboard(osw * w) {
+	[getDelegate() hideKeyboard];
+	return 1;
+}
+
+
 int main(int argc, char ** argv) {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
 	int ret;
 	progrun(argc, argv);
         UIApplicationMain(argc, argv, nil, @"delegate");
-	report("terminating!!");
 	ret = progterm();
         [pool release];
-	report("SUCCESS!!");
         return ret;
 }
 
