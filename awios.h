@@ -1,5 +1,5 @@
 struct _osw {
-	int dummy;
+	int swapped;
 };
 
 struct _osc {

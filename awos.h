@@ -32,7 +32,6 @@ struct _aw {
         ap * pointer;
         void * user;
         ae * last;
-        co * co;
         ae ev[MAX_EVENTS];
         unsigned interval;
         unsigned char pressed[MAX_PRESSED/8];
@@ -50,7 +49,6 @@ typedef struct _osg osg;
 
 struct _ag {
         osg osg; // must be first
-        co * co;
         const char * name;
 };
 
@@ -102,8 +100,10 @@ int osTerm();
 // Defined in the frontend
 void got(osw * w, int, intptr_t, intptr_t);
 void report(const char * fmt, ...);
-void yield();
-int progrun(int argc, char ** argv);
+void progrun(int argc, char ** argv);
+int progfinished();
+int progterm();
+void dispatch();
 #if defined NDEBUG
 static __inline void debug(const char * fmt, ...) {}
 #else

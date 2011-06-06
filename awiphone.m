@@ -177,14 +177,19 @@ shouldChangeCharactersInRange: (NSRange)range
 }
 
 - (void) update {
-	report("UPDATE");
-//	yield();
-        [ctx presentRenderbuffer: GL_RENDERBUFFER_OES];
+	if (w) {
+		w->swapped = 0;
+		while (!w->swapped)
+			dispatch();
+		[ctx presentRenderbuffer: GL_RENDERBUFFER_OES];
+	}
+	else
+		dispatch();
 }
 
 - (void) applicationDidFinishLaunching: (UIApplication*) application 
 {
-	char * argv[] = {"awandroid"};
+	char * argv[] = {"awios"};
 	g_delegate = self;
         CGRect r = [[UIScreen mainScreen] bounds];
         win = [[UIWindow alloc] initWithFrame: r];
@@ -258,6 +263,7 @@ int oswTerm(osw * w) {
 }
 
 int oswSwapBuffers(osw * w) {
+	w->swapped = 1;
         return 1;
 }
 
@@ -270,7 +276,6 @@ int oswHide(osw * w) {
 }
 
 void oswPollEvent(osw * w) {
-	
 }
 
 int oswSetSwapInterval(osw * w, int i) {

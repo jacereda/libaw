@@ -196,7 +196,11 @@ void android_main(struct android_app* app) {
 	g_app = app;
 	debug("fakemain\n");
 	progrun(1, argv);
+	while (!progfinished())
+		dispatch();
 	debug("terminating");
+	progterm();
+	debug("terminated");
 }
 
 static void getcfg(osg * g, EGLConfig * cfg) {

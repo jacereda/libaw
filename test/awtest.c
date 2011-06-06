@@ -195,7 +195,6 @@ static void setCursor2(aw * w) {
 
 static void draw() {
         static int i = 0;
-        Log("DRAW");
         glClearColor((i++ & 0xff) / 255.0f, 0.f, 1.f, 0.f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glFlush();
