@@ -6,15 +6,15 @@
 #define MAX_PRESSED 256
 
 #if defined _WIN32
-#include "aww.h"
+#  include "aww.h"
 #elif defined __ANDROID__
-#include "awandroid.h"
+#  include "awandroid.h"
 #elif defined __IPHONE_OS_VERSION_MIN_REQUIRED
-#include "awios.h"
+#  include "awios.h"
 #elif defined __APPLE__
-#include "awcocoa.h"
+#  include "awcocoa.h"
 #else
-#include "awx.h"
+#  include "awx.h"
 #endif
 
 struct _ae {
