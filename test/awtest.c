@@ -235,6 +235,16 @@ static aw * processEvents(ag * g, aw * w, ac * c) {
                         } break;
                         case  AW_KEY_Q: 
                                 g_exit = 1; break;
+                        case AW_KEY_MOUSELEFT:
+                                if (awMouseX(w) < 80 && awMouseY(w) < 80) {
+                                        static int shown = 0;
+                                        if (shown)
+                                                awHideKeyboard(w);
+                                        else
+                                                awShowKeyboard(w);
+                                        shown = !shown;
+                                }
+                                break;
                         default: break;
                         }
                         break;

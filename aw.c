@@ -545,6 +545,16 @@ int awReleased(const aw * w, awkey k) {
         return ba && !bittest(ba, k) && bittest(pba, k);
 }
 
+void awShowKeyboard(aw * w) {
+        if (!oswShowKeyboard(&w->osw))
+                unable("show keyboard");
+}
+
+void awHideKeyboard(aw * w) {
+        if (!oswHideKeyboard(&w->osw))
+                unable("hide keyboard");
+}
+
 void got(osw * osw, int type, intptr_t p1, intptr_t p2) {
         aw * w = (aw*)osw;
         ae * e = w->ev + w->head;
@@ -759,7 +769,6 @@ const char * aeKeyName(const ae * e) {
 	case AW_KEY_MOUSELEFT: n = "MOUSELEFT"; break;
 	case AW_KEY_MOUSEMIDDLE: n = "MOUSEMIDDLE"; break;
 	case AW_KEY_MOUSERIGHT: n = "MOUSERIGHT"; break;
-
 	case AW_KEY_A: n = "A"; break;
 	case AW_KEY_S: n = "S"; break;
 	case AW_KEY_D: n = "D"; break;
