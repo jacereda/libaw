@@ -35,7 +35,6 @@
 #include <Foundation/NSArray.h>
 #include <Foundation/NSRunLoop.h>
 #include <Foundation/NSNotification.h>
-//#include <AppKit/NSApplication.h>
 #include <AppKit/NSApplicationScripting.h>
 #include <AppKit/NSScreen.h>
 #include <AppKit/NSWindow.h>
@@ -101,14 +100,31 @@ static NSCursor * currentCursor(osw * w) {
 }
 
 @implementation AppDelegate
-- (BOOL)applicationShouldTerminateAfterLastWindowClosed:
-        (NSApplication *)sender {
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed: (NSApplication *)a {
         return NO;
+}
+
+- (void)timerFired: (id)s {
+        dispatch();
+        if (progfinished())
+                [NSApp terminate: nil];
+}
+
+- (void)applicationDidFinishLaunching: (NSNotification *)n {
+        NSTimer * t = [NSTimer timerWithTimeInterval: 0.001
+                                              target: self
+                                            selector: @selector(timerFired:)
+                                            userInfo: nil
+                                             repeats: YES];
+        [[NSRunLoop currentRunLoop] addTimer: t
+                                     forMode: NSDefaultRunLoopMode];
+        //Ensure timer fires during resize        
+        [[NSRunLoop currentRunLoop] addTimer: t
+                                     forMode: NSEventTrackingRunLoopMode];
 }
 @end
 
 @implementation View
-//- (void) display {}
 
 - (void) dealloc {
         _w->_vfreed = 1;
@@ -330,10 +346,19 @@ extern unsigned mapkeycode(unsigned);
         return YES;
 }
 
+- (void)display {
+        assert(0);
+}
+
+- (void)drawRect:(NSRect)dirtyRect {
+        assert(0);
+}
+
+- (BOOL)canDraw { return NO; }
+
 @end
 
 @implementation Window
-//- (void) display {}
 
 - (void) dealloc {
         _w->_wfreed = 1;
@@ -349,6 +374,11 @@ extern unsigned mapkeycode(unsigned);
 {
         return NO;
 }
+
+- (void)display {
+        assert(0);
+}
+
 @end
 
 int oswSetTitle(osw * w, const char * t) {
@@ -383,9 +413,7 @@ static void openwin(osw * w, int x, int y,
 
         [win setAcceptsMouseMovedEvents: YES];
         [win setReleasedWhenClosed: NO];
-//        [win setAutodisplay: NO];
         [view updateTrackingAreas];
-
 }
 
 int oswInit(osw * w, osg * g, int x, int y, 
@@ -405,37 +433,15 @@ int oswInit(osw * w, osg * g, int x, int y,
         return 1;
 }
 
-static NSEvent * nextEventUntil(id win, NSDate * until) {
-        return [win nextEventMatchingMask: NSAnyEventMask 
-                    untilDate: until
-                    inMode: NSDefaultRunLoopMode 
-                    dequeue: YES];
-}
-
-static NSEvent * pumpEvent(id win, NSDate * until) {
-        NSEvent * ev = nextEventUntil(win, until);
-        [NSApp sendEvent: ev];
-        [NSApp updateWindows];
-        return ev;
-}
-
 int oswTerm(osw * w) {
         [w->win makeKeyAndOrderFront: nil];
         [w->win makeFirstResponder: nil];
         [w->win setDelegate: nil];
         [w->win setContentView: nil];
-        while(pumpEvent(NSApp, [NSDate distantPast]))
-                ;
         [w->win close];
-        while(pumpEvent(NSApp, [NSDate distantPast]))
-                ;
         [w->win release];
         [w->view release];
-        while(pumpEvent(NSApp, [NSDate distantPast]))
-                ;
         [w->defcur release];
-//        assert(w->_wfreed);
-//        assert(w->_vfreed);
         return 1;
 }
 
@@ -456,8 +462,6 @@ int oswHide(osw * w) {
 }
 
 void oswPollEvent(osw * w) {
-        pumpEvent(w->win, [NSDate distantPast]);
-        //pumpEvent(NSApp, [NSDate distantPast]);
 }
 
 int oswSetSwapInterval(osw * w, int i) {
@@ -468,7 +472,6 @@ int oswSetSwapInterval(osw * w, int i) {
 
 int oswClearCurrent(osw * w) {
         glFlush();
-        [wcontext(w)->ctx clearDrawable];
         [NSOpenGLContext clearCurrentContext];
         return 1;
 }
@@ -487,7 +490,7 @@ int oswMaximize(osw * w) {
 int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
         NSRect r = NSMakeRect(x, reversed(y + height - 1), width, height);
         NSRect fr = [w->win frameRectForContentRect: r];
-        [w->win setFrame: fr display: YES];
+        [w->win setFrame: fr display: NO];
         return 1;
 }
 
@@ -586,29 +589,29 @@ void osgTick(osg * g) {
 }
 
 int osgInit(osg * g, const char * name) {
-        ProcessSerialNumber psn = { 0, kCurrentProcess };
-        TransformProcessType(&psn, kProcessTransformToForegroundApplication);
-        SetFrontProcess(&psn);
-        NSApp = [NSApplication sharedApplication];
-        [NSApp setDelegate: [[AppDelegate alloc] init]];
-        [NSApp finishLaunching];
-        [NSApp activateIgnoringOtherApps: YES];
-//        [NSApp setWindowsNeedUpdate: NO];
         return 1;
 }
 
 int osgTerm(osg * g) {
-        [NSApp release]; // ???
         return 1;
 }
 
 int main(int argc, char ** argv) {
         int ret;
-        NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+        NSAutoreleasePool * pool;
+        NSApplication * NSApp;
+        ProcessSerialNumber psn = { 0, kCurrentProcess };
+        TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+        SetFrontProcess(&psn);
+        pool = [[NSAutoreleasePool alloc] init];
+        NSApp = [NSApplication sharedApplication];
+        [NSApp setDelegate: [[AppDelegate alloc] init]];
+        [NSApp finishLaunching];
+        [NSApp activateIgnoringOtherApps: YES];
         progrun(argc, argv);
-        while (!progfinished())
-                dispatch();
+        [NSApp run];
         ret = progterm();
+        [NSApp release];
         [pool release];
         return ret;
 }
