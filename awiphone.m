@@ -41,21 +41,24 @@
 
 @interface glview : UIView {}
 @end
-@interface awdelegate : NSObject <UIApplicationDelegate, UITextFieldDelegate> {
+
+@interface delegate : NSObject <UIApplicationDelegate, UITextFieldDelegate> {
         UIWindow * win;
         glview* view; 
         EAGLContext * ctx;
         CADisplayLink * dpylink;
 	UITextField * tf;
+        osc * c;
 @public
         osw * w;
-        osc * c;
 }
+
+- (void) update;
 @end
 
-static awdelegate * g_delegate = 0;
+static delegate * g_delegate = 0;
 
-awdelegate * getDelegate() {
+delegate * getDelegate() {
 	assert(g_delegate);
 	return g_delegate;
 }
@@ -158,7 +161,14 @@ static void fakekey(unsigned unicode) {
 
 @end
 
-@implementation awdelegate
+@implementation delegate
+
+- (void) applicationWillTerminate: (UIApplication*) a {
+	dgot(AW_EVENT_CLOSE, 0, 0);
+	while (!progfinished())
+		[self update];
+}
+
 - (BOOL) textField: (UITextField *)tf 
 shouldChangeCharactersInRange: (NSRange)range 
  replacementString: (NSString *)s {
@@ -179,7 +189,7 @@ shouldChangeCharactersInRange: (NSRange)range
 - (void) update {
 	if (w) {
 		w->swapped = 0;
-		while (!w->swapped)
+		while (!w->swapped && !progfinished())
 			dispatch();
 		[ctx presentRenderbuffer: GL_RENDERBUFFER_OES];
 	}
@@ -189,7 +199,6 @@ shouldChangeCharactersInRange: (NSRange)range
 
 - (void) applicationDidFinishLaunching: (UIApplication*) application 
 {
-	char * argv[] = {"awios"};
 	g_delegate = self;
         CGRect r = [[UIScreen mainScreen] bounds];
         win = [[UIWindow alloc] initWithFrame: r];
@@ -224,7 +233,6 @@ shouldChangeCharactersInRange: (NSRange)range
         [dpylink setFrameInterval: 1];
         [dpylink addToRunLoop: [NSRunLoop currentRunLoop] 
                  forMode: NSDefaultRunLoopMode];
-	progrun(1, argv);
 }
 
 - (void) dealloc
@@ -325,8 +333,13 @@ unsigned oswOrder(osw ** w) {
 
 int main(int argc, char ** argv) {
 	NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
-        int ret = UIApplicationMain(argc, argv, nil, @"awdelegate");
+	int ret;
+	progrun(argc, argv);
+        UIApplicationMain(argc, argv, nil, @"delegate");
+	report("terminating!!");
+	ret = progterm();
         [pool release];
+	report("SUCCESS!!");
         return ret;
 }
 

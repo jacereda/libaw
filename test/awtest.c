@@ -298,6 +298,7 @@ int main(int argc, char ** argv) {
         acDel(c);
         awDel(w);
         agDel(g);
+        Log("leaving");
         return 0;
 }
 
