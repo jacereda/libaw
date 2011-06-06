@@ -78,12 +78,6 @@
 @end
 
 
-#define PROLOGUE                                                        \
-        NSAutoreleasePool * __arp = [[NSAutoreleasePool alloc] init]
-
-#define EPILOGUE                                \
-        [__arp release]
-
 static int reversed(int y) {
         NSSize ss = [[NSScreen mainScreen] frame].size;
         return ss.height - y - 1;
@@ -358,11 +352,9 @@ extern unsigned mapkeycode(unsigned);
 @end
 
 int oswSetTitle(osw * w, const char * t) {
-        PROLOGUE;
         NSString * s = [[NSString alloc] initWithUTF8String: t];
         [w->win setTitle: s];
         [s release];
-        EPILOGUE;
         return 1;
 }
 
@@ -398,7 +390,6 @@ static void openwin(osw * w, int x, int y,
 
 int oswInit(osw * w, osg * g, int x, int y, 
             int width, int height, int bl) {
-        PROLOGUE;
         unsigned style = 0;
         if (!bl) {
                 style += 0
@@ -411,7 +402,6 @@ int oswInit(osw * w, osg * g, int x, int y,
         openwin(w, x, y, width, height, style);
         if (bl)
                 [w->win setLevel: NSPopUpMenuWindowLevel];
-        EPILOGUE;
         return 1;
 }
 
@@ -430,7 +420,6 @@ static NSEvent * pumpEvent(id win, NSDate * until) {
 }
 
 int oswTerm(osw * w) {
-        PROLOGUE;
         [w->win makeKeyAndOrderFront: nil];
         [w->win makeFirstResponder: nil];
         [w->win setDelegate: nil];
@@ -445,63 +434,48 @@ int oswTerm(osw * w) {
         while(pumpEvent(NSApp, [NSDate distantPast]))
                 ;
         [w->defcur release];
-        EPILOGUE;
 //        assert(w->_wfreed);
 //        assert(w->_vfreed);
         return 1;
 }
 
 int oswSwapBuffers(osw * w) {
-        PROLOGUE;
         glFlush();
         [wcontext(w)->ctx flushBuffer];
-        EPILOGUE;
         return 1;
 }
 
 int oswShow(osw * w) {
-        PROLOGUE;
         [w->win makeKeyAndOrderFront: w->view];
-        EPILOGUE;
         return 1;
 }
 
 int oswHide(osw * w) {
-        PROLOGUE;
         [w->win orderOut: nil];
-        EPILOGUE;
         return 1;
 }
 
 void oswPollEvent(osw * w) {
-        PROLOGUE;
         pumpEvent(w->win, [NSDate distantPast]);
         //pumpEvent(NSApp, [NSDate distantPast]);
-        EPILOGUE;
 }
 
 int oswSetSwapInterval(osw * w, int i) {
-        PROLOGUE;
         GLint param = i;
         [wcontext(w)->ctx setValues:&param forParameter:NSOpenGLCPSwapInterval];
-        EPILOGUE;
         return 1;
 }
 
 int oswClearCurrent(osw * w) {
-        PROLOGUE;
         glFlush();
         [wcontext(w)->ctx clearDrawable];
         [NSOpenGLContext clearCurrentContext];
-        EPILOGUE;
         return 1;
 }
 
 int oswMakeCurrent(osw * w, osc * c) {
-        PROLOGUE;
         [c->ctx setView: [w->win contentView]];
         [c->ctx makeCurrentContext];
-        EPILOGUE;
         return 1;
 }
 
@@ -511,34 +485,27 @@ int oswMaximize(osw * w) {
 }
 
 int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
-        PROLOGUE;
         NSRect r = NSMakeRect(x, reversed(y + height - 1), width, height);
         NSRect fr = [w->win frameRectForContentRect: r];
         [w->win setFrame: fr display: YES];
-        EPILOGUE;
         return 1;
 }
 
 void oswPointer(osw * w) {
-        PROLOGUE;
         [w->view establishCursor];
-        EPILOGUE;
 }
 
 unsigned oswOrder(osw ** order) {
-        PROLOGUE;
         NSArray * wins;
         wins = [NSApp orderedWindows];
         unsigned n = [wins count];
         unsigned i;
         for (i = 0; i < n; i++)
                 order[i] = ((Window*)[wins objectAtIndex: i])->_w;
-        EPILOGUE;
         return n;
 }
 
 int oscInit(osc * c, osg * g, osc * share) {
-        PROLOGUE;
         int st = 0; // XXX
         NSOpenGLContext *ctx = 0;
         CGDirectDisplayID dpy = kCGDirectMainDisplay;
@@ -567,7 +534,6 @@ int oscInit(osc * c, osg * g, osc * share) {
                               shareContext: share? share->ctx : 0];
         [fmt release];
         c->ctx = ctx;
-        EPILOGUE;
         return ctx != 0;
 }
 
@@ -580,9 +546,7 @@ void * oscCurrentContext() {
 }
 
 int oscTerm(osc * c) {
-        PROLOGUE;
         [c->ctx release];
-        EPILOGUE;
         return 1;
 }
 
@@ -590,7 +554,6 @@ int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
         NSBitmapImageRep * b;
         NSImage * img;
         uint8_t * planes[1];
-        PROLOGUE;
         memcpy(p->rgba, rgba, sizeof(p->rgba));
         planes[0] = p->rgba;
         b = [[NSBitmapImageRep alloc]
@@ -611,14 +574,11 @@ int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
         p->cur = [[NSCursor alloc] initWithImage: img 
                                          hotSpot: NSMakePoint(hotx, hoty)];
         [img release];
-        EPILOGUE;
         return p->cur != 0;
 }
 
 int ospTerm(osp * p) {
-        PROLOGUE;
         [p->cur release];
-        EPILOGUE;
         return 1;
 }
 
@@ -626,7 +586,6 @@ void osgTick(osg * g) {
 }
 
 int osgInit(osg * g, const char * name) {
-        PROLOGUE;
         ProcessSerialNumber psn = { 0, kCurrentProcess };
         TransformProcessType(&psn, kProcessTransformToForegroundApplication);
         SetFrontProcess(&psn);
@@ -635,19 +594,23 @@ int osgInit(osg * g, const char * name) {
         [NSApp finishLaunching];
         [NSApp activateIgnoringOtherApps: YES];
 //        [NSApp setWindowsNeedUpdate: NO];
-        EPILOGUE;
         return 1;
 }
 
 int osgTerm(osg * g) {
-        PROLOGUE;
         [NSApp release]; // ???
-        EPILOGUE;
         return 1;
 }
 
 int main(int argc, char ** argv) {
-        return progrun(argc, argv);
+        int ret;
+        NSAutoreleasePool * pool = [[NSAutoreleasePool alloc] init];
+        progrun(argc, argv);
+        while (!progfinished())
+                dispatch();
+        ret = progterm();
+        [pool release];
+        return ret;
 }
 
 /* 

@@ -44,8 +44,9 @@ void coSwitchTo(co * next) {
 		Coro_startCoro_(curr->co, next->co,
 				next->data, func);
 	}
-	else
+	else {
 		Coro_switchTo_(curr->co, next->co);
+	}
 }
 
 co * coCurrent() {
@@ -54,4 +55,8 @@ co * coCurrent() {
 
 void * coData(co * co) {
 	return co->data;
+}
+
+void coSetData(co * co, void * data) {
+	co->data = data;
 }

@@ -41,7 +41,6 @@
 #include "co.h"
 #include "bit.h"
 
-#define OSSTK 1024*1024
 #define PROGSTK 8*1024*1024
 
 static co * g_mainco;
@@ -51,8 +50,36 @@ static co * g_progco;
 #define snprintf _snprintf
 #endif
 
-#define D report(__func__)
-//#define D 
+static const char * coname(const co * c) {
+        const char * n;
+        if (c == g_mainco)
+                n = "main";
+        else if (c == g_progco)
+                n = "prog";
+        else
+                n = "other";
+        return n;
+}
+
+static void dbg(const char * func) {
+        report("%s:%s", coname(coCurrent()), func);
+}
+
+static void unable(const char * s) {
+        report("unable to %s", s);
+}
+
+static void switchTo(co * c) {
+//        report("%s:switch to %s", coname(coCurrent()), coname(c));
+        if (c != coCurrent()) {
+        assert(c != coCurrent());
+        coSwitchTo(c);
+        }
+//        report("%s:back to %s", coname(coCurrent()), coname(coCurrent()));
+}
+
+//#define D dbg(__func__)
+#define D 
 
 static int gcheck(const ag * g) {
         if (!g)
@@ -78,237 +105,122 @@ static int pcheck(const ap * p) {
         return p != 0;
 }
 
-static void agentry(void * data) {
-        ag * g = (ag*)data;
-        int ok;
+typedef struct _req {
+        intptr_t (*f)();
+        intptr_t a0;
+        intptr_t a1;
+        intptr_t a2;
+        intptr_t a3;
+        intptr_t a4;
+        intptr_t a5;
+        intptr_t ret;
+} req;
+
+void dispatch() {
+        req * r;
         D;
-        ok = osgInit(&g->osg, g->name);
-        g->name = 0;
-        assert(ok);
-        while (1) {
-                D;
-                yield();
-                osgTick(&g->osg);
+        switchTo(g_progco);
+        if (!progfinished()) {
+                r = coData(coCurrent());
+                if (r->f) 
+                        r->ret = r->f(r->a0, r->a1, r->a2, r->a3, r->a4, r->a5);
+                r->f = 0;
         }
 }
 
-ag * agNew(const char * appname) {
+static intptr_t cmd(req * r) {
+        coSetData(g_mainco, r);
+        switchTo(g_mainco);
+        return r->ret;
+}
+
+static void * agnew(const char * name) {
         ag * g = calloc(1, sizeof(*g));
-        D;
-        g->name = appname;
-        g->co = coNew(agentry, g, OSSTK);
-        agTick(g);
+        osgInit(&g->osg, name);
         return g;
 }
 
-void agTick(ag * g) {
+ag * agNew(const char * name) {
+        req r;
         D;
-        coSwitchTo(g->co);
+        r.f = agnew;
+        r.a0 = name;
+        return cmd(&r);
 }
 
-void agDel(ag * g) {
+void agTick(ag * g) {
+}
+
+static void * agdel(ag * g) {
         D;
         if (gcheck(g)) {
                 if (!osgTerm(&g->osg))
-                        report("deleting group");
-                coDel(g->co);
+                        unable("delege group");
                 free(g);
         }
+        return 0;
 }
 
-void awShow(aw * w) {
+void agDel(ag * g) {
+        req r;
+        D;
+        r.f = agdel;
+        r.a0 = g;
+        return cmd(&r);
+}
+
+static void * awshow(void * data) {
+        aw * w = (aw*)data;
         D;
         if (wcheck(w)) {
                 if (!oswShow(&w->osw))
-                        report("Unable to show window");
+                        unable("show window");
                 else
                         w->shown = 1;
         }
+        return 0;
 }
 
-void awHide(aw * w) {
+void awShow(aw * w) {
+        req r;
+        D;
+        r.f = awshow;
+        r.a0 = w;
+        cmd(&r);
+}
+
+static void * awhide(void * data) {
+        aw * w = (aw*)data;
         D;
         if (wcheck(w)) {
                 if (!oswHide(&w->osw))
-                        report("Unable to hide window");
+                        unable("hide window");
                 else
                         w->shown = 0;
         }
+        return 0;
+}
+
+void awHide(aw * w) {
+        req r;
+        D;
+        r.f = awhide;
+        r.a0 = w;
+        cmd(&r);
+}
+
+static void awsettitle(aw * w, const char * t) {
+        if (wcheck(w) && !w->maximized && !oswSetTitle(&w->osw, t))
+                unable("set window title");
 }
 
 void awSetTitle(aw * w, const char * t) {
+        req r;
         D;
-        if (wcheck(w) && !w->maximized && !oswSetTitle(&w->osw, t))
-                report("Unable to set window title");
-}
-
-static void drain(aw * w) {
-        while (awNextEvent(w))
-                ;
-}
-
-void yield() {
-        D;
-        coSwitchTo(g_progco);
-}
-
-static void awentry(void * data) {
-        aw * w = (aw*)data;
-        while (1) {
-                D;
-                yield();
-                oswPollEvent(&w->osw);
-        }
-}
-
-#define BADPOS 123
-#define BADSIZE 17
-
-static int wopen(ag * g, aw * w) {
-        int ok;
-        D;
-        memset(&w->osw, 0, sizeof(w->osw));
-        w->g = g;
-        w->last = w->ev;
-        w->last->type = AW_EVENT_NONE;
-        w->head = w->tail = 0;
-        D;
-        ok = oswInit(&w->osw, &g->osg, w->rx, w->ry, w->rw, w->rh, !w->borders);
-        D;
-        w->co = coNew(awentry, w, OSSTK);
-        D;
-        drain(w);
-        D;
-        // horrible hack to workaround lack of notifications in Cocoa
-        oswGeometry(&w->osw, w->rx+1, w->ry+1, w->rw+1, w->rh+1);
-        D;
-        drain(w);
-        if (!ok)
-                report("Unable to open window");
-        return ok;
-}
-
-static void wclose(aw * w) {
-        awPointer(w, 0);
-        if (w->ctx)
-                oswClearCurrent(&w->osw);
-        oswHide(&w->osw);
-        drain(w);
-        if (!oswTerm(&w->osw))
-                report("Unable to close window");
-        coDel(w->co); w->co = 0;
-        memset(&w->osw, 0, sizeof(w->osw));
-}
-
-static int wreopen(aw * w) {
-        int ok;
-        ac * c = w->ctx;
-        wclose(w);
-        w->ctx = 0;
-        ok = wopen(w->g, w);
-        w->ctx = c;
-        if (w->ctx)
-                oswMakeCurrent(&w->osw, &w->ctx->osc);
-        drain(w);
-        if (w->maximized)
-                oswMaximize(&w->osw);
-        else
-                oswGeometry(&w->osw, w->rx, w->ry, w->rw, w->rh);
-        if (w->shown)
-                oswShow(&w->osw);
-//        filterBad(w);
-        return ok;
-}
-
-aw * awNew(ag * g) { 
-        aw * w = calloc(1, sizeof(*w));
-        int ok;
-        D;
-        w->rx = 31;
-        w->ry = 31;
-        w->rw = 31;
-        w->rh = 31;
-        w->borders = 1;
-        ok = wopen(g, w);
-        if (!ok) {
-                free(w);
-                w = 0;
-        }
-        return w;
-}
-
-void awDel(aw * w) {  
-        D;
-        if (wcheck(w)) {
-                if (w->pointer) 
-                        report("Closing window with cursor established");
-                if (w->ctx) 
-                        report("Closing window with active context");
-                wclose(w);
-        }
-}
-
-void awShowBorders(aw * w) {
-        D;
-        if (wcheck(w)) {
-                w->borders = 1;
-                wreopen(w);
-        }
-}
-
-void awHideBorders(aw * w) {
-        D;
-        if (wcheck(w)) {
-                w->borders = 0;
-                wreopen(w);
-        }
-}
-
-void awMaximize(aw * w) {
-        D;
-        if (wcheck(w)) {
-                w->maximized = 1;
-                wreopen(w);
-        }
-}
-
-void awNormalize(aw * w) {
-        D;
-        if (wcheck(w)) {
-                w->maximized = 0;
-                wreopen(w);
-        }
-}
-
-static void setInterval(aw * w) {
-        if (w->interval && !oswSetSwapInterval(&w->osw, w->interval)) 
-                report("Unable to set swap interval");
-}
-
-void awSwapBuffers(aw * w) {
-        D;
-        if (wcheck(w)) {
-                setInterval(w);
-                glFlush();
-                if (!w->ctx)
-                        report("awSwapBuffers called without context");
-                else if (!oswSwapBuffers(&w->osw))
-                        report("awSwapBuffers failed");
-                memcpy(w->ppressed, w->pressed, sizeof(w->ppressed));
-        }
-}
-
-void awMakeCurrent(aw * w, ac * c) {
-        D;
-        if (wcheck(w)) {
-                if (w->ctx)
-                        glFlush();
-                if (w->ctx && w->ctx != c) 
-                        oswClearCurrent(&w->osw);
-                if (c && !oswMakeCurrent(&w->osw, &c->osc))
-                        report("Unable to establish context");
-                w->ctx = c;
-        }
+        r.f = awsettitle;
+        r.a0 = w;
+        r.a1 = t;
+        cmd(&r);
 }
 
 static unsigned char * bitarrayFor(unsigned char * p, awkey * k) {
@@ -320,11 +232,6 @@ static unsigned char * bitarrayFor(unsigned char * p, awkey * k) {
 
 static const unsigned char * bitarrayForC(const unsigned char * p, awkey * k) {
         return (const unsigned char *)bitarrayFor((unsigned char *)p, k);
-}
-
-static int pressed(const aw * w, awkey k) {
-        const unsigned char * ba = bitarrayForC(w->pressed, &k);
-        return ba && bittest(ba, k);
 }
 
 static void press(aw * w, awkey k) {
@@ -339,7 +246,7 @@ static void release(aw * w, awkey k) {
                 bitclear(ba, k);
 }
 
-const ae * awNextEvent(aw * w) {
+static intptr_t awnextevent(aw * w) {
         const ae * e = 0;
         D;
         if (!wcheck(w))
@@ -352,7 +259,7 @@ const ae * awNextEvent(aw * w) {
                 last->p[0] = 0;
                 last->type = AW_EVENT_NONE;
         }
-        coSwitchTo(w->co);
+        oswPollEvent(&w->osw);
         if (w->head != w->tail) {
                 e = w->ev + w->tail;
                 w->tail++;
@@ -380,6 +287,232 @@ const ae * awNextEvent(aw * w) {
         return e;
 }
 
+static void drain(aw * w) {
+        while (awnextevent(w))
+                ;
+}
+
+#define BADPOS 123
+#define BADSIZE 17
+
+static int wopen(ag * g, aw * w) {
+        int ok;
+        D;
+        memset(&w->osw, 0, sizeof(w->osw));
+        w->g = g;
+        w->last = w->ev;
+        w->last->type = AW_EVENT_NONE;
+        w->head = w->tail = 0;
+        D;
+        ok = oswInit(&w->osw, &g->osg, w->rx, w->ry, w->rw, w->rh, !w->borders);
+        D;
+        drain(w);
+        D;
+        // horrible hack to workaround lack of notifications in Cocoa
+        oswGeometry(&w->osw, w->rx+1, w->ry+1, w->rw+1, w->rh+1);
+        D;
+        drain(w);
+        if (!ok)
+                unable("open window");
+        return ok;
+}
+
+static void wclose(aw * w) {
+        awPointer(w, 0);
+        if (w->ctx)
+                oswClearCurrent(&w->osw);
+        oswHide(&w->osw);
+        drain(w);
+        if (!oswTerm(&w->osw))
+                unable("close window");
+        memset(&w->osw, 0, sizeof(w->osw));
+}
+
+static int wreopen(aw * w) {
+        int ok;
+        ac * c = w->ctx;
+        wclose(w);
+        w->ctx = 0;
+        ok = wopen(w->g, w);
+        w->ctx = c;
+        if (w->ctx)
+                oswMakeCurrent(&w->osw, &w->ctx->osc);
+        drain(w);
+        if (w->maximized)
+                oswMaximize(&w->osw);
+        else
+                oswGeometry(&w->osw, w->rx, w->ry, w->rw, w->rh);
+        if (w->shown)
+                oswShow(&w->osw);
+//        filterBad(w);
+        return ok;
+}
+
+
+intptr_t awnew(ag * g) {
+        aw * w = calloc(1, sizeof(*w));
+        int ok;
+        D;
+        w->rx = 31;
+        w->ry = 31;
+        w->rw = 31;
+        w->rh = 31;
+        w->borders = 1;
+        ok = wopen(g, w);
+        if (!ok) {
+                free(w);
+                w = 0;
+        }
+        return w;
+}
+
+
+aw * awNew(ag * g) { 
+        req r;
+        D;
+        r.f = awnew; r.a0 = g;
+        return cmd(&r);
+}
+
+static intptr_t awdel(aw * w) {
+        D;
+        if (wcheck(w)) {
+                if (w->pointer) 
+                        report("closing window with cursor established");
+                if (w->ctx) 
+                        report("closing window with active context");
+                wclose(w);
+        }
+        return 0;
+}
+
+void awDel(aw * w) {  
+        req r;
+        D;
+        r.f = awdel; r.a0 = w;
+        cmd(&r);
+}
+
+static intptr_t awshowborders(aw * w) {
+        D;
+        if (wcheck(w)) {
+                w->borders = 1;
+                wreopen(w);
+        }
+        return 0;
+}
+
+void awShowBorders(aw * w) {
+        req r;
+        D;
+        r.f = awshowborders; r.a0 = w;
+        cmd(&r);
+}
+
+static intptr_t awhideborders(aw * w) {
+        D;
+        if (wcheck(w)) {
+                w->borders = 0;
+                wreopen(w);
+        }
+        return 0;
+}
+
+void awHideBorders(aw * w) {
+        req r;
+        D;
+        r.f = awhideborders; r.a0 = w;
+        cmd(&r);
+}
+
+static intptr_t awmaximize(aw * w) {
+        D;
+        if (wcheck(w)) {
+                w->maximized = 1;
+                wreopen(w);
+        }
+        return 0;
+}
+
+void awMaximize(aw * w) {
+        req r;
+        D;
+        r.f = awmaximize; r.a0 = w;
+        cmd(&r);
+}
+
+static intptr_t awnormalize(aw * w) {
+        D;
+        if (wcheck(w)) {
+                w->maximized = 0;
+                wreopen(w);
+        }
+        return 0;
+}
+
+void awNormalize(aw * w) {
+        req r;
+        D;
+        r.f = awnormalize; r.a0 = w;
+        cmd(&r);
+}
+
+static void setInterval(aw * w) {
+        if (w->interval && !oswSetSwapInterval(&w->osw, w->interval)) 
+                unable("set swap interval");
+}
+
+static intptr_t awswapbuffers(aw * w) {
+        D;
+        if (wcheck(w)) {
+                setInterval(w);
+                if (!w->ctx)
+                        unable("swap buffers without context");
+                else {
+                        glFlush();
+                        if (!oswSwapBuffers(&w->osw))
+                                unable("swap buffers");
+                }
+                memcpy(w->ppressed, w->pressed, sizeof(w->ppressed));
+//                switchTo(g_mainco);
+        }
+        return 0;
+}
+
+void awSwapBuffers(aw * w) {
+        req r;
+        D;
+        r.f = awswapbuffers; r.a0 = w;
+        cmd(&r);
+}
+
+static void awmakecurrent(aw * w, ac * c) {
+        D;
+        if (wcheck(w)) {
+                if (w->ctx)
+                        glFlush();
+                if (w->ctx && w->ctx != c) 
+                        oswClearCurrent(&w->osw);
+                if (c && !oswMakeCurrent(&w->osw, &c->osc))
+                        unable("establish context");
+                w->ctx = c;
+        }
+}
+
+void awMakeCurrent(aw * w, ac * c) {
+        req r;
+        D;
+        r.f = awmakecurrent; r.a0 = w; r.a1 = c;
+        cmd(&r);
+}
+
+const ae * awNextEvent(aw * w) {
+        req r;
+        D;
+        r.f = awnextevent; r.a0 = w;
+        return cmd(&r);
+}
+
 unsigned awWidth(const aw * w) {
         return w->width;
 }
@@ -394,6 +527,11 @@ int awMouseX(const aw * w) {
 
 int awMouseY(const aw * w) {
         return w->my;
+}
+
+static int pressed(const aw * w, awkey k) {
+        const unsigned char * ba = bitarrayForC(w->pressed, &k);
+        return ba && bittest(ba, k);
 }
 
 int awPressed(const aw * w, awkey k) {
@@ -417,21 +555,27 @@ void got(osw * osw, int type, intptr_t p1, intptr_t p2) {
         e->type = type;
         e->p[0] = p1;
         e->p[1] = p2;
-        yield();
 }
 
-ac * acNew(ag * g, ac * share) {
+intptr_t acnew(ag * g, ac * share) {
         ac * c = calloc(1, sizeof(*c));
         int ok;
         D;
         c->g = g;
         ok = oscInit(&c->osc, &g->osg, &share->osc);
         if (!ok) {
-                report("unable to create context sharing with %p", share);
+                unable("create context");
                 free(c);
                 c = 0;
         }
         return c;
+}
+
+ac * acNew(ag * g, ac * share) {
+        req r;
+        D;
+        r.f = acnew; r.a0 = g; r.a1 = share;
+        return cmd(&r);
 }
 
 ac * acNewStereo(ag * g, ac * share) {
@@ -439,13 +583,21 @@ ac * acNewStereo(ag * g, ac * share) {
         return 0; // XXX
 }
 
-void acDel(ac * c) {
+static intptr_t acdel(ac * c) {
         D;
         if (ccheck(c)) {
                 if (!oscTerm(&c->osc))
-                        report("unable to delete context %p", c);
+                        unable("delete context");
                 free(c);
         }
+        return 0;
+}
+
+void acDel(ac * c) {
+        req r;
+        D;
+        r.f = acdel; r.a0 = c;
+        cmd(&r);
 }
 
 void awSetInterval(aw * w, int interval) {
@@ -463,11 +615,12 @@ void * awUserData(const aw * w) {
         return w->user;
 }
 
-void awGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+static intptr_t awgeometry(aw * w, int x, int y,
+                           unsigned width, unsigned height) {
         D;
         if (wcheck(w)) {
                 if (!oswGeometry(&w->osw, x, y, width, height))
-                        report("unable to establish geometry");
+                        unable("establish geometry");
                 else {
                         w->rx = x;
                         w->ry = y;
@@ -475,9 +628,18 @@ void awGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
                         w->rh = height;
                 }
         }
+        return 0;
 }
 
-void awPointer(aw * w, ap * p) {
+void awGeometry(aw * w, int x, int y, unsigned width, unsigned height) {
+        req r;
+        D;
+        r.f = awgeometry; r.a0 = w; r.a1 = x; r.a2 = y; 
+        r.a3 = width; r.a4 = height;
+        cmd(&r);
+}
+
+static intptr_t awpointer(aw * w, ap * p) {
         D;
         if (w->pointer)
                 w->pointer->refs--;
@@ -485,33 +647,56 @@ void awPointer(aw * w, ap * p) {
         if (w->pointer)
                 w->pointer->refs++;
         oswPointer(&w->osw);
+        return 0;
 }
 
-ap * apNew(const void * rgba, unsigned hotx, unsigned hoty) {
+void awPointer(aw * w, ap * p) {
+        req r;
+        D;
+        r.f = awpointer; r.a0 = w; r.a1 = p;
+        cmd(&r);
+}
+
+intptr_t apnew(const void * rgba, uintptr_t hotx, uintptr_t hoty) {
         ap * p = calloc(1, sizeof(*p));
         int ok;
         D;
         ok = ospInit(&p->osp, rgba, hotx, hoty);
         if (!ok) {
-                report("unable to create pointer");
+                unable("create pointer");
                 free(p);
                 p = 0;
         }
         return p;
 }
 
-void apDel(ap * p) {
+ap * apNew(const void * rgba, unsigned hotx, unsigned hoty) {
+        req r;
         D;
-        if (p->refs)
-                report("destroying referenced pointer");
-        else if (pcheck(p)) {
-                if (!ospTerm(&p->osp))
-                        report("unable to destroy pointer");
-                free(p);
-        }
+        r.f = apnew; r.a0 = rgba; r.a1 = hotx; r.a2 = hoty;
+        return cmd(&r);
 }
 
-unsigned awOrder(const aw * w) {
+static intptr_t apdel(ap * p) {
+        D;
+        if (p->refs)
+                unable("destroy referenced pointer");
+        else if (pcheck(p)) {
+                if (!ospTerm(&p->osp))
+                        unable("destroy pointer");
+                free(p);
+        }
+        return 0;
+}
+
+void apDel(ap * p) {
+        req r;
+        D;
+        r.f = apdel; r.a0 = p;
+        cmd(&r);
+}
+
+static intptr_t aworder(const aw * w) {
         aw * zorder[MAX_WINDOWS];
         unsigned n;
         unsigned i = 0;
@@ -526,6 +711,13 @@ unsigned awOrder(const aw * w) {
                 if (w == zorder[i])
                         break;
         return i;
+}
+
+unsigned awOrder(const aw * w) {
+        req r;
+        D;
+        r.f = aworder; r.a0 = w;
+        return cmd(&r);
 }
 
 int aeType(const ae * e) {
@@ -700,8 +892,6 @@ const char * aeKeyName(const ae * e) {
 	return buf;
 }
 
-
-
 struct args {
         int argc;
         char ** argv;
@@ -713,20 +903,28 @@ static void prgentry(void * vargs) {
         struct args * a = (struct args *)vargs;
         a->ret = fakemain(a->argc, a->argv);
         while (1)
-                coSwitchTo(g_mainco);
+                switchTo(g_mainco);
 }
 
-int progrun(int argc, char ** argv) {
-        struct args a;
-        a.argc = argc;
-        a.argv = argv;
+struct args g_a;
+
+int progfinished() {
+        return g_a.ret != 0xdeadbeef;
+}
+
+void progrun(int argc, char ** argv) {
+        g_a.argc = argc;
+        g_a.argv = argv;
+        g_a.ret = 0xdeadbeef;
         D;
         g_mainco = coMain(0);
-        g_progco = coNew(prgentry, &a, PROGSTK);
-        coSwitchTo(g_progco);
+        g_progco = coNew(prgentry, &g_a, PROGSTK);
+}
+
+int progterm() {
         coDel(g_progco);
         coDel(g_mainco);
-        return a.ret;
+        return g_a.ret;
 }
 
 /* 
