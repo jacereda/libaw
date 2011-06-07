@@ -508,6 +508,14 @@ unsigned oswOrder(osw ** order) {
         return n;
 }
 
+int oswShowKeyboard(osw * w) {
+        return 0;
+}
+
+int oswHideKeyboard(osw * w) {
+        return 0;
+}
+
 int oscInit(osc * c, osg * g, osc * share) {
         int st = 0; // XXX
         NSOpenGLContext *ctx = 0;
