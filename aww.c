@@ -44,9 +44,17 @@
 static BOOL (APIENTRY *wglSwapInterval) (int interval) = 0;
 
 static inline BOOL chk(BOOL b) {
+#if 0 //!defined NDEBUG
+        int err = GetLastError();
+        if (err)
+                report("got error %d", err);
+#endif
         assert(!GetLastError());
         return b;
 }
+
+//#define chk(x) (report("checking " #x), chk(x))
+
 
 static void setPF(HDC dc) {
         PIXELFORMATDESCRIPTOR pfd = { 
@@ -279,7 +287,8 @@ int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
 
 void oswSetPointer(osw * w) {
         osp * p = wpointer(w);
-        SetCursor(p? p->icon : 0);
+        SetCursor(p? p->icon : LoadCursor(0, IDC_ARROW));
+        chk(1);
 }
 
 void oswPointer(osw * w) {
@@ -303,7 +312,6 @@ int ospInit(osp * p, const void * vrgba, unsigned hotx, unsigned hoty) {
         int x, y;
 
         BITMAPV5HEADER bh;
-        ICONINFO ii = {0};
         int w = 32;
         int h = 32;
         
@@ -318,11 +326,11 @@ int ospInit(osp * p, const void * vrgba, unsigned hotx, unsigned hoty) {
         bh.bV5BlueMask = 0x00ff0000;
         bh.bV5GreenMask = 0x0000ff00;
         bh.bV5RedMask = 0x000000ff;
-        
         dc = GetDC(0);
         bm = CreateDIBSection(dc, (BITMAPINFO*)&bh, DIB_RGB_COLORS, (void **)&bits, 0, 0);
+        if (bm)
+                SetLastError(0);
         ReleaseDC(0, dc);
-        
         memcpy(bits, vrgba, w * h * 4);
 
         // Change red <-> blue
@@ -334,22 +342,22 @@ int ospInit(osp * p, const void * vrgba, unsigned hotx, unsigned hoty) {
                         bits[c + 2] = aux;
                 }
 
-        ii.fIcon = FALSE;
-        ii.xHotspot = hotx;
-        ii.yHotspot = hoty;
-        ii.hbmColor = bm;
-        ii.hbmMask = CreateBitmap(w, h, 1, 1, NULL);
-        p->icon = CreateIconIndirect(&ii);
-        chk(DeleteObject(ii.hbmMask));
-        chk(DeleteObject(ii.hbmColor));
+        p->ii.fIcon = FALSE;
+        p->ii.xHotspot = hotx;
+        p->ii.yHotspot = hoty;
+        p->ii.hbmColor = bm;
+        p->ii.hbmMask = CreateBitmap(w, h, 1, 1, NULL);
+        p->icon = CreateIconIndirect(&p->ii);
         return p->icon != 0;
 }
 
 int ospTerm(osp * p) {
-        int ret;
+        int failed = 0;
         SetCursor(0);
-        ret = chk(DestroyIcon(p->icon));
-        return ret;
+        failed += chk(DestroyIcon(p->icon));
+        failed += chk(DeleteObject(p->ii.hbmColor));
+        failed += chk(DeleteObject(p->ii.hbmMask));
+        return failed == 0;
 }
 
 int main(int argc, char ** argv) {

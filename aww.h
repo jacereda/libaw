@@ -20,4 +20,5 @@ struct _osc {
 
 struct _osp {
         HCURSOR icon;
+        ICONINFO ii;
 };
