@@ -24,7 +24,7 @@ static void deletePointer(aw * w) {
         }
 }
 
-static void hideCursor(aw * w) {
+static void hideCursor(ag * g, aw * w) {
         unsigned i;
         unsigned char rgba[32*32*4];
         for (i = 0; i < 32*32; i++) {
@@ -32,11 +32,11 @@ static void hideCursor(aw * w) {
                 rgba[3] = 0xff;
         }
         deletePointer(w);
-        g_p = apNew(rgba, 10, 5);
+        g_p = apNew(g, rgba, 10, 5);
         awPointer(w, g_p);        
 }
 
-static void setCursor(aw * w) {
+static void setCursor(ag * g, aw * w) {
         unsigned char rgba[32*32*4];
         int x, y;
 
@@ -62,7 +62,7 @@ static void setCursor(aw * w) {
                 }
         }
 
-        g_p = apNew(rgba, 10, 5);
+        g_p = apNew(g, rgba, 10, 5);
         awPointer(w, g_p);
 }
 
@@ -95,8 +95,8 @@ static aw * processEvents(ag * g, aw * w, ac * c) {
                         Log("Up: %s", aeKeyName(e));
                         switch (aeWhich(e)) {
                         case AW_KEY_8: awPointer(w, 0); break;
-                        case AW_KEY_9: setCursor(w); break;
-                        case AW_KEY_0: hideCursor(w); break;
+                        case AW_KEY_9: setCursor(g, w); break;
+                        case AW_KEY_0: hideCursor(g, w); break;
                         case AW_KEY_S: awShowBorders(w); break;
                         case AW_KEY_H: awHideBorders(w); break;
                         case AW_KEY_M: awMaximize(w); break;
@@ -117,6 +117,7 @@ static aw * processEvents(ag * g, aw * w, ac * c) {
                                         else
                                                 awShowKeyboard(w);
                                         shown = !shown;
+                                        setCursor(g, w);
                                 }
                                 break;
                         default: break;

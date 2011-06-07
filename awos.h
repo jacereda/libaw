@@ -64,6 +64,7 @@ typedef struct _osp osp;
 
 struct _ap {
         osp osp; // must be first
+        ag * g;
         int refs;
         int ok;
 };
@@ -116,6 +117,7 @@ static __inline void debug(const char * fmt, ...) {}
 #define wmaximized(w) (((aw*)w)->maximized)
 #define wgroup(w) (&(((aw*)w)->g->osg))
 #define cgroup(c) (&(((ac*)c)->g->osg))
+#define pgroup(p) (&(((ap*)p)->g->osg))
 #define wpointer(w) (&(((aw*)w)->pointer->osp))
 #define wcontext(w) (&(((aw*)w)->ctx->osc))
 #define wmousex(w) ((((aw*)w)->mx))

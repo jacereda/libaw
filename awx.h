@@ -22,5 +22,5 @@ struct _osc {
 };
 
 struct _osp {
-	int dummy;
+	Cursor cur;
 };
