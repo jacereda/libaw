@@ -43,6 +43,18 @@
 
 static BOOL (APIENTRY *wglSwapInterval) (int interval) = 0;
 
+static inline BOOL chk(BOOL b) {
+#if !defined NDEBUG
+        int err = GetLastError();
+        if (err)
+                report("failed %d", err);
+        assert(!err);
+#endif
+        return b;
+}
+
+#define chk(x) (report("pre " #x), chk(1), report("checking " #x), chk(x))
+
 static void setPF(HDC dc) {
         PIXELFORMATDESCRIPTOR pfd = { 
                 sizeof(PIXELFORMATDESCRIPTOR),   // size of this pfd 
@@ -74,7 +86,7 @@ static void wide(WCHAR * d, size_t dsz, const char * t) {
 int oswSetTitle(osw * w, const char * t) {
         WCHAR wt[1024];
         wide(wt, sizeof(wt), t);
-        return SetWindowTextW(w->win, wt);
+        return chk(SetWindowTextW(w->win, wt));
 }
 
 static int openwin(osw * w, int x, int y, int width, int height, 
@@ -84,7 +96,7 @@ static int openwin(osw * w, int x, int y, int width, int height,
         w->style = style;
         r.left = x; r.top = y;
         r.right = x + width; r.bottom = y + height;
-        AdjustWindowRect(&r, style, FALSE);
+        chk(AdjustWindowRect(&r, style, FALSE));
         win = CreateWindowExW(exstyle, 
                               g->appname, g->appname, style,
                               r.left, r.top, 
@@ -94,18 +106,18 @@ static int openwin(osw * w, int x, int y, int width, int height,
         if (win) {
                 HDC dc = GetDC(win);
                 setPF(dc);
-                ReleaseDC(win, dc);
+                chk(ReleaseDC(win, dc));
                 DragAcceptFiles(win, TRUE);
         }
         w->win = win;
         return win != 0;
 }
 
-static void dispatch(HWND win, unsigned type) {
+static void dispatchmsgs(HWND win, unsigned type) {
         MSG msg;
         if (PeekMessageW(&msg, win, 0, 0, PM_REMOVE+type)) {
                 TranslateMessage(&msg);
-                DispatchMessageW(&msg);
+                chk(DispatchMessageW(&msg));
         }
 }
 
@@ -117,17 +129,17 @@ static DWORD __stdcall groupThread(LPVOID param) {
                                  WS_POPUP, 0, 0, 0, 0, 0, 0, 
                                  GetModuleHandleW(NULL), 0);
 //        ShowWindow(g->win, SW_SHOWNORMAL);
-        SetEvent(g->ready);
+        chk(SetEvent(g->ready));
         while (1) {
                 MSG msg;
                 if (GetMessageW(&msg, 0, 0, 0)) {
                         TranslateMessage(&msg);
-                        DispatchMessageW(&msg);
+                        chk(DispatchMessageW(&msg));
                 }
                 if (msg.message == EXITMSG)
                         break;
         }
-        DestroyWindow(g->win);
+        chk(DestroyWindow(g->win));
         return 0; 
 }
 
@@ -135,7 +147,9 @@ int osgInit(osg * g, const char * appname) {
         extern LRESULT CALLBACK handle(HWND win, UINT msg, WPARAM w, LPARAM l); 
         WNDCLASSW  wc;
         int ok;
+        report("wide");
         wide(g->appname, sizeof(g->appname), appname);
+        report("zme");
         ZeroMemory(&wc, sizeof(wc));
 //        wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
         wc.style += CS_OWNDC;
@@ -143,11 +157,16 @@ int osgInit(osg * g, const char * appname) {
         wc.lpfnWndProc = handle;
         wc.hInstance = GetModuleHandleW(NULL);
         wc.lpszClassName = g->appname;
+        report("regclass");
         ok = 0 != RegisterClassW(&wc);
+        report("cev");
         g->ready = CreateEvent(0,0,0,0);
+        report("cth");
         g->thread = CreateThread(NULL, 4096, groupThread, g, 0, NULL);
-        WaitForSingleObject(g->ready, INFINITE);
-        CloseHandle(g->ready); g->ready = 0;
+        report("wso");
+        chk(WaitForSingleObject(g->ready, INFINITE));
+        report("ch");
+        chk(CloseHandle(g->ready)); g->ready = 0;
         return ok;
 }
 
@@ -156,7 +175,7 @@ int osgTerm(osg * g) {
         PostMessage(g->win, EXITMSG, 0, 0);
         ret = WaitForSingleObject(g->thread, INFINITE);
         assert(ret == WAIT_OBJECT_0);
-        ret = 0 != CloseHandle(g->thread);
+        ret = 0 != chk(CloseHandle(g->thread));
         return ret;
 }
 
@@ -185,45 +204,51 @@ int oswInit(osw * w, osg * g, int x, int y,
 }
 
 int oswTerm(osw * w) {
-        int ret = 1;
-        if (w->win) ret &= 0 != DestroyWindow(w->win);
+        int ret;
+        report("err0: %x", GetLastError());
+        report("win: %x", w->win);
+        ret = 0 != chk(DestroyWindow(w->win));
+        report("err: %x", GetLastError());
+        w->win = 0xdeadbeef;
         return ret;
 }
 
 int oswSwapBuffers(osw * w) {
         int ret;
         HDC dc = GetDC(w->win);
-        ret = SwapBuffers(dc);
-        ReleaseDC(w->win, dc);
+        ret = chk(SwapBuffers(dc));
+        chk(ReleaseDC(w->win, dc));
         return ret;
 }
 
 int oswMakeCurrent(osw * w, osc * c) {
         int ret;
         HDC dc = GetDC(w->win);
-        ret = wglMakeCurrent(dc, c->ctx);
+        ret = chk(wglMakeCurrent(dc, c->ctx));
         if (!wglSwapInterval)
                 wglSwapInterval = (void*)wglGetProcAddress("wglSwapIntervalEXT");
-        ReleaseDC(w->win, dc);
+        chk(ReleaseDC(w->win, dc));
         return ret;
 }
 
 int oswClearCurrent(osw * w) {
-        return wglMakeCurrent(0, 0);
+        return chk(wglMakeCurrent(0, 0));
 }
 
 int oswShow(osw * w) {
-        ShowWindow(w->win, wmaximized(w)? SW_MAXIMIZE : SW_SHOWNORMAL);
+        report("show");
+        assert(!GetLastError());
+        chk(ShowWindow(w->win, wmaximized(w)? SW_MAXIMIZE : SW_SHOWNORMAL));
+        report("shown");
         return 1;
 }
 
 int oswHide(osw * w) {
-        ShowWindow(w->win, SW_HIDE);
-        return 1;
+        return chk(ShowWindow(w->win, SW_HIDE));
 }
 
 void oswPollEvent(osw * w) {
-        dispatch(w->win, 0);
+        dispatchmsgs(w->win, 0);
 /*
   dispatch(w->win, PM_QS_POSTMESSAGE+PM_QS_SENDMESSAGE+PM_QS_PAINT);
   dispatch((HWND)-1, PM_QS_POSTMESSAGE+PM_QS_SENDMESSAGE+PM_QS_PAINT);
@@ -233,7 +258,8 @@ void oswPollEvent(osw * w) {
 }
 
 int oswSetSwapInterval(osw * w, int si) {
-        return wglSwapInterval? wglSwapInterval(si) : 1;
+        return 1;
+//        return wglSwapInterval? wglSwapInterval(si) : 1;
 }
 
 int oscInit(osc * c, osg * g, osc * share) {
@@ -243,16 +269,17 @@ int oscInit(osc * c, osg * g, osc * share) {
         HDC dc = GetDC(dummy);
         setPF(dc);
         ctx = wglCreateContext(dc);
-        ReleaseDC(dummy, dc);
-        DestroyWindow(dummy);
+        chk(ReleaseDC(dummy, dc));
+        chk(DestroyWindow(dummy));
         if (ctx && share) 
-                wglShareLists(share->ctx, ctx);
+                chk(wglShareLists(share->ctx, ctx));
         c->ctx = ctx;
         return ctx != 0;
 }
 
 int oscTerm(osc * c) {
-        int ret = 0 != wglDeleteContext(c->ctx);
+        int ret;
+        ret = 0 != chk(wglDeleteContext(c->ctx));
         return ret;
 }
 
@@ -265,24 +292,29 @@ int oswGeometry(osw * w, int x, int y, unsigned width, unsigned height) {
         RECT r;
         r.left = x; r.top = y;
         r.right = x + width; r.bottom = y + height;
-        AdjustWindowRect(&r, w->style, FALSE);
-        return MoveWindow(w->win, r.left, r.top, 
-                   r.right - r.left, r.bottom - r.top, 
-                   1);
+        chk(AdjustWindowRect(&r, w->style, FALSE));
+        return chk(MoveWindow(w->win, r.left, r.top, 
+                              r.right - r.left, r.bottom - r.top, 
+                              1));
 }
 
 void oswSetPointer(osw * w) {
         osp * p = wpointer(w);
-        if (p)
-                SetCursor(p->icon);
-        else
-                SetCursor(0);
+        SetCursor(p? p->icon : 0);
 }
 
 void oswPointer(osw * w) {
         POINT p;
-        GetCursorPos(&p);
-        SetCursorPos(p.x, p.y);
+        chk(GetCursorPos(&p));
+        chk(SetCursorPos(p.x, p.y));
+}
+
+int oswShowKeyboard(osw * w) {
+        return 0;
+}
+
+int oswHideKeyboard(osw * w) {
+        return 0;
 }
 
 int ospInit(osp * p, const void * vrgba, unsigned hotx, unsigned hoty) {
@@ -329,20 +361,23 @@ int ospInit(osp * p, const void * vrgba, unsigned hotx, unsigned hoty) {
         ii.hbmColor = bm;
         ii.hbmMask = CreateBitmap(w, h, 1, 1, NULL);
         p->icon = CreateIconIndirect(&ii);
-        DeleteObject(ii.hbmMask);
-        DeleteObject(ii.hbmColor);
+        chk(DeleteObject(ii.hbmMask));
+        chk(DeleteObject(ii.hbmColor));
         return p->icon != 0;
 }
 
 int ospTerm(osp * p) {
         int ret;
         SetCursor(0);
-        ret = DestroyIcon(p->icon);
+        ret = chk(DestroyIcon(p->icon));
         return ret;
 }
 
 int main(int argc, char ** argv) {
-        return progrun(argc, argv);
+        progrun(argc, argv);
+        while (!progfinished())
+                dispatch();
+        return progterm();
 }
 
 /* 
