@@ -169,8 +169,7 @@ void agDel(ag * g) {
         return cmd(&r);
 }
 
-static void * awshow(void * data) {
-        aw * w = (aw*)data;
+static void * awshow(aw * w) {
         D;
         if (wcheck(w)) {
                 if (!oswShow(&w->osw))
@@ -189,8 +188,7 @@ void awShow(aw * w) {
         cmd(&r);
 }
 
-static void * awhide(void * data) {
-        aw * w = (aw*)data;
+static void * awhide(aw * w) {
         D;
         if (wcheck(w)) {
                 if (!oswHide(&w->osw))
