@@ -44,16 +44,9 @@
 static BOOL (APIENTRY *wglSwapInterval) (int interval) = 0;
 
 static inline BOOL chk(BOOL b) {
-#if !defined NDEBUG
-        int err = GetLastError();
-        if (err)
-                report("failed %d", err);
-        assert(!err);
-#endif
+        assert(!GetLastError());
         return b;
 }
-
-#define chk(x) (report("pre " #x), chk(1), report("checking " #x), chk(x))
 
 static void setPF(HDC dc) {
         PIXELFORMATDESCRIPTOR pfd = { 
@@ -147,9 +140,7 @@ int osgInit(osg * g, const char * appname) {
         extern LRESULT CALLBACK handle(HWND win, UINT msg, WPARAM w, LPARAM l); 
         WNDCLASSW  wc;
         int ok;
-        report("wide");
         wide(g->appname, sizeof(g->appname), appname);
-        report("zme");
         ZeroMemory(&wc, sizeof(wc));
 //        wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
         wc.style += CS_OWNDC;
@@ -157,15 +148,10 @@ int osgInit(osg * g, const char * appname) {
         wc.lpfnWndProc = handle;
         wc.hInstance = GetModuleHandleW(NULL);
         wc.lpszClassName = g->appname;
-        report("regclass");
         ok = 0 != RegisterClassW(&wc);
-        report("cev");
         g->ready = CreateEvent(0,0,0,0);
-        report("cth");
         g->thread = CreateThread(NULL, 4096, groupThread, g, 0, NULL);
-        report("wso");
         chk(WaitForSingleObject(g->ready, INFINITE));
-        report("ch");
         chk(CloseHandle(g->ready)); g->ready = 0;
         return ok;
 }
@@ -205,11 +191,7 @@ int oswInit(osw * w, osg * g, int x, int y,
 
 int oswTerm(osw * w) {
         int ret;
-        report("err0: %x", GetLastError());
-        report("win: %x", w->win);
         ret = 0 != chk(DestroyWindow(w->win));
-        report("err: %x", GetLastError());
-        w->win = 0xdeadbeef;
         return ret;
 }
 
@@ -236,10 +218,7 @@ int oswClearCurrent(osw * w) {
 }
 
 int oswShow(osw * w) {
-        report("show");
-        assert(!GetLastError());
         chk(ShowWindow(w->win, wmaximized(w)? SW_MAXIMIZE : SW_SHOWNORMAL));
-        report("shown");
         return 1;
 }
 

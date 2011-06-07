@@ -10,7 +10,6 @@
 #endif
 
 osw * oswFor(HWND win) {
-        report("gwlp %x", win);
         return win? (osw*)GetWindowLongPtrW(win, GWLP_USERDATA) : 0;
 }
 
@@ -186,7 +185,7 @@ static int onNCCREATE(HWND win, CREATESTRUCT * cs) {
 LRESULT WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
         LRESULT r;
         switch (msg) {
-#define HANDLE(x) case WM_##x: r = HANDLE_WM_##x(win, w, l, on##x); report("checking " #x); assert(!GetLastError()); break
+#define HANDLE(x) case WM_##x: r = HANDLE_WM_##x(win, w, l, on##x); break
                 HANDLE(NCCREATE);
                 HANDLE(MOUSEMOVE);
                 HANDLE(MOVE);
@@ -248,10 +247,6 @@ LRESULT WINAPI handle(HWND win, UINT msg, WPARAM w, LPARAM l)  {
         }
         if (!r)
                 r = DefWindowProcW(win, msg, w, l);
-        if (r == 1234) {
-                report("ignoring message");
-                r = 0;
-        }
         assert(!GetLastError());
         return r;
 }
