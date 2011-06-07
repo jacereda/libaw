@@ -234,7 +234,7 @@ EXPORTED ac * acNew(ag * g, ac *);
 EXPORTED ac * acNewStereo(ag * g, ac *);
 EXPORTED void acDel(ac *);
 
-EXPORTED ap * apNew(const void * rgba, unsigned hotx, unsigned hoty);
+EXPORTED ap * apNew(ag * g, const void * rgba, unsigned hotx, unsigned hoty);
 EXPORTED void apDel(ap *);
 
 

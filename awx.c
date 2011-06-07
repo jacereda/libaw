@@ -35,6 +35,7 @@
 #include <GL/glx.h>
 #include <GL/glxext.h>
 #include <X11/keysym.h>
+#include <X11/Xcursor/Xcursor.h>
 
 #include "aw.h"
 #include "awos.h"
@@ -337,10 +338,31 @@ int oscTerm(osc * c) {
 }
 
 int ospInit(osp * p, const void * rgba, unsigned hotx, unsigned hoty) {
+        XcursorImage * ci = XcursorImageCreate(32, 32);
+        unsigned i;
+        const uint8_t * src = (const uint8_t*)rgba;
+        uint8_t * dst = (uint8_t*)ci->pixels;
+        ci->xhot = hotx;
+        ci->yhot = hoty;
+        for (i = 0; i < 32*32; i++) {
+#if defined __APPLE__
+                dst[i*4+2] = src[i*4+0];
+                dst[i*4+1] = src[i*4+1];
+                dst[i*4+0] = src[i*4+2];
+#else
+                dst[i*4+0] = src[i*4+0];
+                dst[i*4+1] = src[i*4+1];
+                dst[i*4+2] = src[i*4+2];
+#endif
+                dst[i*4+3] = src[i*4+3];
+        }
+        p->cur = XcursorImageLoadCursor(pgroup(p)->dpy, ci);
+        XcursorImageDestroy(ci);
         return 1;
 }
 
 int ospTerm(osp * p) {
+        XFreeCursor(pgroup(p)->dpy, p->cur);
         return 1;
 }
 
@@ -349,6 +371,12 @@ unsigned oswOrder(osw ** w) {
 }
 
 void oswPointer(osw * w) {
+        osg * g = wgroup(w);
+        osp * p = wpointer(w);
+        if (p)
+                XDefineCursor(g->dpy, w->win, p->cur);
+        else
+                XUndefineCursor(g->dpy, w->win);
 }
 
 int oswShowKeyboard(osw * w) {

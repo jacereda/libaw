@@ -77,7 +77,7 @@ class Env(Environment):
 			self.Append(LIBPATH=['/usr/X11R6/lib'])
 			self.Append(CPPPATH=['/usr/X11R6/include',
 					     '/usr/include/gtk-2.0/'])
-			self.Append(LIBS=['GL', 'GLU', 'X11'])
+			self.Append(LIBS=['GL', 'GLU', 'X11', 'Xcursor'])
 		if self['BACKEND'] == 'nt':
 			self.Append(LIBS=['opengl32', 'gdi32', 'glu32', 'user32', 'imm32', 'shell32'])
 

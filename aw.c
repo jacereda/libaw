@@ -665,10 +665,11 @@ void awPointer(aw * w, ap * p) {
         cmd(&r);
 }
 
-intptr_t apnew(const void * rgba, uintptr_t hotx, uintptr_t hoty) {
+intptr_t apnew(ag * g, const void * rgba, uintptr_t hotx, uintptr_t hoty) {
         ap * p = calloc(1, sizeof(*p));
         int ok;
         D;
+        p->g = g;
         ok = ospInit(&p->osp, rgba, hotx, hoty);
         if (!ok) {
                 unable("create pointer");
@@ -678,10 +679,10 @@ intptr_t apnew(const void * rgba, uintptr_t hotx, uintptr_t hoty) {
         return p;
 }
 
-ap * apNew(const void * rgba, unsigned hotx, unsigned hoty) {
+ap * apNew(ag * g, const void * rgba, unsigned hotx, unsigned hoty) {
         req r;
         D;
-        r.f = apnew; r.a0 = rgba; r.a1 = hotx; r.a2 = hoty;
+        r.f = apnew; r.a0 = g, r.a1 = rgba; r.a2 = hotx; r.a3 = hoty;
         return cmd(&r);
 }
 
