@@ -349,11 +349,21 @@ unsigned oswOrder(osw ** w) {
 }
 
 void oswPointer(osw * w) {
+}
 
+int oswShowKeyboard(osw * w) {
+        return 0;
+}
+
+int oswHideKeyboard(osw * w) {
+        return 0;
 }
 
 int main(int argc, char ** argv) {
-        return progrun(argc, argv);
+        progrun(argc, argv);
+        while (!progfinished())
+                dispatch();
+        return progterm();
 }
 
 /* 
