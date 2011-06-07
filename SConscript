@@ -18,7 +18,7 @@ if aw['BACKEND'] == 'nt':
     aw.Append(CPPDEFINES=['USE_FIBERS'])
 else:
     aw.Append(CPPDEFINES=['USE_GUESSED_SETJMP'])
-aw.Append(CPPDEFINES=['BUILDING_AW'])
+aw.Append(CPPDEFINES=['BUILDING_AW', 'BACKEND_%s' % aw['BACKEND']])
 aw.Lib('aw', 'aw.c co.c coroutine/source/Coro.c ' + backend)
 
 aw.Install('include/aw', ['aw.h', 'awtypes.h', 'sysgl.h', 'sysglu.h'])
@@ -29,12 +29,6 @@ if awnpapi:
     awnpapi.Append(CPPDEFINES=['AWPLUGIN'])
     awnpapi.Append(CPPPATH=['coroutine/source',])
     awnpapi.UsesOpenGL()
-    if awnpapi['BACKEND'] == 'nt':
-        awnpapi.Append(CPPDEFINES=['USE_FIBERS',])
-    elif awnpapi['BACKEND'] == 'x11':
-        awnpapi.Append(CPPDEFINES=['USE_UCONTEXT',])        
-    else:
-        awnpapi.Append(CPPDEFINES=['USE_SETJMP',])        
     backend = {
         'cocoa': '''
            awposixresolve.c awmackeycodes.c awcocoanpapi.m awreportfile.c tlspthread.c
