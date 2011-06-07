@@ -27,9 +27,10 @@ static void deletePointer(aw * w) {
 static void hideCursor(aw * w) {
         unsigned i;
         unsigned char rgba[32*32*4];
-        memset(rgba, 0, sizeof(rgba));
-        for (i = 0; i < 32*32; i++)
+        for (i = 0; i < 32*32; i++) {
+                rgba[0] = rgba[1] = rgba[2] = 0;
                 rgba[3] = 0xff;
+        }
         deletePointer(w);
         g_p = apNew(rgba, 10, 5);
         awPointer(w, g_p);        
