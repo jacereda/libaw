@@ -17,11 +17,12 @@ def generate(env):
     env['CC'] = sdkprefix + 'gcc'
     env['CXX'] = sdkprefix + 'g++'
     env['LINK'] = sdkprefix + 'gcc'
-    env.Append(CPPDEFINES=[['__IPHONE_OS_VERSION_MIN_REQUIRED', 30000]])
+    env.Append(CPPDEFINES=[['__IPHONE_OS_VERSION_MIN_REQUIRED', 30200]])
     env.Append(LINKFLAGS=' -arch i386 -m32 ')
     env.Append(CFLAGS=' -arch i386 -m32 ')
-    env.Append(CFLAGS=' -isysroot /Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator3.1.sdk ')
-    env.Append(LINKFLAGS=' -isysroot /Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator3.1.sdk ')
+    env.Append(CFLAGS=' -fobjc-abi-version=2 -fobjc-legacy-dispatch ')
+    env.Append(CFLAGS=' -isysroot /Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator3.2.sdk ')
+    env.Append(LINKFLAGS=' -isysroot /Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator3.2.sdk ')
     env.Append(CFLAGS=' -mmacosx-version-min=10.5 ')
     env.Append(LINKFLAGS=' -mmacosx-version-min=10.5 ')
     env['AS'] = sdkprefix + 'as'
