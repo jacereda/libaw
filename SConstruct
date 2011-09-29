@@ -31,7 +31,7 @@ else:
 backends = {
 	'iphone' : ['iphone'],
 	'iphonesim' : ['iphone'],
-	'darwin' : ['cocoa', 'x11'],
+	'darwin' : ['cocoa'],
 	'android' : ['android'],
 	'linux' : ['x11'],
 	'win32' : ['nt'],
@@ -125,7 +125,7 @@ class Env(Environment):
 
 
 	def App(self, name, prg):
-		dst = '#/../Library/Application Support/' +\
+		dst = os.environ['HOME'] + '/Library/Application Support/' +\
 		'iPhone Simulator/User/Applications/%s/%s.app/' % (name, name)
 		plist = self.Command(name + '.plist', 'template.plist',
 				     filtertemplate)
@@ -167,6 +167,7 @@ class Env(Environment):
 			self.Apk(name, prg)
 
 	def CompileAs32Bits(self):
+		return # XXX
 		if comp == 'gcc':
 			self.Append(CCFLAGS=' -m32 ')
 			self.Append(LINKFLAGS=' -m32 ')
@@ -209,7 +210,6 @@ class Env(Environment):
 		return self.Library(name, self._SharedObjects(name, sources))
 
 	def Plg(self, name, sources):
-		return # XXX Broken when running as out-of-process
 		prefix = ''
 		platobjs = []
 		if target == 'win32':
@@ -296,7 +296,7 @@ for backend in backends:
 			  CPPDEFINES=confcppdefines[conf]+compcppdefines[comp],
 			  LINKFLAGS=lf,
 			  )
-#		cnf.CompileAs32Bits()
+		cnf.CompileAs32Bits()
 
 		if tools:
 			cnf.Tool(tools, '.')
