@@ -24,5 +24,17 @@
 	<string></string>
 	<key>CFPlugInDynamicRegistration</key>
 	<string>YES</string>
+
+	<key>WebPluginDescription</key>
+	<string>NAME</string>
+	<key>WebPluginMIMETypes</key>
+	<dict>
+		<key>application/NAME</key>
+		<dict>
+			<key>WebPluginTypeDescription</key>
+			<string>NAME</string>
+		</dict>
+	</dict>
+
 </dict>
 </plist>
