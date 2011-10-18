@@ -299,10 +299,9 @@ for backend in backends:
 		if tools:
 			cnf.Tool(tools, '.')
 		dir = conf + '/' + backend
-		cnf.BuildDir(dir, '.', duplicate=0)
 		cnf.SConsignFile(dir)
 		cnf['CONF'] = conf
 		env = cnf.Clone()
 		env['BACKEND'] = backend
 		Export("env")
-		env.SConscript(dir  + '/SConscript')
+		env.SConscript('SConscript', variant_dir=dir)
