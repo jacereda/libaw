@@ -303,5 +303,4 @@ for backend in backends:
 		cnf['CONF'] = conf
 		env = cnf.Clone()
 		env['BACKEND'] = backend
-		Export("env")
-		env.SConscript('SConscript', variant_dir=dir)
+		env.SConscript('SConscript', variant_dir=dir, exports='env')
