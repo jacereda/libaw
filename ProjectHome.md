@@ -1,0 +1,2 @@
+This library provides window handling for simple OpenGL applications. Sort of GLUT-- or SDL-- (just window creation and simple event handling).
+Can also be used to write NPAPI plugins (only for Safari OSX and Firefox Windows/Linux for now).
